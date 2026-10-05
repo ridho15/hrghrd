@@ -1,0 +1,10 @@
+@extends('layouts.app')
+@section('title','Impor karyawan')
+@section('content')
+<div class="page-head"><div><div class="eyebrow">TAHAP 1</div><h1>Impor karyawan</h1><p>Unggah CSV atau XLSX. Data asli tidak diubah. Hanya baris valid yang masuk.</p></div></div>
+<section class="card"><h2>1. Unggah file</h2><p class="hint">Kolom yang diperlukan: nama, email, kode cabang, jabatan, tanggal mulai, gaji bulanan, status. Buat cabang lebih dulu.</p><form method="post" action="{{ route('import.preview') }}" enctype="multipart/form-data" class="inline-form">@csrf<input type="file" name="file" accept=".csv,.xlsx" required><button class="button primary">Pratinjau</button></form></section>
+@isset($headers)<section class="card"><h2>2. Pemetaan kolom</h2><div class="table-wrap"><table><thead><tr>@foreach($headers as $h)<th>{{ $h }}</th>@endforeach</tr></thead><tbody>@foreach($sample as $row)<tr>@foreach($headers as $i=>$h)<td>{{ $row[$i] ?? '' }}</td>@endforeach</tr>@endforeach</tbody></table></div>
+<form method="post" action="{{ route('import.commit') }}" class="form-grid">@csrf
+@foreach(['name'=>'Nama','email'=>'Email','branch'=>'Kode cabang','position'=>'Jabatan','hired_at'=>'Tanggal mulai','base_salary'=>'Gaji bulanan','active'=>'Status aktif'] as $key=>$label)<label>{{ $label }}<select name="{{ $key }}" required><option value="">Pilih kolom</option>@foreach($headers as $i=>$h)<option value="{{ $i }}" @selected(str_contains(strtolower($h),strtolower(explode(' ',$label)[0])))>{{ $h }}</option>@endforeach</select></label>@endforeach<button class="button primary">Impor baris valid</button></form><p class="hint">Akun impor dibuat dengan sandi acak. Setel sandi sementara pada halaman Karyawan sebelum karyawan masuk.</p></section>@endisset
+@isset($result)<section class="card"><h2>Hasil impor</h2><p><strong>{{ $result['imported'] }}</strong> baris berhasil · <strong>{{ $result['failed'] }}</strong> baris gagal.</p>@if($result['errors'])<div class="alert error"><ul>@foreach($result['errors'] as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif<a class="button subtle" href="{{ route('people') }}">Lihat karyawan</a></section>@endisset
+@endsection
