@@ -12,7 +12,12 @@
     "php": "^8.4",
     "laravel/framework": "^13.17"
   },
-  "require-dev": {},
+  "require-dev": {
+    "fakerphp/faker": "^1.24",
+    "laravel/boost": "^2.10",
+    "mockery/mockery": "^1.6",
+    "phpunit/phpunit": "^13.4"
+  },
   "autoload": {
     "psr-4": {
       "App\\": "app/",

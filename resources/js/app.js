@@ -75,3 +75,71 @@ if (leaveType) {
   const update = () => { file.required = leaveType.value === 'sick'; };
   leaveType.addEventListener('change', update); update();
 }
+
+// Mobile sidebar drawer toggle
+const openSidebarBtn = document.getElementById('open-mobile-sidebar');
+const closeSidebarBtn = document.getElementById('close-mobile-sidebar');
+const mobileBackdrop = document.getElementById('mobile-sidebar-backdrop');
+const appSidebar = document.getElementById('app-sidebar');
+
+if (openSidebarBtn && appSidebar) {
+  const toggleSidebar = (show) => {
+    if (show) {
+      appSidebar.classList.remove('-translate-x-full');
+      mobileBackdrop?.classList.remove('hidden');
+    } else {
+      appSidebar.classList.add('-translate-x-full');
+      mobileBackdrop?.classList.add('hidden');
+    }
+  };
+
+  openSidebarBtn.addEventListener('click', () => toggleSidebar(true));
+  closeSidebarBtn?.addEventListener('click', () => toggleSidebar(false));
+  mobileBackdrop?.addEventListener('click', () => toggleSidebar(false));
+}
+
+// Show / Hide Password Toggle Handler
+document.addEventListener('click', (e) => {
+  const toggleBtn = e.target.closest('[data-toggle-password]');
+  if (!toggleBtn) return;
+  const wrapper = toggleBtn.closest('.password-input-wrapper');
+  const input = wrapper ? wrapper.querySelector('input') : toggleBtn.parentElement.querySelector('input');
+  if (!input) return;
+  const isPassword = input.type === 'password';
+  input.type = isPassword ? 'text' : 'password';
+  toggleBtn.setAttribute('aria-label', isPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+  toggleBtn.querySelector('.eye-icon-show')?.classList.toggle('hidden', isPassword);
+  toggleBtn.querySelector('.eye-icon-hide')?.classList.toggle('hidden', !isPassword);
+});
+
+// Generic Detail Modal Dialog Handler
+document.addEventListener('click', (e) => {
+  const openBtn = e.target.closest('[data-open-modal]');
+  if (openBtn) {
+    const modalId = openBtn.dataset.openModal;
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove('hidden');
+      document.body.classList.add('overflow-hidden');
+    }
+  }
+  const closeBtn = e.target.closest('[data-close-modal]');
+  if (closeBtn) {
+    const modal = closeBtn.closest('[data-modal-container]');
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    }
+  }
+});
+
+// Penutup Modal via Keyboard ESC
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('[data-modal-container]:not(.hidden)').forEach(modal => {
+      modal.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
+    });
+  }
+});
+
