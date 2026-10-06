@@ -43,7 +43,11 @@ function testRoute(string $uri, ?User $user = null, string $label = '', array $e
         $status = $response->getStatusCode();
         
         if ($status !== 200) {
-            echo "FAILED (HTTP {$status})\n";
+            $msg = isset($response->exception) && $response->exception ? $response->exception->getMessage() : '';
+            echo "FAILED (HTTP {$status}) {$msg}\n";
+            if (isset($response->exception) && $response->exception) {
+                echo "  Trace: " . $response->exception->getFile() . ":" . $response->exception->getLine() . "\n";
+            }
             return false;
         }
 
@@ -85,22 +89,95 @@ $allPassed = testRoute('/', $employee, 'Dashboard Karyawan', [
     'open-mobile-sidebar'
 ]) && $allPassed;
 
-$allPassed = testRoute('/leave', $employee, 'Pengajuan Cuti Karyawan', [
-    'id="leave-type"',
-    'name="certificate"',
-    'Formulir Pengajuan'
+$allPassed = testRoute('/leave', $employee, 'Daftar Izin Karyawan Bersih', [
+    'Pengajuan Izin & Sakit',
+    '+ Ajukan Izin / Sakit',
+    'Tindakan'
+]) && $allPassed;
+
+$allPassed = testRoute('/leave/create', $employee, 'Halaman Formulir Izin Mandiri', [
+    'Formulir Pengajuan Izin & Sakit',
+    'leave-start-date',
+    'leave-end-date',
+    'leave-reason'
+]) && $allPassed;
+
+$firstLeave = \App\Models\LeaveRequest::first();
+if (!$firstLeave) {
+    $firstLeave = \App\Models\LeaveRequest::create([
+        'user_id' => $employee->id,
+        'created_by' => $employee->id,
+        'type' => 'leave',
+        'start_date' => now('Asia/Jakarta')->addDays(5)->toDateString(),
+        'end_date' => now('Asia/Jakarta')->addDays(6)->toDateString(),
+        'reason' => 'Keperluan keluarga di luar kota selama dua hari.',
+        'status' => 'pending',
+    ]);
+    $firstLeave->days()->create([
+        'date' => now('Asia/Jakarta')->addDays(5)->toDateString(),
+        'status' => 'pending',
+        'paid' => false,
+    ]);
+    $firstLeave->days()->create([
+        'date' => now('Asia/Jakarta')->addDays(6)->toDateString(),
+        'status' => 'pending',
+        'paid' => false,
+    ]);
+}
+
+$allPassed = testRoute('/leave/' . $firstLeave->id, $employee, 'Halaman Dossier Pengajuan Izin Mandiri (Employee)', [
+    'Daftar Pengajuan',
+    'Alasan Permohonan',
+    'Matriks Status per Hari'
+]) && $allPassed;
+
+$allPassed = testRoute('/leave/' . $firstLeave->id, $manager, 'Halaman Dossier Pengajuan Izin Mandiri (Manager Review)', [
+    'Daftar Pengajuan',
+    'Alasan Permohonan',
+    'Keputusan Peninjauan Manajerial'
 ]) && $allPassed;
 
 // 3. Tampilan Manager
 echo "\n--- 3. MODUL MANAJER (MANAGER) ---\n";
-$allPassed = testRoute('/shifts', $manager, 'Jadwal Shift', [
-    'Jadwal Shift Kerja',
-    'Daftar Jadwal Shift'
+$allPassed = testRoute('/', $manager, 'Dashboard Supervisi Manager', [
+    'Halo,',
+    'Supervisi Cabang',
+    'Layar Kiosk QR Toko',
+    'Jadwal Shift Hari Ini'
 ]) && $allPassed;
+
+$allPassed = testRoute('/shifts', $manager, 'Jadwal Shift Bersih', [
+    'Jadwal Shift Kerja',
+    '+ Buat Jadwal Shift Baru',
+    'data-searchable-select'
+]) && $allPassed;
+
+$allPassed = testRoute('/shifts/create', $manager, 'Halaman Buat Shift Mandiri', [
+    'Buat Jadwal Shift Baru',
+    'Alokasi Karyawan & Cabang',
+    'Tanggal & Jam Kerja',
+    'Simpan Draf Shift'
+]) && $allPassed;
+
+$firstShift = \App\Models\Shift::first();
+if ($firstShift) {
+    $allPassed = testRoute('/shifts/' . $firstShift->id, $manager, 'Halaman Dossier Shift Mandiri', [
+        'Daftar Shift',
+        'Cabang & Lokasi Tugas',
+        'Catatan Presensi Aktual'
+    ]) && $allPassed;
+
+    $allPassed = testRoute('/shifts/' . $firstShift->id . '/edit', $manager, 'Halaman Revisi Shift Mandiri', [
+        'Revisi Jadwal Shift',
+        'Penyesuaian Waktu Kerja',
+        'Alasan & Justifikasi Revisi'
+    ]) && $allPassed;
+}
 
 $allPassed = testRoute('/attendance-review', $manager, 'Tinjau Presensi', [
     'Tinjau & Koreksi Presensi',
-    'Pengecualian Menunggu Keputusan'
+    'Pengecualian Menunggu Keputusan',
+    'data-searchable-select'
 ]) && $allPassed;
 
 $allPassed = testRoute('/branch-qr', $manager, 'Kiosk QR Cabang', [
@@ -111,11 +188,84 @@ $allPassed = testRoute('/branch-qr', $manager, 'Kiosk QR Cabang', [
 
 // 4. Tampilan Super Admin
 echo "\n--- 4. MODUL SUPER ADMIN (ADMIN) ---\n";
-$allPassed = testRoute('/people', $admin, 'Direktori Karyawan & Cabang', [
-    'Tambah Cabang Baru',
-    'Tambah Akun Karyawan',
-    'Direktori Karyawan Terdaftar',
+$allPassed = testRoute('/', $admin, 'Dashboard Eksekutif Super Admin', [
+    'Halo,',
+    'Pusat Tindakan Cepat',
+    'Total Karyawan Aktif',
+    'Siaran Langsung Presensi'
+]) && $allPassed;
+
+$allPassed = testRoute('/people', $admin, 'Direktori Karyawan Bersih', [
+    'Direktori Karyawan',
+    '+ Tambah Karyawan Baru',
+    'data-searchable-select'
+]) && $allPassed;
+
+$allPassed = testRoute('/people/create', $admin, 'Halaman Tambah Karyawan Mandiri', [
+    'Pendaftaran Karyawan Baru',
+    'Identitas Pribadi & Akun',
+    'Simpan Karyawan Baru',
+    'data-searchable-select'
+]) && $allPassed;
+
+$allPassed = testRoute('/people/' . $employee->id, $admin, 'Halaman Dossier Karyawan Mandiri', [
+    'Dossier Karyawan',
+    'Riwayat Presensi Terbaru',
+    'Gaji Pokok Bulanan'
+]) && $allPassed;
+
+$allPassed = testRoute('/people/' . $employee->id . '/edit', $admin, 'Halaman Ubah Karyawan Mandiri', [
+    'Ubah Data Karyawan',
+    'Simpan Perubahan Data',
     'reset_device'
+]) && $allPassed;
+
+$allPassed = testRoute('/branches', $admin, 'Master Cabang Bersih', [
+    'Master Cabang Perusahaan',
+    'Tambah Cabang Baru',
+    'Titik Koordinat GPS'
+]) && $allPassed;
+
+$allPassed = testRoute('/branches/create', $admin, 'Halaman Tambah Cabang Mandiri', [
+    'Pendaftaran Lokasi Operasional',
+    'Petunjuk Mudah Menyalin Koordinat',
+    'Simpan Cabang Baru'
+]) && $allPassed;
+
+$allPassed = testRoute('/branches/1', $admin, 'Halaman Dossier Cabang Mandiri', [
+    'Daftar Staf Cabang Ini',
+    'Radius Geofence',
+    'QR Presensi Cabang'
+]) && $allPassed;
+
+$allPassed = testRoute('/branches/1/edit', $admin, 'Halaman Ubah Cabang Mandiri', [
+    'Ubah Data Cabang',
+    'Kode Cabang (Permanen)',
+    'Simpan Perubahan Cabang'
+]) && $allPassed;
+
+$allPassed = testRoute('/positions', $admin, 'Master Jabatan Bersih', [
+    'Master Jabatan & Posisi',
+    'Tambah Jabatan Baru',
+    'Nama Jabatan'
+]) && $allPassed;
+
+$allPassed = testRoute('/positions/create', $admin, 'Halaman Tambah Jabatan Mandiri', [
+    'Struktur Organisasi Perusahaan',
+    'Tips Penamaan Jabatan',
+    'Simpan Jabatan Baru'
+]) && $allPassed;
+
+$allPassed = testRoute('/positions/1', $admin, 'Halaman Detail Jabatan Mandiri', [
+    'Daftar Karyawan dengan Jabatan Ini',
+    'Total Karyawan Aktif',
+    'Ubah Nama'
+]) && $allPassed;
+
+$allPassed = testRoute('/positions/1/edit', $admin, 'Halaman Ubah Jabatan Mandiri', [
+    'Ubah Nama Jabatan',
+    'Perubahan Struktur Posisi',
+    'Simpan Perubahan'
 ]) && $allPassed;
 
 $allPassed = testRoute('/import', $admin, 'Wizard Impor Karyawan', [
@@ -126,8 +276,25 @@ $allPassed = testRoute('/import', $admin, 'Wizard Impor Karyawan', [
 
 $allPassed = testRoute('/payroll', $admin, 'Dashboard Payroll', [
     'Kalkulasi & Rekap Payroll',
-    'Simpan Draf Payroll',
-    'Slip Gaji Cabang'
+    'Otomasi Penggajian & Audit',
+    'Glosarium & Panduan Perhitungan Gaji',
+    'Rekapitulasi gaji'
+]) && $allPassed;
+
+$allPassed = testRoute('/payroll/slip/' . $employee->id, $admin, 'Slip Gaji Karyawan (Admin Access)', [
+    'Slip Gaji Karyawan',
+    'HR GROUP ENTERPRISE',
+    '1. Pendapatan (Earnings)',
+    '2. Potongan (Deductions)',
+    'Take Home Pay'
+]) && $allPassed;
+
+$allPassed = testRoute('/payroll/slip/' . $employee->id, $employee, 'Slip Gaji Karyawan (Self Access)', [
+    'Slip Gaji Karyawan',
+    'HR GROUP ENTERPRISE',
+    '1. Pendapatan (Earnings)',
+    '2. Potongan (Deductions)',
+    'Take Home Pay'
 ]) && $allPassed;
 
 $allPassed = testRoute('/settings', $admin, 'Aturan Kebijakan', [
@@ -144,7 +311,7 @@ $allPassed = testRoute('/audit', $admin, 'Jejak Audit Aktivitas', [
 
 echo "\n========================================================\n";
 if ($allPassed) {
-    echo "🎉 ALL 12 BLADE VIEWS & E2E FLOWS RENDERED SUCCESSFULLY!\n";
+    echo "🎉 ALL BLADE VIEWS & E2E FLOWS RENDERED SUCCESSFULLY (incl. Payroll Slip)!\n";
     echo "========================================================\n";
     exit(0);
 } else {
@@ -152,3 +319,4 @@ if ($allPassed) {
     echo "========================================================\n";
     exit(1);
 }
+

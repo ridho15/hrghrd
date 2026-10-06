@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#047857">
     <title>@yield('title', 'HR Group') · HR Group Enterprise</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,6 +12,51 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full text-slate-800 font-sans selection:bg-emerald-500 selection:text-white">
+
+    {{-- Floating Toast Notification Container (Global) --}}
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm sm:max-w-md w-full pointer-events-none px-4 sm:px-0" aria-live="polite">
+        {{-- Flash Notifikasi Sukses --}}
+        @if(session('ok'))
+            <div id="flash-success" role="status" class="toast-item pointer-events-auto relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-emerald-200/90 p-4 text-emerald-950 shadow-xl shadow-emerald-950/10 flex items-start justify-between gap-3 transform transition-all duration-300 translate-x-0 opacity-100" data-toast-type="success" data-duration="5000">
+                <div class="flex items-start gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs shadow-emerald-500/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                    </span>
+                    <div class="space-y-0.5">
+                        <h4 class="text-xs font-bold text-emerald-800 uppercase tracking-wider m-0">Operasi Berhasil</h4>
+                        <p class="text-xs font-medium text-slate-700 m-0 leading-relaxed">{{ session('ok') }}</p>
+                    </div>
+                </div>
+                <button type="button" data-toast-close class="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer shrink-0" aria-label="Tutup notifikasi">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <div class="toast-progress absolute bottom-0 left-0 h-1 bg-gradient-to-r from-emerald-500 to-emerald-400 w-full transition-all duration-100"></div>
+            </div>
+        @endif
+
+        {{-- Flash Notifikasi Error / Validasi Form --}}
+        @if($errors->any())
+            <div id="flash-errors" role="alert" class="toast-item pointer-events-auto relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-rose-200/90 p-4 text-rose-950 shadow-xl shadow-rose-950/10 flex items-start justify-between gap-3 transform transition-all duration-300 translate-x-0 opacity-100" data-toast-type="error" data-duration="7000">
+                <div class="flex items-start gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-xs shadow-rose-500/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </span>
+                    <div class="space-y-1">
+                        <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider m-0">Periksa Kembali Masukan Anda</h4>
+                        <ul class="text-xs text-slate-700 space-y-0.5 list-disc pl-4 m-0 font-medium">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+                <button type="button" data-toast-close class="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer shrink-0" aria-label="Tutup notifikasi">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <div class="toast-progress absolute bottom-0 left-0 h-1 bg-gradient-to-r from-rose-500 to-rose-400 w-full transition-all duration-100"></div>
+            </div>
+        @endif
+    </div>
 
 @guest
     {{-- Tampilan Publik / Tamu (Login) --}}
@@ -32,27 +78,6 @@
         </header>
 
         <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 lg:p-8">
-            @if(session('ok'))
-                <div class="mb-6 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-emerald-900 flex items-start gap-3 shadow-xs">
-                    <svg class="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <div class="text-sm font-medium">{{ session('ok') }}</div>
-                </div>
-            @endif
-
-            @if($errors->any())
-                <div class="mb-6 rounded-xl bg-rose-50 border border-rose-200 p-4 text-rose-900 flex items-start gap-3 shadow-xs">
-                    <svg class="w-5 h-5 text-rose-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    <div class="text-sm">
-                        <strong class="font-semibold block mb-1">Periksa kembali masukan Anda:</strong>
-                        <ul class="list-disc pl-5 space-y-1">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                </div>
-            @endif
-
             @yield('content')
         </main>
 
@@ -129,9 +154,18 @@
                             <div class="px-3 mb-2 text-[11px] font-bold tracking-wider text-slate-400 uppercase">Administrasi & Finansial</div>
                             <div class="space-y-1">
                                 <a href="{{ route('people') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('people*') ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-emerald-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
-                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                    <span>Karyawan & Cabang</span>
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                    <span>Karyawan</span>
                                 </a>
+                                <a href="{{ route('branches.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('branches*') ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-emerald-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    <span>Cabang</span>
+                                </a>
+                                <a href="{{ route('positions.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('positions*') ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-emerald-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    <span>Jabatan</span>
+                                </a>
+
                                 <a href="{{ route('import') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors {{ request()->routeIs('import*') ? 'bg-emerald-500/15 text-emerald-300 border-l-2 border-emerald-400' : 'text-slate-400 hover:text-white hover:bg-slate-800/60' }}">
                                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
                                     <span>Impor Data</span>
@@ -204,7 +238,19 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2.5">
+                        {{-- Tombol Bantuan Pintasan Keyboard --}}
+                        <button
+                            type="button"
+                            data-open-modal="modal-keyboard-shortcuts"
+                            class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200/80 transition-colors cursor-pointer"
+                            title="Panduan Pintasan Keyboard (Tekan ?)"
+                        >
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                            <span>Pintasan</span>
+                            <kbd class="px-1 py-0.2 bg-white text-[10px] font-mono text-slate-500 rounded border border-slate-200 font-bold">?</kbd>
+                        </button>
+
                         <div class="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-100/80 px-3 py-1.5 rounded-full border border-slate-200">
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                             <span>Asia/Jakarta (WIB)</span>
@@ -219,58 +265,84 @@
             {{-- Wadah Isi Halaman --}}
             <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                 <div class="max-w-7xl mx-auto">
-                    {{-- Flash Notifikasi Sukses --}}
-                    @if(session('ok'))
-                        <div id="flash-success" class="mb-6 rounded-2xl bg-emerald-50 border border-emerald-200/80 p-4 text-emerald-900 flex items-start justify-between gap-3 shadow-xs transition-all duration-200" role="status">
-                            <div class="flex items-start gap-3">
-                                <span class="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                                </span>
-                                <div>
-                                    <h4 class="text-xs font-bold text-emerald-800 uppercase tracking-wider mb-0.5">Operasi Berhasil</h4>
-                                    <p class="text-sm font-medium text-emerald-900 m-0">{{ session('ok') }}</p>
-                                </div>
-                            </div>
-                            <button onclick="document.getElementById('flash-success').remove()" class="p-1 text-emerald-700 hover:text-emerald-950 rounded-lg hover:bg-emerald-100/60" aria-label="Tutup">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-                    @endif
-
-                    {{-- Flash Notifikasi Error / Validasi Form --}}
-                    @if($errors->any())
-                        <div id="flash-errors" class="mb-6 rounded-2xl bg-rose-50 border border-rose-200/80 p-4 text-rose-900 flex items-start justify-between gap-3 shadow-xs" role="alert">
-                            <div class="flex items-start gap-3">
-                                <span class="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                </span>
-                                <div>
-                                    <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider mb-1">Periksa Kembali Masukan:</h4>
-                                    <ul class="text-sm space-y-1 list-disc pl-5 m-0 text-rose-950 font-medium">
-                                        @foreach($errors->all() as $error)
-                                            <li>{{ $error }}</li>
-                                        @endforeach
-                                    </ul>
-                                </div>
-                            </div>
-                            <button onclick="document.getElementById('flash-errors').remove()" class="p-1 text-rose-700 hover:text-rose-950 rounded-lg hover:bg-rose-100/60" aria-label="Tutup">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-                    @endif
-
                     @yield('content')
                 </div>
             </main>
 
             {{-- Footer Area Dashboard --}}
             <footer class="py-4 px-6 border-t border-slate-200/80 bg-white/50 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
-                <span>&copy; {{ date('Y') }} HR Group &middot; Enterprise HRIS & Payroll System</span>
+                <div class="flex items-center gap-2">
+                    <span>&copy; {{ date('Y') }} HR Group &middot; Enterprise HRIS & Payroll System</span>
+                    <span class="text-slate-300">&middot;</span>
+                    <button type="button" data-open-modal="modal-keyboard-shortcuts" class="text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer inline-flex items-center gap-1">
+                        <span>Pintasan Keyboard</span>
+                        <kbd class="px-1 py-0.2 bg-slate-100 text-[10px] font-mono text-slate-500 rounded border border-slate-200">?</kbd>
+                    </button>
+                </div>
                 <span class="text-slate-400">Sinkronisasi Waktu Server Asia/Jakarta (WIB) &middot; Multi-Factor Anti-Fraud</span>
             </footer>
         </div>
     </div>
 @endauth
+
+{{-- Modal Bantuan Pintasan Keyboard Interaktif --}}
+<x-detail-modal
+    id="modal-keyboard-shortcuts"
+    title="Panduan Pintasan Keyboard"
+    subtitle="Akses cepat navigasi & pencarian sistem HR Group"
+    badge="Pintasan Cepat"
+    badgeColor="bg-emerald-50 text-emerald-700 border-emerald-200"
+    maxWidth="md"
+>
+    <div class="space-y-4 text-xs">
+        <p class="text-slate-600 m-0">Gunakan tombol pintasan berikut untuk mempercepat navigasi dan pencarian data di seluruh modul:</p>
+        
+        <div class="rounded-xl border border-slate-200 overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 text-slate-600 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider">
+                    <tr>
+                        <th class="py-2.5 px-3.5">Tombol</th>
+                        <th class="py-2.5 px-3.5">Fungsi / Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    <tr>
+                        <td class="py-2.5 px-3.5 whitespace-nowrap">
+                            <kbd class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded shadow-2xs">/</kbd>
+                        </td>
+                        <td class="py-2.5 px-3.5 text-slate-700 font-medium">
+                            Fokus instan ke kolom pencarian data pada tabel aktif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 px-3.5 whitespace-nowrap">
+                            <kbd class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded shadow-2xs">Esc</kbd>
+                        </td>
+                        <td class="py-2.5 px-3.5 text-slate-700 font-medium">
+                            Tutup modal aktif, hilangkan fokus pencarian, atau dismiss notifikasi
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 px-3.5 whitespace-nowrap">
+                            <kbd class="px-2 py-1 text-xs font-mono font-bold text-slate-800 bg-slate-100 border border-slate-200 rounded shadow-2xs">?</kbd> <span class="text-slate-400 text-[10px]">(Shift + /)</span>
+                        </td>
+                        <td class="py-2.5 px-3.5 text-slate-700 font-medium">
+                            Buka / tutup jendela panduan pintasan keyboard ini
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200/80 text-[11px] text-emerald-800 flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Pintasan tombol tidak akan terpicu ketika Anda sedang mengetik di dalam kolom isian form.</span>
+        </div>
+    </div>
+</x-detail-modal>
+
+{{-- Global Confirm Modal (Tindakan Penting / Destruktif) --}}
+<x-confirm-modal id="global-confirm-modal" />
 
 </body>
 </html>

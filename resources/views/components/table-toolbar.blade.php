@@ -32,8 +32,12 @@
                     name="{{ $searchName }}"
                     value="{{ $searchValue }}"
                     placeholder="{{ $searchPlaceholder }}"
-                    class="w-full h-9 pl-11 pr-3.5 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-medium"
+                    data-table-search
+                    class="w-full h-9 pl-11 pr-10 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all font-medium"
                 >
+                <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                    <kbd class="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] font-mono font-bold text-slate-400 bg-slate-100 border border-slate-200 rounded shadow-2xs" title="Tekan / untuk fokus pencarian">/</kbd>
+                </div>
             </div>
 
             {{-- Slot Filter Tambahan (Dropdown Cabang, Role, Status, dll) --}}

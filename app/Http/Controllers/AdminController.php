@@ -9,6 +9,7 @@ use App\Http\Requests\Admin\ImportPreviewRequest;
 use App\Http\Requests\Admin\PersonStoreRequest;
 use App\Http\Requests\Admin\PersonUpdateRequest;
 use App\Http\Requests\Admin\PositionStoreRequest;
+use App\Http\Requests\Admin\PositionUpdateRequest;
 use App\Http\Requests\Admin\SettingsSaveRequest;
 use App\Http\Requests\Admin\ShiftStoreRequest;
 use App\Http\Requests\Admin\ShiftUpdateRequest;
@@ -41,7 +42,12 @@ class AdminController extends Controller
         $branches = Branch::orderBy('name')->get();
         $positions = Position::orderBy('name')->get();
 
-        $query = User::with(['branch', 'position'])
+        $query = User::with([
+            'branch',
+            'position',
+            'shifts' => fn ($q) => $q->latest('start_at')->take(5),
+            'leaveRequests' => fn ($q) => $q->latest('id')->take(5),
+        ])
             ->when($request->query('search'), function ($q, $search) {
                 $q->where(function ($sub) use ($search) {
                     $sub->where('name', 'like', "%{$search}%")
@@ -59,13 +65,59 @@ class AdminController extends Controller
         return view('people', compact('branches', 'positions', 'people'));
     }
 
+    public function branches(Request $request)
+    {
+        $this->admin();
+        $query = Branch::withCount(['users', 'shifts'])
+            ->with(['users' => fn ($q) => $q->take(5)])
+            ->when($request->query('search'), function ($q, $search) {
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('name');
+
+        $branches = $query->paginate(10)->withQueryString();
+
+        return view('branches', compact('branches'));
+    }
+
+    public function branchCreate()
+    {
+        $this->admin();
+
+        return view('branches-create');
+    }
+
+    public function branchShow(int $id)
+    {
+        $this->admin();
+        $branch = Branch::withCount(['users', 'shifts'])
+            ->with([
+                'users' => fn ($q) => $q->with('position')->orderBy('name'),
+                'shifts' => fn ($q) => $q->with(['user.position', 'attendance'])->latest('start_at')->take(10),
+            ])
+            ->findOrFail($id);
+
+        return view('branches-show', compact('branch'));
+    }
+
+    public function branchEdit(int $id)
+    {
+        $this->admin();
+        $branch = Branch::findOrFail($id);
+
+        return view('branches-edit', compact('branch'));
+    }
+
     public function branch(BranchStoreRequest $request)
     {
         $data = $request->validated();
         $branch = Branch::create($data + ['qr_secret' => Str::random(64)]);
         Audit::record('branch', $branch->id, 'create');
 
-        return back()->with('ok', 'Cabang dibuat.');
+        return redirect()->route('branches.show', $branch->id)->with('ok', "Cabang {$branch->name} berhasil dibuat.");
     }
 
     public function branchUpdate(BranchUpdateRequest $request, int $id)
@@ -76,7 +128,138 @@ class AdminController extends Controller
         $branch->update($data);
         Audit::record('branch', $branch->id, 'update', 'Area absensi diperbarui', $before, $data);
 
-        return back()->with('ok', 'Lokasi cabang diperbarui.');
+        return redirect()->route('branches.show', $branch->id)->with('ok', "Data cabang {$branch->name} berhasil diperbarui.");
+    }
+
+    public function branchDestroy(int $id)
+    {
+        $this->admin();
+        $branch = Branch::withCount(['users', 'shifts'])->findOrFail($id);
+        if ($branch->users_count > 0) {
+            return back()->withErrors(['branch' => 'Cabang ' . $branch->name . ' tidak dapat dihapus karena masih menaungi ' . $branch->users_count . ' karyawan aktif. Pindahkan karyawan terlebih dahulu.']);
+        }
+        if ($branch->shifts_count > 0) {
+            return back()->withErrors(['branch' => 'Cabang ' . $branch->name . ' memiliki riwayat jadwal shift dan tidak dapat dihapus demi integritas data audit.']);
+        }
+
+        $branchName = $branch->name;
+        $branch->delete();
+        Audit::record('branch', $id, 'delete', "Cabang {$branchName} dihapus oleh Super Admin.");
+
+        return redirect()->route('branches.index')->with('ok', "Cabang {$branchName} berhasil dihapus.");
+    }
+
+    public function positions(Request $request)
+    {
+        $this->admin();
+        $query = Position::withCount('users')
+            ->with(['users' => fn ($q) => $q->take(5)])
+            ->when($request->query('search'), fn ($q, $s) => $q->where('name', 'like', "%{$s}%"))
+            ->orderBy('name');
+
+        $positions = $query->paginate(10)->withQueryString();
+
+        return view('positions', compact('positions'));
+    }
+
+    public function positionCreate()
+    {
+        $this->admin();
+
+        return view('positions-create');
+    }
+
+    public function positionShow(int $id)
+    {
+        $this->admin();
+        $position = Position::withCount('users')
+            ->with([
+                'users' => fn ($q) => $q->with('branch')->orderBy('name'),
+            ])
+            ->findOrFail($id);
+
+        return view('positions-show', compact('position'));
+    }
+
+    public function positionEdit(int $id)
+    {
+        $this->admin();
+        $position = Position::findOrFail($id);
+
+        return view('positions-edit', compact('position'));
+    }
+
+    public function position(PositionStoreRequest $request)
+    {
+        $data = $request->validated();
+        $position = Position::create($data);
+        Audit::record('position', $position->id, 'create');
+
+        return redirect()->route('positions.show', $position->id)->with('ok', "Jabatan {$position->name} berhasil dibuat.");
+    }
+
+    public function positionUpdate(PositionUpdateRequest $request, int $id)
+    {
+        $this->admin();
+        $position = Position::findOrFail($id);
+        $oldName = $position->name;
+        $data = $request->validated();
+        $position->update($data);
+        Audit::record('position', $position->id, 'update', "Nama jabatan diubah dari {$oldName} menjadi {$position->name}.", ['name' => $oldName], $data);
+
+        return redirect()->route('positions.show', $position->id)->with('ok', "Nama jabatan berhasil diperbarui.");
+    }
+
+    public function positionDestroy(int $id)
+    {
+        $this->admin();
+        $position = Position::withCount('users')->findOrFail($id);
+        if ($position->users_count > 0) {
+            return back()->withErrors(['position' => 'Jabatan ' . $position->name . ' tidak dapat dihapus karena masih digunakan oleh ' . $position->users_count . ' karyawan aktif.']);
+        }
+
+        $posName = $position->name;
+        $position->delete();
+        Audit::record('position', $id, 'delete', "Jabatan {$posName} dihapus oleh Super Admin.");
+
+        return redirect()->route('positions.index')->with('ok', "Jabatan {$posName} berhasil dihapus.");
+    }
+
+    public function personCreate()
+    {
+        $this->admin();
+        $branches = Branch::orderBy('name')->get();
+        $positions = Position::orderBy('name')->get();
+
+        return view('people-create', compact('branches', 'positions'));
+    }
+
+    public function personShow(int $id)
+    {
+        abort_unless(Access::manager(), 403);
+        if (! Access::admin()) {
+            abort_unless(Access::employee($id), 403);
+        }
+
+        $person = User::with([
+            'branch',
+            'position',
+            'shifts' => fn ($q) => $q->with(['branch', 'attendance'])->latest('start_at')->take(10),
+            'leaveRequests' => fn ($q) => $q->latest('id')->take(10),
+            'attendances' => fn ($q) => $q->with('shift.branch')->latest('checkin_at')->take(10),
+        ])->findOrFail($id);
+
+        return view('people-show', compact('person'));
+    }
+
+    public function personEdit(int $id)
+    {
+        $this->admin();
+        $person = User::findOrFail($id);
+        $branches = Branch::orderBy('name')->get();
+        $positions = Position::orderBy('name')->get();
+
+        return view('people-edit', compact('person', 'branches', 'positions'));
     }
 
     public function person(PersonStoreRequest $request)
@@ -87,16 +270,7 @@ class AdminController extends Controller
         $user = User::create($data);
         Audit::record('user', $user->id, 'create');
 
-        return back()->with('ok', 'Karyawan dibuat.');
-    }
-
-    public function position(PositionStoreRequest $request)
-    {
-        $data = $request->validated();
-        $position = Position::create($data);
-        Audit::record('position', $position->id, 'create');
-
-        return back()->with('ok', 'Jabatan dibuat.');
+        return redirect()->route('people.show', $user->id)->with('ok', "Karyawan {$user->name} berhasil didaftarkan.");
     }
 
     public function personUpdate(PersonUpdateRequest $request, int $id)
@@ -118,8 +292,55 @@ class AdminController extends Controller
         $person->update($data);
         Audit::record('user', $person->id, 'update', 'Data HR diperbarui; nilai gaji tidak disimpan dalam log');
 
-        return back()->with('ok', 'Data karyawan diperbarui.');
+        return redirect()->route('people.show', $person->id)->with('ok', "Data karyawan {$person->name} berhasil diperbarui.");
     }
+
+    public function personToggleStatus(int $id)
+    {
+        $this->admin();
+        $person = User::findOrFail($id);
+        if ($person->id === auth()->id()) {
+            return back()->withErrors(['person' => 'Anda tidak dapat mengubah status akun Anda sendiri.']);
+        }
+
+        $newActive = ! $person->active;
+        $person->update([
+            'active' => $newActive,
+            'ended_at' => $newActive ? null : now('Asia/Jakarta')->toDateString(),
+        ]);
+        $statusStr = $newActive ? 'diaktifkan' : 'dinonaktifkan';
+        Audit::record('user', $person->id, 'status_change', "Status akun karyawan {$person->name} {$statusStr} oleh Super Admin.");
+
+        return back()->with('ok', "Akun {$person->name} berhasil {$statusStr}.");
+    }
+
+    public function personDestroy(int $id)
+    {
+        $this->admin();
+        $person = User::withCount(['attendances', 'payrollLines', 'shifts'])->findOrFail($id);
+        if ($person->id === auth()->id()) {
+            return back()->withErrors(['person' => 'Anda tidak dapat menghapus akun Anda sendiri.']);
+        }
+
+        // Jika memiliki transaksi absensi atau payroll historis, lakukan deaktifasi aman demi integritas audit
+        if ($person->attendances_count > 0 || $person->payroll_lines_count > 0) {
+            $person->update([
+                'active' => false,
+                'ended_at' => $person->ended_at ?: now('Asia/Jakarta')->toDateString(),
+            ]);
+            Audit::record('user', $person->id, 'deactivate', "Akun {$person->name} dinonaktifkan secara aman karena memiliki riwayat audit absensi/payroll.");
+
+            return back()->with('ok', "Karyawan {$person->name} memiliki riwayat data absensi/payroll historis. Akun telah dinonaktifkan secara aman demi integritas audit.");
+        }
+
+        $name = $person->name;
+        $person->shifts()->delete();
+        $person->delete();
+        Audit::record('user', $id, 'delete', "Akun karyawan {$name} dihapus secara permanen oleh Super Admin.");
+
+        return back()->with('ok', "Karyawan {$name} berhasil dihapus.");
+    }
+
 
     public function shifts(Request $request)
     {
@@ -129,7 +350,7 @@ class AdminController extends Controller
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->orderBy('name')->get();
 
-        $query = Shift::with(['user', 'branch'])
+        $query = Shift::with(['user.position', 'user.branch', 'branch', 'attendance'])
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->when($request->query('branch_id') && Access::admin(), fn ($q, $b) => $q->where('branch_id', $b))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
@@ -145,14 +366,47 @@ class AdminController extends Controller
         return view('shifts', compact('branches', 'people', 'shifts'));
     }
 
+    public function shiftCreate()
+    {
+        abort_unless(Access::manager(), 403);
+        $branches = Branch::orderBy('name')->get();
+        $people = User::active()->whereIn('role', ['employee', 'manager'])
+            ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
+            ->orderBy('name')->get();
+
+        return view('shifts-create', compact('branches', 'people'));
+    }
+
+    public function shiftShow(int $id)
+    {
+        abort_unless(Access::manager(), 403);
+        $shift = Shift::with(['user.position', 'user.branch', 'branch', 'attendance'])->findOrFail($id);
+        if (! Access::admin()) {
+            abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
+        }
+
+        return view('shifts-show', compact('shift'));
+    }
+
+    public function shiftEdit(int $id)
+    {
+        abort_unless(Access::manager(), 403);
+        $shift = Shift::with(['user.position', 'branch'])->findOrFail($id);
+        if (! Access::admin()) {
+            abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
+        }
+
+        return view('shifts-edit', compact('shift'));
+    }
+
     public function shift(ShiftStoreRequest $request, ShiftService $service)
     {
         $data = $request->validated();
         [$start, $end] = $this->times($data);
         $this->noOverlap($data['user_id'], $start, $end);
-        $service->create($data);
+        $shift = $service->create($data);
 
-        return back()->with('ok', 'Shift draf dibuat.');
+        return redirect()->route('shifts.show', $shift->id)->with('ok', 'Shift draf berhasil dibuat.');
     }
 
     public function shiftUpdate(ShiftUpdateRequest $request, int $id, ShiftService $service)
@@ -167,7 +421,7 @@ class AdminController extends Controller
         $service->update($shift, $data);
         Audit::record('shift', $shift->id, 'revision', $data['reason'], $before, ['start_at' => $start, 'end_at' => $end]);
 
-        return back()->with('ok', 'Perubahan shift tercatat dan menunggu persetujuan ulang.');
+        return redirect()->route('shifts.show', $shift->id)->with('ok', 'Perubahan shift tercatat dan menunggu persetujuan ulang.');
     }
 
     public function shiftApprove(int $id, ShiftService $service)
@@ -179,6 +433,27 @@ class AdminController extends Controller
 
         return back()->with('ok', 'Shift disetujui.');
     }
+
+    public function shiftDestroy(int $id)
+    {
+        abort_unless(Access::manager(), 403);
+        $shift = Shift::with(['attendance', 'user'])->findOrFail($id);
+        if (! Access::admin()) {
+            abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
+        }
+
+        if ($shift->attendance()->exists()) {
+            return back()->withErrors(['shift' => 'Shift yang sudah memiliki rekaman absensi tidak dapat dihapus. Silakan gunakan alur koreksi absensi.']);
+        }
+
+        $date = $shift->start_at->translatedFormat('d M Y');
+        $userName = $shift->user?->name ?? 'Karyawan';
+        $shift->delete();
+        Audit::record('shift', $id, 'delete', "Jadwal shift {$userName} pada {$date} dibatalkan dan dihapus.");
+
+        return redirect()->route('shifts')->with('ok', "Jadwal shift untuk {$userName} berhasil dibatalkan.");
+    }
+
 
     private function times(array $data): array
     {

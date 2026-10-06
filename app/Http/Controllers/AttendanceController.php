@@ -91,7 +91,7 @@ class AttendanceController extends Controller
             ->paginate(10, ['*'], 'attempts_page')
             ->withQueryString();
 
-        $attendancesQuery = Attendance::with(['user', 'shift'])
+        $attendancesQuery = Attendance::with(['user.position', 'user.branch', 'shift.branch', 'overtimeApprover'])
             ->whereHas('shift', function ($q) use ($branch, $request) {
                 $q->when(! Access::admin(), fn ($x) => $x->where('branch_id', $branch))
                     ->when($request->query('branch_id') && Access::admin(), fn ($x) => $x->where('branch_id', $request->query('branch_id')))

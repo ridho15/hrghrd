@@ -1,0 +1,100 @@
+@extends('layouts.app')
+@section('title', 'Ubah Jabatan: ' . $position->name)
+
+@section('content')
+<div class="max-w-3xl mx-auto space-y-6">
+    {{-- Breadcrumb Navigasi --}}
+    <nav class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+        <a href="{{ route('home') }}" class="hover:text-emerald-700 transition-colors">Beranda</a>
+        <span>/</span>
+        <a href="{{ route('positions.index') }}" class="hover:text-emerald-700 transition-colors">Master Jabatan</a>
+        <span>/</span>
+        <a href="{{ route('positions.show', $position->id) }}" class="hover:text-emerald-700 transition-colors">{{ $position->name }}</a>
+        <span>/</span>
+        <span class="text-slate-900 font-bold">Ubah Nama</span>
+    </nav>
+
+    {{-- Header Halaman & Tombol Kembali --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200/80">
+        <div>
+            <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md mb-2 border border-blue-200/60">
+                <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <span>Perubahan Struktur Posisi</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Ubah Nama Jabatan
+            </h1>
+            <p class="text-sm text-slate-500 mt-1">
+                Perbarui nama posisi resmi dalam struktur organisasi perusahaan.
+            </p>
+        </div>
+
+        <a
+            href="{{ route('positions.show', $position->id) }}"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider shadow-2xs transition-all self-start sm:self-auto"
+        >
+            <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            <span>Kembali ke Detail</span>
+        </a>
+    </div>
+
+    {{-- Formulir Ubah Jabatan --}}
+    <form method="POST" action="{{ route('positions.update', $position->id) }}" class="space-y-6">
+        @csrf
+
+        <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-5">
+            <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 font-black text-sm flex items-center justify-center border border-emerald-200/60">
+                    💼
+                </div>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Nama Jabatan Fungsional</h2>
+                    <p class="text-xs text-slate-500">Perubahan akan langsung tercermin pada profil {{ $position->users_count }} karyawan terkait.</p>
+                </div>
+            </div>
+
+            <div>
+                <label for="name" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Nama Jabatan <span class="text-rose-500">*</span>
+                </label>
+                <input
+                    type="text"
+                    name="name"
+                    id="name"
+                    required
+                    maxlength="100"
+                    value="{{ old('name', $position->name) }}"
+                    class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all @error('name') border-rose-300 bg-rose-50/50 @enderror"
+                >
+                @error('name')
+                    <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
+        {{-- Footer Tombol Aksi --}}
+        <div class="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+            <a
+                href="{{ route('positions.show', $position->id) }}"
+                class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold uppercase tracking-wider transition-colors"
+            >
+                Batal & Kembali
+            </a>
+
+            <button
+                type="submit"
+                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>Simpan Perubahan</span>
+            </button>
+        </div>
+    </form>
+</div>
+@endsection

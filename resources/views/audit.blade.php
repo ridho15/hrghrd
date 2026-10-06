@@ -66,7 +66,8 @@
                         <th class="py-3.5 px-4">Aktor Pelaksana</th>
                         <th class="py-3.5 px-4">Objek Entitas</th>
                         <th class="py-3.5 px-4">Tindakan</th>
-                        <th class="py-3.5 px-4 sm:px-6">Alasan & Perubahan Nilai</th>
+                        <th class="py-3.5 px-4">Alasan & Catatan</th>
+                        <th class="py-3.5 px-4 sm:px-6 text-right">Detail</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -115,38 +116,136 @@
                                 </span>
                             </td>
 
-                            {{-- Alasan & Diff Perubahan --}}
-                            <td class="py-4 px-4 sm:px-6 text-xs text-slate-600">
-                                <div class="font-medium text-slate-800 mb-1">
+                            {{-- Alasan & Catatan --}}
+                            <td class="py-4 px-4 text-xs text-slate-600">
+                                <div class="font-medium text-slate-800 line-clamp-2">
                                     {{ $e->reason ?? '—' }}
                                 </div>
+                            </td>
 
-                                @if($e->before || $e->after)
-                                    <details class="text-[11px] text-slate-500 pt-1">
-                                        <summary class="cursor-pointer text-emerald-700 font-semibold hover:underline">
-                                            Inspeksi Perbandingan Data
-                                        </summary>
-                                        <div class="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 font-mono text-[10px]">
-                                            @if($e->before)
-                                                <div class="text-rose-700">
-                                                    <strong>Sebelum:</strong>
-                                                    <pre class="whitespace-pre-wrap mt-0.5">{{ is_string($e->before) ? $e->before : json_encode($e->before, JSON_PRETTY_PRINT) }}</pre>
+                            {{-- Tombol Detail & Modal Jejak Audit --}}
+                            <td class="py-4 px-4 sm:px-6 text-right whitespace-nowrap">
+                                <button
+                                    type="button"
+                                    data-open-modal="detail-audit-{{ $e->id }}"
+                                    class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200/80 transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                    title="Inspeksi detail rekaman audit dan perubahan state"
+                                >
+                                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    <span>Detail</span>
+                                </button>
+
+                                {{-- Modal Detail Audit Lengkap --}}
+                                <x-detail-modal
+                                    id="detail-audit-{{ $e->id }}"
+                                    title="Inspeksi Rekaman Audit Log"
+                                    subtitle="Peristiwa #AUD-{{ str_pad($e->id, 6, '0', STR_PAD_LEFT) }} &middot; {{ $e->created_at }}"
+                                    badge="{{ strtoupper($e->action) }}"
+                                    badgeColor="{{ $actionClass }}"
+                                    maxWidth="3xl"
+                                >
+                                    {{-- Banner Identitas Peristiwa --}}
+                                    <div class="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-emerald-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div class="flex items-center gap-3.5">
+                                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-300 font-extrabold flex items-center justify-center text-base border border-emerald-500/30 shrink-0">
+                                                {{ strtoupper(substr($e->actor_name ?? 'SYS', 0, 2)) }}
+                                            </div>
+                                            <div>
+                                                <h4 class="text-base font-bold text-white m-0">{{ $e->actor_name ?? 'Sistem Otomatis (Cron / Background)' }}</h4>
+                                                <span class="text-xs text-slate-300 block font-mono">Actor ID: {{ $e->actor_id ? '#'.$e->actor_id : 'System Daemon' }}</span>
+                                                <div class="flex items-center gap-2 mt-1">
+                                                    <span class="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20 font-mono">
+                                                        Waktu: {{ $e->created_at }} WIB
+                                                    </span>
                                                 </div>
-                                            @endif
-                                            @if($e->after)
-                                                <div class="text-emerald-700 pt-1 border-t border-slate-200">
-                                                    <strong>Sesudah:</strong>
-                                                    <pre class="whitespace-pre-wrap mt-0.5">{{ is_string($e->after) ? $e->after : json_encode($e->after, JSON_PRETTY_PRINT) }}</pre>
-                                                </div>
-                                            @endif
+                                            </div>
                                         </div>
-                                    </details>
-                                @endif
+                                        <div class="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-700/60">
+                                            <span class="text-[11px] uppercase tracking-wider text-slate-400 block font-bold">Event Log ID</span>
+                                            <span class="text-sm font-mono font-bold text-emerald-300">#AUD-{{ str_pad($e->id, 6, '0', STR_PAD_LEFT) }}</span>
+                                        </div>
+                                    </div>
+
+                                    {{-- Entitas Objek & Parameter Aksi --}}
+                                    <div class="space-y-3">
+                                        <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider m-0">Metadata Entitas & Aksi</h5>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
+                                                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Target Entitas</span>
+                                                <strong class="text-xs font-bold text-slate-900 block font-mono">
+                                                    {{ strtoupper($e->subject_type) }} #{{ $e->subject_id }}
+                                                </strong>
+                                            </div>
+
+                                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
+                                                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Tindakan / Action</span>
+                                                <strong class="text-xs font-bold text-slate-900 block uppercase">
+                                                    {{ $e->action }}
+                                                </strong>
+                                            </div>
+
+                                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
+                                                <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Perekaman Database</span>
+                                                <strong class="text-xs font-bold text-slate-900 block tabular-nums">
+                                                    {{ \Carbon\Carbon::parse($e->created_at)->translatedFormat('d F Y') }}
+                                                </strong>
+                                                <span class="text-[11px] text-slate-500">{{ \Carbon\Carbon::parse($e->created_at)->format('H:i:s') }} WIB</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Alasan & Konteks Perubahan --}}
+                                    <div class="space-y-2">
+                                        <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider m-0">Catatan & Alasan Perubahan</h5>
+                                        <div class="p-3.5 bg-white rounded-xl border border-slate-200 shadow-2xs text-xs text-slate-800 leading-relaxed">
+                                            {{ $e->reason ?? 'Tidak ada catatan naratif khusus yang disertakan pada log peristiwa ini.' }}
+                                        </div>
+                                    </div>
+
+                                    {{-- Inspeksi Perbandingan Data (Before vs After) --}}
+                                    <div class="space-y-3">
+                                        <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider m-0">Inspeksi Snapshot Data (Before vs After)</h5>
+                                        @if($e->before || $e->after)
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-[11px]">
+                                                {{-- Nilai Sebelum (Before) --}}
+                                                <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50/40 space-y-2">
+                                                    <div class="flex items-center justify-between pb-1.5 border-b border-rose-200">
+                                                        <span class="font-bold text-rose-800 uppercase tracking-wider text-[10px]">Keadaan Sebelum (Before)</span>
+                                                        <span class="text-[9px] text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded font-bold">STATE AWAL</span>
+                                                    </div>
+                                                    @if($e->before)
+                                                        <pre class="whitespace-pre-wrap text-rose-950 overflow-x-auto m-0 leading-relaxed">{{ is_string($e->before) ? $e->before : json_encode($e->before, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                                    @else
+                                                        <span class="text-slate-400 italic font-sans text-xs">Tidak ada data sebelumnya (entitas baru dibuat).</span>
+                                                    @endif
+                                                </div>
+
+                                                {{-- Nilai Sesudah (After) --}}
+                                                <div class="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-2">
+                                                    <div class="flex items-center justify-between pb-1.5 border-b border-emerald-200">
+                                                        <span class="font-bold text-emerald-800 uppercase tracking-wider text-[10px]">Keadaan Sesudah (After)</span>
+                                                        <span class="text-[9px] text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded font-bold">STATE AKHIR</span>
+                                                    </div>
+                                                    @if($e->after)
+                                                        <pre class="whitespace-pre-wrap text-emerald-950 overflow-x-auto m-0 leading-relaxed">{{ is_string($e->after) ? $e->after : json_encode($e->after, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                                    @else
+                                                        <span class="text-slate-400 italic font-sans text-xs">Tidak ada data sesudah (entitas dihapus / diarsipkan).</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @else
+                                            <div class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
+                                                <svg class="w-7 h-7 text-slate-300 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <p class="text-xs text-slate-500 m-0">Aksi ini tidak menyimpan snapshot delta perbandingan nilai data (contoh: log trigger, kunci audit, atau peristiwa baca).</p>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </x-detail-modal>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="py-12 text-center text-slate-400">
+                            <td colspan="6" class="py-12 text-center text-slate-400">
                                 <p class="text-sm font-semibold text-slate-500 m-0">Belum ada peristiwa log aktivitas yang tercatat atau sesuai pencarian.</p>
                             </td>
                         </tr>

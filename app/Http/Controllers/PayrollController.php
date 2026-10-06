@@ -65,7 +65,67 @@ class PayrollController extends Controller
         $allBranchEmployees = User::where('branch_id', $branchId)->active()->orderBy('name')->get();
         $blockers = $service->blockers($branchId, $month);
 
-        return view('payroll', compact('branches', 'branch', 'branchId', 'month', 'run', 'lines', 'blockers', 'paginatedEmployees', 'allBranchEmployees'));
+        $summary = [
+            'total_base' => 0,
+            'total_overtime' => 0,
+            'total_deductions' => 0,
+            'total_net' => 0,
+            'employee_count' => 0,
+        ];
+
+        if ($run && in_array($run->status, ['approved', 'locked'], true)) {
+            foreach ($run->lines as $lineModel) {
+                $d = is_array($lineModel->breakdown) ? $lineModel->breakdown : json_decode($lineModel->breakdown, true);
+                $summary['total_base'] += ($d['prorated_base'] ?? 0);
+                $summary['total_overtime'] += ($d['overtime_pay'] ?? 0);
+                $summary['total_deductions'] += (($d['unpaid_deduction'] ?? 0) + ($d['late_deduction'] ?? 0));
+                $summary['total_net'] += ($d['net'] ?? 0);
+                $summary['employee_count']++;
+            }
+        } else {
+            $branchAllForSummary = User::where('branch_id', $branchId)
+                ->whereIn('role', ['employee', 'manager'])
+                ->where('hired_at', '<=', $end)
+                ->where(fn ($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', $month . '-01'))
+                ->get();
+            foreach ($branchAllForSummary as $emp) {
+                $d = $calculator->calculate($emp, $month);
+                $summary['total_base'] += ($d['prorated_base'] ?? 0);
+                $summary['total_overtime'] += ($d['overtime_pay'] ?? 0);
+                $summary['total_deductions'] += (($d['unpaid_deduction'] ?? 0) + ($d['late_deduction'] ?? 0));
+                $summary['total_net'] += ($d['net'] ?? 0);
+                $summary['employee_count']++;
+            }
+        }
+
+        return view('payroll', compact('branches', 'branch', 'branchId', 'month', 'run', 'lines', 'blockers', 'paginatedEmployees', 'allBranchEmployees', 'summary'));
+    }
+
+    public function slip(Request $request, int $userId, PayrollCalculator $calculator)
+    {
+        abort_unless(Access::employee($userId), 403);
+        $employee = User::with(['branch', 'position'])->findOrFail($userId);
+        $month = $request->query('month', now('Asia/Jakarta')->format('Y-m'));
+        abort_unless(preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month), 422);
+
+        $branchId = (int) $request->query('branch_id', $employee->branch_id);
+        $branch = Branch::findOrFail($branchId);
+
+        $run = PayrollRun::with('lines')->where('branch_id', $branchId)->where('month', $month)->first();
+        $detail = null;
+
+        if ($run && in_array($run->status, ['approved', 'locked'], true)) {
+            $saved = $run->lines->firstWhere('user_id', $userId);
+            if ($saved) {
+                $detail = is_array($saved->breakdown) ? $saved->breakdown : json_decode($saved->breakdown, true);
+            }
+        }
+
+        if (! $detail) {
+            $detail = $calculator->calculate($employee, $month);
+        }
+
+        return view('payroll-slip', compact('employee', 'branch', 'month', 'run', 'detail'));
     }
 
     public function generate(PayrollSelectionRequest $request, PayrollCalculator $calculator, PayrollService $service)
@@ -99,6 +159,31 @@ class PayrollController extends Controller
 
         return back()->with('ok', 'Koreksi manual ditambahkan. Buat ulang draf.');
     }
+
+    public function reset(PayrollSelectionRequest $request)
+    {
+        $this->admin();
+        $data = $request->validated();
+        $run = PayrollRun::where('branch_id', $data['branch_id'])
+            ->where('month', $data['month'])
+            ->first();
+
+        if (! $run) {
+            return back()->with('ok', 'Tidak ada draf payroll yang perlu direset.');
+        }
+
+        if ($run->status === 'locked') {
+            return back()->withErrors(['payroll' => 'Periode penggajian yang telah dikunci tidak dapat direset.']);
+        }
+
+        $runId = $run->id;
+        $run->lines()->delete();
+        $run->delete();
+        \App\Support\Audit::record('payroll', $runId, 'reset', "Draf penggajian cabang ID {$data['branch_id']} periode {$data['month']} direset oleh Super Admin.");
+
+        return back()->with('ok', 'Draf penggajian berhasil direset. Sistem menghitung ulang kalkulasi absensi secara dinamis.');
+    }
+
 
     public function export(PayrollSelectionRequest $request)
     {

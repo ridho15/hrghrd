@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class Attendance extends Model
 {
@@ -33,6 +34,9 @@ class Attendance extends Model
             'late_minutes' => 'integer',
             'late_units' => 'integer',
             'overtime_minutes' => 'integer',
+            'checkin_evidence' => 'array',
+            'checkout_evidence' => 'array',
+            'flags' => 'array',
         ];
     }
 
