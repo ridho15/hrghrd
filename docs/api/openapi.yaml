@@ -1,0 +1,956 @@
+openapi: 3.1.0
+info:
+  title: HR Group Enterprise Mobile REST API
+  version: 1.0.0
+  description: |
+    API RESTful lengkap untuk aplikasi mobile (Android / iOS) HR Group Enterprise.
+    Mendukung autentikasi berbasis Bearer Token (Laravel Sanctum), presensi anti-fraud dengan dynamic QR code dan geofencing GPS, pengajuan izin/cuti bertingkat dengan lampiran berkas, slip gaji digital, dan administrasi cabang.
+
+servers:
+  - url: http://127.0.0.1:8003/api/v1
+    description: Local Development Server
+  - url: https://api.hrgroup.enterprise/api/v1
+    description: Production Server
+
+components:
+  securitySchemes:
+    SanctumAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Sanctum Token
+      description: |
+        Masukkan token yang diperoleh dari endpoint `/auth/login`.
+        Format header: `Authorization: Bearer <plainTextToken>`
+
+  schemas:
+    ApiResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operasi berhasil dilakukan.
+        data:
+          type: object
+
+    ApiPaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        per_page:
+          type: integer
+          example: 15
+        total:
+          type: integer
+          example: 42
+        last_page:
+          type: integer
+          example: 3
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 3
+        name:
+          type: string
+          example: Karyawan Demo
+        email:
+          type: string
+          format: email
+          example: karyawan@example.test
+        role:
+          type: string
+          enum: [admin, manager, employee]
+          example: employee
+        active:
+          type: boolean
+          example: true
+        hired_at:
+          type: string
+          format: date
+          example: '2026-01-01'
+        base_salary:
+          type: integer
+          example: 6000000
+        device_hash:
+          type: string
+          nullable: true
+          example: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+        branch:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: Head Office Jakarta
+            code:
+              type: string
+              example: HO-JKT
+        position:
+          type: object
+          properties:
+            id:
+              type: integer
+              example: 1
+            name:
+              type: string
+              example: Staff Administrasi
+
+    Branch:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Head Office Jakarta
+        code:
+          type: string
+          example: HO-JKT
+        latitude:
+          type: number
+          format: float
+          example: -6.175392
+        longitude:
+          type: number
+          format: float
+          example: 106.827153
+        radius_m:
+          type: integer
+          example: 100
+        active:
+          type: boolean
+          example: true
+
+    Shift:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 14
+        start_at:
+          type: string
+          format: date-time
+          example: '2026-10-07T08:00:00+07:00'
+        end_at:
+          type: string
+          format: date-time
+          example: '2026-10-07T17:00:00+07:00'
+        status:
+          type: string
+          enum: [draft, approved]
+          example: approved
+        version:
+          type: integer
+          example: 1
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-10-06T15:30:00+07:00'
+        user:
+          $ref: '#/components/schemas/User'
+        branch:
+          $ref: '#/components/schemas/Branch'
+
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 25
+        shift_id:
+          type: integer
+          example: 14
+        status:
+          type: string
+          enum: [present, late, absent]
+          example: present
+        checkin_at:
+          type: string
+          format: date-time
+          example: '2026-10-07T07:55:12+07:00'
+        checkout_at:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2026-10-07T17:05:30+07:00'
+        late_minutes:
+          type: integer
+          example: 0
+        late_units:
+          type: integer
+          example: 0
+        overtime_minutes:
+          type: integer
+          example: 0
+
+    LeaveRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        type:
+          type: string
+          enum: [leave, sick]
+          example: leave
+        status:
+          type: string
+          enum: [pending, approved, rejected, partial]
+          example: approved
+        reason:
+          type: string
+          example: Keperluan keluarga di kampung.
+        start_date:
+          type: string
+          format: date
+          example: '2026-11-01'
+        end_date:
+          type: string
+          format: date
+          example: '2026-11-03'
+        has_certificate:
+          type: boolean
+          example: false
+        review_note:
+          type: string
+          nullable: true
+          example: Disetujui sesuai kuota cuti.
+
+    PayrollSlip:
+      type: object
+      properties:
+        ref_number:
+          type: string
+          example: PR-HO-JKT-3-202610
+        period:
+          type: string
+          example: '2026-10'
+        employee:
+          type: object
+        branch:
+          type: object
+        employment:
+          type: object
+          properties:
+            monthly_salary:
+              type: integer
+              example: 6000000
+            daily_rate:
+              type: number
+              example: 200000
+            hourly_rate:
+              type: number
+              example: 25000
+        earnings:
+          type: object
+          properties:
+            prorated_base:
+              type: integer
+              example: 6000000
+            overtime_pay:
+              type: integer
+              example: 150000
+            gross_total:
+              type: integer
+              example: 6150000
+        deductions:
+          type: object
+          properties:
+            unpaid_deduction:
+              type: integer
+              example: 0
+            late_deduction:
+              type: integer
+              example: 50000
+            total_deductions:
+              type: integer
+              example: 50000
+        net_pay:
+          type: integer
+          example: 6100000
+
+paths:
+  # ==========================================
+  # 🔐 AUTENTIKASI
+  # ==========================================
+  /auth/login:
+    post:
+      summary: Login Karyawan
+      description: Otentikasi menggunakan email dan password untuk mendapatkan token Bearer Sanctum.
+      tags: [Autentikasi]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, device_name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: karyawan@example.test
+                password:
+                  type: string
+                  example: password
+                device_name:
+                  type: string
+                  example: Samsung Galaxy S23
+      responses:
+        '200':
+          description: Login berhasil, token aktif dikembalikan.
+        '403':
+          description: Akun dinonaktifkan.
+        '422':
+          description: Kredensial tidak valid.
+
+  /auth/logout:
+    post:
+      summary: Logout
+      description: Mencabut dan menghapus Bearer token aktif dari basis data.
+      tags: [Autentikasi]
+      security:
+        - SanctumAuth: []
+      responses:
+        '200':
+          description: Berhasil logout.
+
+  /auth/me:
+    get:
+      summary: Profil Pengguna Saat Ini
+      description: Mengambil informasi detail akun dan daftar abilities token.
+      tags: [Autentikasi]
+      security:
+        - SanctumAuth: []
+      responses:
+        '200':
+          description: Profil akun berhasil didapatkan.
+
+  /auth/device:
+    post:
+      summary: Daftarkan Perangkat Karyawan
+      description: Mendaftarkan identitas perangkat mobile untuk validasi presensi anti-titip absen.
+      tags: [Autentikasi]
+      security:
+        - SanctumAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_hash]
+              properties:
+                device_hash:
+                  type: string
+                  example: dev_unique_android_id_9921
+      responses:
+        '200':
+          description: Perangkat berhasil didaftarkan.
+        '409':
+          description: Perangkat sudah terdaftar di akun lain.
+
+  /auth/refresh:
+    post:
+      summary: Rotasi Token
+      description: Merotasi token sesi aktif untuk keamanan sesi jangka panjang.
+      tags: [Autentikasi]
+      security:
+        - SanctumAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [device_name]
+              properties:
+                device_name:
+                  type: string
+                  example: Samsung Galaxy S23
+      responses:
+        '200':
+          description: Token baru berhasil diterbitkan.
+
+  # ==========================================
+  # 👤 PROFIL KARYAWAN
+  # ==========================================
+  /profile:
+    get:
+      summary: Profil Lengkap
+      description: Mengambil data profil lengkap karyawan, penugasan cabang, dan jabatan.
+      tags: [Profil]
+      security:
+        - SanctumAuth: []
+      responses:
+        '200':
+          description: Profil berhasil diambil.
+
+  /profile/today:
+    get:
+      summary: Status Kerja Hari Ini
+      description: Menampilkan jadwal shift hari ini, rekaman presensi terkini, dan token tantangan presensi.
+      tags: [Profil]
+      security:
+        - SanctumAuth: []
+      responses:
+        '200':
+          description: Status shift dan presensi hari ini.
+
+  # ==========================================
+  # 📍 PRESENSI & QR
+  # ==========================================
+  /attendance/checkin:
+    post:
+      summary: Check-In Presensi
+      description: Melakukan check-in ke shift kerja menggunakan QR code cabang dan koordinat GPS.
+      tags: [Presensi]
+      security:
+        - SanctumAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shift_id, qr_code]
+              properties:
+                shift_id:
+                  type: integer
+                  example: 14
+                qr_code:
+                  type: string
+                  example: 8A4F19C2
+                latitude:
+                  type: number
+                  format: float
+                  example: -6.175392
+                longitude:
+                  type: number
+                  format: float
+                  example: 106.827153
+                accuracy:
+                  type: number
+                  example: 12.5
+                device_token:
+                  type: string
+                  example: dev_token_mobile_abc123
+                challenge:
+                  type: string
+                  example: '482'
+      responses:
+        '201':
+          description: Check-in berhasil diverifikasi.
+        '422':
+          description: Lokasi di luar geofence atau QR code kedaluwarsa.
+
+  /attendance/checkout:
+    post:
+      summary: Check-Out Presensi
+      description: Melakukan check-out dari shift aktif dan menghitung lembur otomatis.
+      tags: [Presensi]
+      security:
+        - SanctumAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shift_id]
+              properties:
+                shift_id:
+                  type: integer
+                  example: 14
+                latitude:
+                  type: number
+                  format: float
+                  example: -6.175392
+                longitude:
+                  type: number
+                  format: float
+                  example: 106.827153
+                accuracy:
+                  type: number
+                  example: 15.0
+                device_token:
+                  type: string
+                  example: dev_token_mobile_abc123
+      responses:
+        '200':
+          description: Check-out berhasil tercatat.
+
+  /attendance/history:
+    get:
+      summary: Riwayat Presensi
+      description: Riwayat presensi terpaginasi (pribadi untuk employee, seluruh cabang untuk manager).
+      tags: [Presensi]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+          description: Filter bulan (YYYY-MM)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 15
+      responses:
+        '200':
+          description: Daftar presensi berhasil diambil.
+
+  /attendance/qr:
+    get:
+      summary: Generate Dynamic QR Code Cabang
+      description: Menghasilkan kode QR dinamis cabang yang berganti otomatis setiap 30 detik (Manager+).
+      tags: [Presensi]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: branch_id
+          in: query
+          schema:
+            type: integer
+          description: ID cabang (opsional bagi Manager)
+      responses:
+        '200':
+          description: Kode QR dinamis cabang.
+        '403':
+          description: Akses ditolak (bukan Manager/Admin).
+
+  /attendance/{id}/exception:
+    post:
+      summary: Ajukan Pengecualian Presensi
+      description: Mengajukan laporan kendala jika check-in atau check-out gagal karena alasan teknis.
+      tags: [Presensi]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID Shift
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, reason]
+              properties:
+                action:
+                  type: string
+                  enum: [in, out]
+                  example: in
+                reason:
+                  type: string
+                  example: Kamera ponsel bermasalah dan GPS tidak dapat terkunci.
+      responses:
+        '201':
+          description: Pengecualian berhasil diajukan.
+
+  # ==========================================
+  # 📅 SHIFT
+  # ==========================================
+  /shifts:
+    get:
+      summary: Daftar Jadwal Shift
+      description: Mengambil daftar shift kerja (milik sendiri untuk employee, cabang untuk manager).
+      tags: [Shift]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          example: '2026-10-07'
+        - name: month
+          in: query
+          schema:
+            type: string
+          example: '2026-10'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, approved]
+      responses:
+        '200':
+          description: Daftar shift berhasil diambil.
+
+    post:
+      summary: Buat Shift Baru (Manager+)
+      description: Membuat jadwal kerja baru dalam status draft.
+      tags: [Shift]
+      security:
+        - SanctumAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id, branch_id]
+              properties:
+                user_id:
+                  type: integer
+                  example: 3
+                branch_id:
+                  type: integer
+                  example: 1
+                date:
+                  type: string
+                  format: date
+                  example: '2026-10-15'
+                start_time:
+                  type: string
+                  example: '08:00'
+                end_time:
+                  type: string
+                  example: '17:00'
+      responses:
+        '201':
+          description: Shift berhasil dibuat.
+        '409':
+          description: Shift tumpang tindih.
+
+  /shifts/{id}:
+    get:
+      summary: Detail Shift
+      description: Mengambil detail satu jadwal shift beserta data presensi aktual.
+      tags: [Shift]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail shift.
+
+    patch:
+      summary: Update Shift (Manager+)
+      description: Memperbarui jam atau tanggal jadwal shift yang masih draft.
+      tags: [Shift]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                start_time:
+                  type: string
+                end_time:
+                  type: string
+      responses:
+        '200':
+          description: Shift berhasil diperbarui.
+
+    delete:
+      summary: Hapus Shift (Manager+)
+      description: Menghapus jadwal shift yang belum memiliki absensi.
+      tags: [Shift]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Shift berhasil dihapus.
+
+  /shifts/{id}/approve:
+    post:
+      summary: Setujui Shift (Manager+)
+      description: Mengubah status shift dari draf menjadi disetujui (approved).
+      tags: [Shift]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Shift berhasil disetujui.
+
+  # ==========================================
+  # 🏖️ IZIN & CUTI
+  # ==========================================
+  /leave:
+    get:
+      summary: Daftar Pengajuan Izin / Cuti
+      description: Mengambil daftar permohonan izin dengan filter status dan tipe.
+      tags: [Izin & Cuti]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [leave, sick]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected, partial]
+      responses:
+        '200':
+          description: Daftar permohonan izin.
+
+    post:
+      summary: Ajukan Izin / Sakit Baru
+      description: Mengirim permohonan izin baru dengan dukungan unggah surat dokter.
+      tags: [Izin & Cuti]
+      security:
+        - SanctumAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [type, start_date, end_date, reason]
+              properties:
+                type:
+                  type: string
+                  enum: [leave, sick]
+                  example: sick
+                start_date:
+                  type: string
+                  format: date
+                  example: '2026-11-01'
+                end_date:
+                  type: string
+                  format: date
+                  example: '2026-11-02'
+                reason:
+                  type: string
+                  example: Sakit radang tenggorokan demam tinggi.
+                certificate:
+                  type: string
+                  format: binary
+                  description: File bukti / surat dokter (PDF / Gambar maks 2MB)
+      responses:
+        '201':
+          description: Permohonan izin berhasil dikirim.
+
+  /leave/{id}:
+    get:
+      summary: Detail Pengajuan Izin
+      description: Rincian lengkap status per hari pengajuan izin.
+      tags: [Izin & Cuti]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail pengajuan izin.
+
+    delete:
+      summary: Batalkan Pengajuan Izin
+      description: Membatalkan permohonan izin yang statusnya masih 'pending'.
+      tags: [Izin & Cuti]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Pengajuan berhasil dibatalkan.
+
+  /leave/{id}/review:
+    post:
+      summary: Review / Putusan Izin (Manager+)
+      description: Menyetujui atau menolak permohonan izin per tanggal.
+      tags: [Izin & Cuti]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [review_note]
+              properties:
+                approved_dates:
+                  type: array
+                  items:
+                    type: string
+                    format: date
+                  example: ['2026-11-01', '2026-11-02']
+                paid_dates:
+                  type: array
+                  items:
+                    type: string
+                    format: date
+                  example: ['2026-11-01']
+                review_note:
+                  type: string
+                  example: Disetujui 1 hari cuti dibayar, 1 hari unpaid.
+      responses:
+        '200':
+          description: Keputusan berhasil disimpan.
+
+  # ==========================================
+  # 💰 PAYROLL & SLIP GAJI
+  # ==========================================
+  /payroll/slip:
+    get:
+      summary: Slip Gaji Pribadi
+      description: Rincian slip gaji bulanan pengguna yang sedang login.
+      tags: [Payroll]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+          example: '2026-10'
+      responses:
+        '200':
+          description: Rincian slip gaji digital.
+
+  /payroll/slip/{userId}:
+    get:
+      summary: Slip Gaji Karyawan Tertentu (Manager+)
+      description: Mengambil slip gaji seorang karyawan di cabang yang bersangkutan.
+      tags: [Payroll]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: string
+          example: '2026-10'
+      responses:
+        '200':
+          description: Rincian slip gaji karyawan.
+
+  /payroll/summary:
+    get:
+      summary: Ringkasan Finansial Cabang (Manager+)
+      description: Ringkasan total gaji pokok, lembur, potongan kasbon, dan status blocker payroll.
+      tags: [Payroll]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+          example: '2026-10'
+        - name: branch_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ringkasan payroll cabang.
+
+  # ==========================================
+  # 🏢 ADMINISTRASI & MASTER DATA
+  # ==========================================
+  /admin/employees:
+    get:
+      summary: Daftar Master Karyawan (Manager+)
+      description: Daftar seluruh karyawan dalam cabang untuk keperluan penugasan shift dan administrasi.
+      tags: [Administrasi]
+      security:
+        - SanctumAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: active
+          in: query
+          schema:
+            type: boolean
+        - name: branch_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Daftar karyawan berhasil diambil.
+
+  /admin/branches:
+    get:
+      summary: Daftar Master Cabang (Manager+)
+      description: Daftar cabang perusahaan yang aktif beserta koordinat geografis dan radius presensi.
+      tags: [Administrasi]
+      security:
+        - SanctumAuth: []
+      responses:
+        '200':
+          description: Daftar cabang perusahaan.
