@@ -20,7 +20,7 @@
         @if(session('ok'))
             <div id="flash-success" role="status" class="toast-item pointer-events-auto relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-emerald-200/90 p-4 text-emerald-950 shadow-xl shadow-emerald-950/10 flex items-start justify-between gap-3 transform transition-all duration-300 translate-x-0 opacity-100" data-toast-type="success" data-duration="5000">
                 <div class="flex items-start gap-3">
-                    <span class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs shadow-emerald-500/30">
+                    <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
                     </span>
                     <div class="space-y-0.5">
@@ -37,9 +37,9 @@
 
         {{-- Flash Notifikasi Error / Validasi Form --}}
         @if($errors->any())
-            <div id="flash-errors" role="alert" class="toast-item pointer-events-auto relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-rose-200/90 p-4 text-rose-950 shadow-xl shadow-rose-950/10 flex items-start justify-between gap-3 transform transition-all duration-300 translate-x-0 opacity-100" data-toast-type="error" data-duration="7000">
+            <div id="flash-errors" role="alert" class="toast-item pointer-events-auto relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-rose-200/90 p-4 text-rose-950 shadow-xl shadow-slate-950/5 flex items-start justify-between gap-3 transform transition-all duration-300 translate-x-0 opacity-100" data-toast-type="error" data-duration="7000">
                 <div class="flex items-start gap-3">
-                    <span class="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0 shadow-xs shadow-rose-500/30">
+                    <span class="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                     </span>
                     <div class="space-y-1">

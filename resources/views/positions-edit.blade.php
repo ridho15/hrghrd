@@ -46,7 +46,7 @@
     <form method="POST" action="{{ route('positions.update', $position->id) }}" class="space-y-6">
         @csrf
 
-        <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-5">
+        <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-5">
             <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
                 <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 font-black text-sm flex items-center justify-center border border-emerald-200/60">
                     💼
