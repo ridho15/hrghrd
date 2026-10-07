@@ -22,14 +22,13 @@ services:
       DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: "${DB_DATABASE:-hrg_hrd}"
-      DB_USERNAME: "${DB_USERNAME:-root}"
+      DB_USERNAME: "${DB_USERNAME:-hrg_user}"
       DB_PASSWORD: "${DB_PASSWORD:-hrg_password}"
       RUN_MIGRATIONS: "true"
       SESSION_DRIVER: database
       QUEUE_CONNECTION: database
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     volumes:
       - app_storage:/var/www/html/storage
     networks:
@@ -57,12 +56,6 @@ services:
       MYSQL_PASSWORD: "${DB_PASSWORD:-hrg_password}"
       # Mengizinkan akses root & pengguna dari IP host manapun secara remote (%)
       MYSQL_ROOT_HOST: "%"
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 15s
     volumes:
       - mysql_data:/var/lib/mysql
     networks:

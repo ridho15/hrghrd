@@ -4,7 +4,7 @@ set -e
 # Tunggu database MySQL siap menerima koneksi (jika koneksi bertipe mysql)
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
   echo "Menunggu koneksi database MySQL di $DB_HOST:${DB_PORT:-3306}..."
-  until mysqladmin ping -h "$DB_HOST" -P "${DB_PORT:-3306}" --silent; do
+  until php -r "try { new PDO('mysql:host=' . getenv('DB_HOST') . ';port=' . (getenv('DB_PORT') ?: '3306') . ';dbname=' . getenv('DB_DATABASE'), getenv('DB_USERNAME'), getenv('DB_PASSWORD')); exit(0); } catch (Throwable \$e) { exit(1); }"; do
     echo "Database belum siap, mencoba lagi dalam 2 detik..."
     sleep 2
   done
