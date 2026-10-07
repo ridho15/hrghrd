@@ -49,8 +49,9 @@
                         <span>Cabang: <strong class="text-slate-700">{{ $shift->branch_name }}</strong></span>
                         @if($shift->user)
                             <span>&middot;</span>
-                            <a href="{{ route('people.show', $shift->user_id) }}" class="text-emerald-700 hover:underline font-semibold">
-                                Lihat Berkas Karyawan ↗
+                            <a href="{{ route('people.show', $shift->user_id) }}" class="text-emerald-700 hover:underline font-semibold inline-flex items-center gap-1">
+                                <span>Lihat Berkas Karyawan</span>
+                                <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             </a>
                         @endif
                     </p>
@@ -155,8 +156,11 @@
         {{-- KARTU 1: Informasi Penugasan & Lokasi --}}
         <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
             <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">
-                    📍
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
                 </div>
                 <div>
                     <h2 class="text-base font-bold text-slate-900">Cabang & Lokasi Tugas</h2>
@@ -197,8 +201,10 @@
         {{-- KARTU 2: Realisasi Presensi (Attendance Record) --}}
         <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
             <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">
-                    ⏱️
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
                 <div>
                     <h2 class="text-base font-bold text-slate-900">Catatan Presensi Aktual</h2>
@@ -241,8 +247,10 @@
                 </div>
             @else
                 <div class="p-8 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 space-y-2">
-                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center font-bold text-sm">
-                        ⏳
+                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
                     </div>
                     <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Belum Ada Presensi</h3>
                     <p class="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
@@ -265,8 +273,10 @@
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-7 space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm">
-                    📜
+                <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
                 </div>
                 <div>
                     <h2 class="text-base font-bold text-slate-900">Jejak Audit & Riwayat Perubahan</h2>

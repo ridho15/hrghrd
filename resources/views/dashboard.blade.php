@@ -13,7 +13,7 @@
                 <span>{{ now('Asia/Jakarta')->translatedFormat('l, d F Y') }}</span>
             </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Halo, {{ Str::before(auth()->user()->name, ' ') }} 👋
+                Halo, {{ Str::before(auth()->user()->name, ' ') }}
             </h1>
             <p class="text-sm text-slate-500 mt-1">
                 @if(\App\Support\Access::admin())
@@ -202,63 +202,63 @@
         </div>
 
         {{-- Pusat Tindakan Cepat (Quick Action Center) Super Admin --}}
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 text-white shadow-xs">
-            <div class="flex items-center justify-between pb-4 border-b border-slate-700/80 mb-4">
+        <div class="bg-white border border-slate-200/90 rounded-2xl p-5 sm:p-6 text-slate-900 shadow-xs">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4 flex-wrap gap-2">
                 <div>
-                    <h2 class="text-base font-bold text-white tracking-tight">Pusat Tindakan Cepat (Quick Action Center)</h2>
-                    <p class="text-xs text-slate-400 mt-0.5">Jalan pintas terpadu untuk mengeksekusi operasi penting harian</p>
+                    <h2 class="text-base font-bold text-slate-900 tracking-tight">Pusat Tindakan Cepat (Quick Action Center)</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Jalan pintas terpadu untuk mengeksekusi operasi penting harian</p>
                 </div>
-                <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 px-2.5 py-1 rounded-lg">
+                <span class="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-lg">
                     Super Admin Mode
                 </span>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                <a href="{{ route('people') }}" class="p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-center transition-all group hover:border-emerald-500/50">
-                    <div class="w-9 h-9 mx-auto rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <a href="{{ route('people') }}" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">
+                    <div class="w-9 h-9 mx-auto rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                     </div>
-                    <span class="block text-xs font-bold text-slate-200 group-hover:text-white">Kelola Staf</span>
+                    <span class="block text-xs font-bold text-slate-800 group-hover:text-emerald-700">Kelola Staf</span>
                     <span class="block text-[10px] text-slate-400 mt-0.5">Daftar & Akun</span>
                 </a>
 
-                <a href="{{ route('shifts') }}" class="p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-center transition-all group hover:border-emerald-500/50">
-                    <div class="w-9 h-9 mx-auto rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <a href="{{ route('shifts') }}" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">
+                    <div class="w-9 h-9 mx-auto rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </div>
-                    <span class="block text-xs font-bold text-slate-200 group-hover:text-white">Jadwal Shift</span>
+                    <span class="block text-xs font-bold text-slate-800 group-hover:text-sky-700">Jadwal Shift</span>
                     <span class="block text-[10px] text-slate-400 mt-0.5">Plot Penugasan</span>
                 </a>
 
-                <a href="{{ route('attendance.review') }}" class="p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-center transition-all group hover:border-emerald-500/50">
-                    <div class="w-9 h-9 mx-auto rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <a href="{{ route('attendance.review') }}" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">
+                    <div class="w-9 h-9 mx-auto rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                     </div>
-                    <span class="block text-xs font-bold text-slate-200 group-hover:text-white">Tinjau Presensi</span>
+                    <span class="block text-xs font-bold text-slate-800 group-hover:text-amber-700">Tinjau Presensi</span>
                     <span class="block text-[10px] text-slate-400 mt-0.5">Lembur & Kendala</span>
                 </a>
 
-                <a href="{{ route('payroll.index') }}" class="p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-center transition-all group hover:border-emerald-500/50">
-                    <div class="w-9 h-9 mx-auto rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <a href="{{ route('payroll.index') }}" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">
+                    <div class="w-9 h-9 mx-auto rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
-                    <span class="block text-xs font-bold text-slate-200 group-hover:text-white">Penggajian</span>
+                    <span class="block text-xs font-bold text-slate-800 group-hover:text-emerald-700">Penggajian</span>
                     <span class="block text-[10px] text-slate-400 mt-0.5">Kalkulasi Gaji</span>
                 </a>
 
-                <a href="{{ route('qr.page') }}" class="p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-center transition-all group hover:border-emerald-500/50">
-                    <div class="w-9 h-9 mx-auto rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <a href="{{ route('qr.page') }}" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">
+                    <div class="w-9 h-9 mx-auto rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
                     </div>
-                    <span class="block text-xs font-bold text-slate-200 group-hover:text-white">Kiosk QR Toko</span>
+                    <span class="block text-xs font-bold text-slate-800 group-hover:text-indigo-700">Kiosk QR Toko</span>
                     <span class="block text-[10px] text-slate-400 mt-0.5">Display Scanner</span>
                 </a>
 
-                <a href="{{ route('audit') }}" class="p-3.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-center transition-all group hover:border-emerald-500/50">
-                    <div class="w-9 h-9 mx-auto rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                <a href="{{ route('audit') }}" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">
+                    <div class="w-9 h-9 mx-auto rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                     </div>
-                    <span class="block text-xs font-bold text-slate-200 group-hover:text-white">Audit Log</span>
+                    <span class="block text-xs font-bold text-slate-800 group-hover:text-rose-700">Audit Log</span>
                     <span class="block text-[10px] text-slate-400 mt-0.5">Keamanan Sistem</span>
                 </a>
             </div>

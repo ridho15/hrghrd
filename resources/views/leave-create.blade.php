@@ -43,8 +43,10 @@
     {{-- Kotak Informasi Kebijakan --}}
     <div class="p-5 bg-slate-900 border border-slate-800 text-white rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex items-start gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 font-extrabold flex items-center justify-center shrink-0 border border-emerald-500/30">
-                📋
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <svg class="w-5 h-5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
             </div>
             <div class="text-xs space-y-1">
                 <strong class="text-sm text-emerald-200 font-bold block">Ketentuan Kebijakan Perusahaan</strong>
@@ -128,8 +130,8 @@
                         onchange="toggleCertificateRequirement(this.value)"
                         class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all cursor-pointer @error('type') border-rose-300 bg-rose-50/50 @enderror"
                     >
-                        <option value="leave" @selected(old('type') === 'leave')>📅 Izin Biasa / Cuti Terencana</option>
-                        <option value="sick" @selected(old('type') === 'sick')>🩺 Sakit (Wajib Surat Dokter)</option>
+                        <option value="leave" @selected(old('type') === 'leave')>Izin Biasa / Cuti Terencana</option>
+                        <option value="sick" @selected(old('type') === 'sick')>Sakit (Wajib Surat Dokter)</option>
                     </select>
                     @error('type')
                         <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>

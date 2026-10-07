@@ -191,8 +191,13 @@
             <strong>Lembur Sah</strong> = Tarif per Jam &times; (Menit Setelah Ambang Batas &divide; 60).
         </p>
 
-        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed">
-            <strong>💡 Simulasi Nyata:</strong> Gaji Rp3.000.000 pada bulan 30 hari menghasilkan tarif harian <strong>Rp100.000</strong> dan tarif per jam <strong>Rp{{ number_format(100000 / max(1, $settings['hourly_divisor']), 2, ',', '.') }}</strong>. Satu unit keterlambatan memotong <strong>Rp{{ number_format($settings['late_penalty_per_unit'], 0, ',', '.') }}</strong>.
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-700 leading-relaxed flex items-start gap-2.5">
+            <svg class="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <strong>Simulasi Nyata:</strong> Gaji Rp3.000.000 pada bulan 30 hari menghasilkan tarif harian <strong>Rp100.000</strong> dan tarif per jam <strong>Rp{{ number_format(100000 / max(1, $settings['hourly_divisor']), 2, ',', '.') }}</strong>. Satu unit keterlambatan memotong <strong>Rp{{ number_format($settings['late_penalty_per_unit'], 0, ',', '.') }}</strong>.
+            </div>
         </div>
     </section>
 </div>

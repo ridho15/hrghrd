@@ -65,8 +65,10 @@
                             {{-- Nama Jabatan --}}
                             <td class="py-3.5 px-4 font-bold text-slate-900 text-sm whitespace-nowrap">
                                 <div class="flex items-center gap-2.5">
-                                    <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 font-bold border border-emerald-200/60 shadow-2xs">
-                                        💼
+                                    <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 border border-emerald-200/60 shadow-2xs">
+                                        <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                        </svg>
                                     </span>
                                     <a href="{{ route('positions.show', $p->id) }}" class="hover:text-emerald-700 hover:underline transition-colors">
                                         {{ $p->name }}

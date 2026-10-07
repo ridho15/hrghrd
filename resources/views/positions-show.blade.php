@@ -16,8 +16,10 @@
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-7">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
             <div class="flex items-start sm:items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-800 font-extrabold text-2xl flex items-center justify-center border border-emerald-200/60 shadow-2xs shrink-0">
-                    💼
+                <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-200/60 shadow-2xs shrink-0">
+                    <svg class="w-8 h-8 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
                 </div>
                 <div>
                     <div class="flex flex-wrap items-center gap-2 mb-1.5">
@@ -86,8 +88,10 @@
                     <span class="text-2xl font-black text-slate-900 block mt-0.5">{{ $position->users_count }} Orang</span>
                     <span class="text-[11px] text-slate-500 font-medium block">Mengemban jabatan ini</span>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-emerald-100/70 text-emerald-800 flex items-center justify-center font-bold text-lg">
-                    👥
+                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/60 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
                 </div>
             </div>
 
@@ -99,8 +103,10 @@
                     </span>
                     <span class="text-[11px] text-slate-400 font-medium block">Kesiapan alokasi staf</span>
                 </div>
-                <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-lg">
-                    📋
+                <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 border border-slate-200/60 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                    </svg>
                 </div>
             </div>
         </div>

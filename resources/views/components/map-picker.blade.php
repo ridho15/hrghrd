@@ -131,9 +131,10 @@
                     href="https://maps.google.com/?q={{ $defaultLat }},{{ $defaultLng }}" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-emerald-700 hover:bg-slate-50 text-[11px] font-bold transition-all shadow-2xs"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-emerald-700 hover:bg-slate-50 text-[11px] font-bold transition-all shadow-2xs"
                 >
-                    <span>Buka Google Maps ↗</span>
+                    <span>Buka Google Maps</span>
+                    <svg class="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                 </a>
             </div>
         @endif
@@ -353,7 +354,7 @@
                                     const userLng = pos.coords.longitude;
                                     updateCoordinates(userLat, userLng, true);
                                     map.setView([userLat, userLng], 17);
-                                    if (locateText) locateText.textContent = 'Lokasi Terpasang ✓';
+                                    if (locateText) locateText.textContent = 'Lokasi Terpasang';
                                     setTimeout(() => {
                                         if (locateText) locateText.textContent = 'Lokasi Saya';
                                         locateBtn.disabled = false;

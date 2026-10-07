@@ -136,7 +136,10 @@
                     rel="noopener noreferrer"
                     class="mt-2 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-emerald-700 hover:bg-emerald-50 text-xs font-bold transition-all shadow-2xs"
                 >
-                    <span>Buka Lokasi Peta ↗</span>
+                    <span>Buka Lokasi Peta</span>
+                    <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
                 </a>
             </div>
         </div>

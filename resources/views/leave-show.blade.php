@@ -47,7 +47,7 @@
                             <span>{{ $statusBadge['label'] }}</span>
                         </span>
                         <span class="px-2.5 py-0.5 rounded-md text-xs font-bold {{ $leave->type === 'sick' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
-                            {{ $leave->type === 'sick' ? '🩺 Izin Sakit' : '📅 Cuti / Izin' }}
+                            {{ $leave->type === 'sick' ? 'Izin Sakit' : 'Cuti / Izin' }}
                         </span>
                     </div>
 
@@ -60,8 +60,9 @@
                         <span>Cabang: <strong class="text-slate-700">{{ $leave->user?->branch?->name ?? 'Cabang —' }}</strong></span>
                         @if($leave->user)
                             <span>&middot;</span>
-                            <a href="{{ route('people.show', $leave->user_id) }}" class="text-emerald-700 hover:underline font-semibold">
-                                Lihat Berkas Karyawan ↗
+                            <a href="{{ route('people.show', $leave->user_id) }}" class="text-emerald-700 hover:underline font-semibold inline-flex items-center gap-1">
+                                <span>Lihat Berkas Karyawan</span>
+                                <svg class="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             </a>
                         @endif
                     </p>
@@ -136,8 +137,10 @@
             {{-- Alasan Pengajuan --}}
             <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-3">
                 <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100">
-                    <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
-                        ✍️
+                    <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
                     </span>
                     <h2 class="text-sm font-bold text-slate-900">Alasan Permohonan</h2>
                 </div>
@@ -150,8 +153,10 @@
             <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-3">
                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
-                        <span class="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xs">
-                            📑
+                        <span class="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
                         </span>
                         <h2 class="text-sm font-bold text-slate-900">Berkas Surat Dokter</h2>
                     </div>
@@ -160,8 +165,10 @@
                 @if($leave->certificate_path)
                     <div class="p-4 rounded-2xl bg-purple-50/50 border border-purple-200/70 space-y-3">
                         <div class="flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg shrink-0">
-                                📄
+                            <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
                             </div>
                             <div class="min-w-0 flex-1">
                                 <strong class="text-xs font-bold text-slate-900 block truncate">
@@ -182,7 +189,8 @@
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                 </svg>
-                                <span>Unduh / Buka Dokumen Penuh ↗</span>
+                                <span>Unduh / Buka Dokumen Penuh</span>
+                                <svg class="w-3.5 h-3.5 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                             </a>
                         </div>
                     </div>
@@ -197,8 +205,10 @@
             @if($leave->review_note)
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-2">
                     <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
-                        <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
-                            💬
+                        <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
                         </span>
                         <h2 class="text-sm font-bold text-slate-900">Catatan Evaluasi Peninjau</h2>
                     </div>
@@ -215,8 +225,10 @@
             <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
-                        <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
-                            🗓️
+                        <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
                         </span>
                         <h2 class="text-sm font-bold text-slate-900">Matriks Status per Hari</h2>
                     </div>
@@ -270,8 +282,10 @@
             @if($canReview)
                 <div class="bg-white rounded-2xl border-2 border-emerald-600/30 shadow-xs p-6 sm:p-7 space-y-5">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-                        <div class="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-sm">
-                            ⚖️
+                        <div class="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                            </svg>
                         </div>
                         <div>
                             <h2 class="text-base font-bold text-slate-900">Keputusan Peninjauan Manajerial</h2>

@@ -30,7 +30,7 @@
                 >
                     @foreach($branches as $b)
                         <option value="{{ $b->id }}" @selected($branch->id == $b->id)>
-                            📍 {{ $b->name }} ({{ $b->code }})
+                            {{ $b->name }} ({{ $b->code }})
                         </option>
                     @endforeach
                 </select>

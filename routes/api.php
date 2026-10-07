@@ -24,7 +24,7 @@ Route::post('/auth/login', [AuthApiController::class, 'login'])
 // --- Protected Routes (Sanctum + Active User) ---
 Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
-    // 🔐 Auth Management
+    // Auth Management
     Route::prefix('auth')->group(function () {
         Route::post('/logout', [AuthApiController::class, 'logout']);
         Route::get('/me', [AuthApiController::class, 'me']);
@@ -32,13 +32,13 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/refresh', [AuthApiController::class, 'refresh']);
     });
 
-    // 👤 Profile Karyawan
+    // Profile Karyawan
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileApiController::class, 'profile']);
         Route::get('/today', [ProfileApiController::class, 'today']);
     });
 
-    // 📍 Presensi & QR
+    // Presensi & QR
     Route::prefix('attendance')->group(function () {
         Route::post('/checkin', [AttendanceApiController::class, 'checkIn'])->middleware('throttle:20,1');
         Route::post('/checkout', [AttendanceApiController::class, 'checkOut'])->middleware('throttle:20,1');
@@ -47,7 +47,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/{id}/exception', [AttendanceApiController::class, 'exception']);
     });
 
-    // 📅 Jadwal Shift
+    // Jadwal Shift
     Route::prefix('shifts')->group(function () {
         Route::get('/', [ShiftApiController::class, 'index']);
         Route::get('/{id}', [ShiftApiController::class, 'show']);
@@ -57,7 +57,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::delete('/{id}', [ShiftApiController::class, 'destroy']);
     });
 
-    // 🏖️ Pengajuan Izin & Cuti
+    // Pengajuan Izin & Cuti
     Route::prefix('leave')->group(function () {
         Route::get('/', [LeaveApiController::class, 'index']);
         Route::post('/', [LeaveApiController::class, 'store']);
@@ -66,14 +66,14 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::delete('/{id}', [LeaveApiController::class, 'destroy']);
     });
 
-    // 💰 Slip Gaji & Payroll
+    // Slip Gaji & Payroll
     Route::prefix('payroll')->group(function () {
         Route::get('/slip', [PayrollApiController::class, 'mySlip']);
         Route::get('/slip/{userId}', [PayrollApiController::class, 'slip']);
         Route::get('/summary', [PayrollApiController::class, 'summary']);
     });
 
-    // 🏢 Master Data & Administrasi
+    // Master Data & Administrasi
     Route::prefix('admin')->group(function () {
         Route::get('/employees', [AdminApiController::class, 'employees']);
         Route::get('/branches', [AdminApiController::class, 'branches']);
