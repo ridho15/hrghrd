@@ -45,9 +45,17 @@
                                     {{ $e->action === 'in' ? 'Check-in' : 'Check-out' }}
                                 </span>
                             </div>
-                            <span class="text-xs text-slate-500 block mt-0.5 tabular-nums">
-                                Shift: {{ $e->start_at }} &middot; Diajukan: {{ $e->created_at }}
-                            </span>
+                            <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                <span class="text-xs text-slate-500 tabular-nums">
+                                    Shift: {{ $e->start_at }} &middot; Diajukan: {{ $e->created_at }}
+                                </span>
+                                @if($e->claimed_time)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Klaim: {{ $e->claimed_time }}
+                                    </span>
+                                @endif
+                            </div>
                         </div>
                     </div>
 
@@ -63,6 +71,10 @@
                                 <option value="approved">Setujui</option>
                                 <option value="rejected">Tolak</option>
                             </select>
+                        </div>
+                        <div class="w-32">
+                            <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Jam Riil (JJ:MM)</label>
+                            <input type="time" name="actual_time" value="{{ old('actual_time', $e->claimed_time) }}" title="Kosongkan jika mengikuti jam klaim / jam rencana shift" class="w-full px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-500">
                         </div>
                         <div class="flex-1 min-w-[200px]">
                             <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Catatan Verifikasi</label>
@@ -127,6 +139,7 @@
                     <option value="present" @selected(request('status') === 'present')>Hadir (Present)</option>
                     <option value="late" @selected(request('status') === 'late')>Terlambat (Late)</option>
                     <option value="absent" @selected(request('status') === 'absent')>Mangkir (Absent)</option>
+                    <option value="early_checkout" @selected(request('status') === 'early_checkout')>Pulang Awal (Early Checkout)</option>
                     <option value="corrected" @selected(request('status') === 'corrected')>Dikoreksi (Corrected)</option>
                 </select>
 
@@ -167,8 +180,20 @@
                             {{-- Status & Bukti --}}
                             <td class="py-4 px-4">
                                 <div class="space-y-1">
-                                    <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider {{ in_array($a->status, ['present', 'corrected']) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($a->status === 'absent' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-amber-50 text-amber-700 border border-amber-200') }}">
-                                        {{ $a->status }}
+                                    @php
+                                        $statusClass = match($a->status) {
+                                            'present', 'corrected' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                                            'absent' => 'bg-rose-50 text-rose-700 border-rose-200',
+                                            'early_checkout' => 'bg-purple-50 text-purple-700 border-purple-200',
+                                            default => 'bg-amber-50 text-amber-700 border-amber-200',
+                                        };
+                                        $statusLabel = match($a->status) {
+                                            'early_checkout' => 'Pulang Awal (<30m)',
+                                            default => $a->status,
+                                        };
+                                    @endphp
+                                    <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider {{ $statusClass }}">
+                                        {{ $statusLabel }}
                                     </span>
                                     @php
                                         $hasFlags = is_array($a->flags) ? !empty($a->flags) : !empty(json_decode($a->flags ?? '', true));
@@ -248,8 +273,8 @@
                                                 <div>
                                                     <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Status</label>
                                                     <select name="status" class="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-emerald-500">
-                                                        @foreach(['present', 'late', 'absent', 'corrected'] as $st)
-                                                            <option value="{{ $st }}" @selected($a->status === $st)>{{ strtoupper($st) }}</option>
+                                                        @foreach(['present', 'late', 'absent', 'corrected', 'early_checkout'] as $st)
+                                                            <option value="{{ $st }}" @selected($a->status === $st)>{{ strtoupper(str_replace('_', ' ', $st)) }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
@@ -282,7 +307,7 @@
                                     $inEvidence = is_array($a->checkin_evidence) ? $a->checkin_evidence : json_decode($a->checkin_evidence ?? '', true);
                                     $outEvidence = is_array($a->checkout_evidence) ? $a->checkout_evidence : json_decode($a->checkout_evidence ?? '', true);
                                     $flagList = is_array($a->flags) ? $a->flags : (json_decode($a->flags ?? '', true) ?? []);
-                                    $badgeClr = in_array($a->status, ['present', 'corrected']) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ($a->status === 'absent' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200');
+                                    $badgeClr = in_array($a->status, ['present', 'corrected']) ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : ($a->status === 'absent' ? 'bg-rose-50 text-rose-700 border-rose-200' : ($a->status === 'early_checkout' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-amber-50 text-amber-700 border-amber-200'));
                                 @endphp
                                 <x-detail-modal
                                     id="detail-attendance-{{ $a->id }}"

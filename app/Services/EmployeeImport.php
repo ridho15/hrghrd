@@ -72,27 +72,71 @@ final class EmployeeImport
             if (DB::table('users')->where('email',$v['email'])->exists()) { $errors[]="Baris $line: email sudah ada"; continue; }
             $branch=DB::table('branches')->where('code',$v['branch'])->first();
             if (!$branch) { $errors[]="Baris $line: kode cabang tidak ditemukan"; continue; }
+            if (trim($v['hired_at'] ?? '') === '') {
+                $errors[] = "Baris $line: tanggal mulai kerja wajib diisi";
+                continue;
+            }
+
             try {
-                $hired=$this->date($v['hired_at']);
-                $salaryText=preg_replace('/[^0-9.,]/','',$v['base_salary']);
-                $salary=(int)preg_replace('/\D/','',preg_replace('/[.,]\d{2}$/','',$salaryText));
-                if ($salary <= 0) throw new \RuntimeException();
-            } catch (\Throwable) { $errors[]="Baris $line: tanggal mulai atau gaji tidak valid"; continue; }
-            $position=DB::table('positions')->where('name',$v['position'])->value('id');
-            if (!$position) $position=DB::table('positions')->insertGetId(['name'=>$v['position'] ?: 'Staf','created_at'=>now(),'updated_at'=>now()]);
-            DB::table('users')->insert(['name'=>$v['name'],'email'=>$v['email'],'password'=>Hash::make(Str::random(40)),
-                'role'=>'employee','branch_id'=>$branch->id,'position_id'=>$position,'hired_at'=>$hired,
-                'base_salary'=>$salary,'active'=>!in_array(strtolower($v['active'] ?? 'aktif'),['0','tidak','nonaktif','inactive'],true),
-                'created_at'=>now(),'updated_at'=>now()]);
+                $hired = $this->date($v['hired_at']);
+                $salaryText = preg_replace('/[^0-9.,]/', '', $v['base_salary']);
+                $salary = (int) preg_replace('/\D/', '', preg_replace('/[.,]\d{2}$/', '', $salaryText));
+                if ($salary <= 0) {
+                    throw new \RuntimeException();
+                }
+            } catch (\Throwable) {
+                $errors[] = "Baris $line: tanggal mulai atau gaji tidak valid";
+                continue;
+            }
+
+            $rawPos = trim((string) ($v['position'] ?? ''));
+            $posName = $rawPos !== '' ? $rawPos : 'Staf';
+            $position = DB::table('positions')
+                ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($posName)])
+                ->value('id');
+            if (! $position) {
+                $position = DB::table('positions')->insertGetId([
+                    'name' => $posName,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            DB::table('users')->insert([
+                'name' => $v['name'],
+                'email' => $v['email'],
+                'password' => Hash::make('Demo12345!'),
+                'role' => 'employee',
+                'branch_id' => $branch->id,
+                'position_id' => $position,
+                'hired_at' => $hired,
+                'base_salary' => $salary,
+                'active' => ! in_array(strtolower($v['active'] ?? 'aktif'), ['0', 'tidak', 'nonaktif', 'inactive'], true),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
             $ok++;
         }
-        return ['imported'=>$ok,'failed'=>count($errors),'errors'=>$errors];
+
+        return ['imported' => $ok, 'failed' => count($errors), 'errors' => $errors];
     }
 
     private function date(string $value): string
     {
-        if (is_numeric($value) && (int)$value > 20000)
-            return Carbon::create(1899,12,30)->addDays((int)$value)->toDateString();
-        return Carbon::parse($value,'Asia/Jakarta')->toDateString();
+        $value = trim($value);
+        if ($value === '') {
+            throw new \InvalidArgumentException('Tanggal kosong');
+        }
+
+        if (is_numeric($value) && (int) $value > 20000) {
+            return Carbon::create(1899, 12, 30)->addDays((int) $value)->toDateString();
+        }
+
+        // Support Indonesian DD/MM/YYYY or DD-MM-YYYY format
+        if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $value, $m)) {
+            return Carbon::createFromDate((int) $m[3], (int) $m[2], (int) $m[1], 'Asia/Jakarta')->toDateString();
+        }
+
+        return Carbon::parse($value, 'Asia/Jakarta')->toDateString();
     }
 }

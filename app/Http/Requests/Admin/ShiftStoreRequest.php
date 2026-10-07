@@ -10,7 +10,16 @@ class ShiftStoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return Access::admin();
+        if (Access::admin()) {
+            return true;
+        }
+
+        if (Access::manager()) {
+            $branchId = (int) $this->input('branch_id');
+            return Access::branch($branchId);
+        }
+
+        return false;
     }
 
     public function rules(): array

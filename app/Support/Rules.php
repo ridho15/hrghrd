@@ -10,7 +10,9 @@ final class Rules
         'late_grace_minutes' => '15', 'late_unit_minutes' => '15',
         'late_penalty_per_unit' => '10000', 'late_reject_minutes' => '60',
         'checkin_early_minutes' => '60', 'checkout_late_hours' => '6',
-        'overtime_threshold_minutes' => '90', 'leave_notice_days' => '7',
+        'overtime_threshold_minutes' => '90', 'overtime_max_daily_minutes' => '240',
+        'min_work_duration_minutes' => '30',
+        'leave_notice_days' => '7',
         'sick_paid_days_per_case' => '2', 'daily_divisor' => 'calendar',
         'hourly_divisor' => '24',
     ];

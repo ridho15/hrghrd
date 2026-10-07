@@ -191,13 +191,13 @@
 
             {{-- Bagian Bawah: Profil Pengguna & Keluar --}}
             <div class="p-3.5 border-t border-slate-200/80 bg-slate-50/80">
-                <div class="flex items-center justify-between p-2.5 rounded-xl bg-white border border-slate-200 mb-2.5 shadow-2xs">
+                <a href="{{ route('people.show', auth()->id()) }}" title="Lihat Profil & Keamanan Akun" class="flex items-center justify-between p-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 mb-2.5 shadow-2xs group transition-all">
                     <div class="flex items-center gap-2.5 overflow-hidden">
-                        <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-200">
+                        <div class="w-9 h-9 rounded-lg bg-emerald-100 group-hover:bg-emerald-200 text-emerald-800 flex items-center justify-center font-bold text-sm shrink-0 border border-emerald-200 transition-colors">
                             {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
                         </div>
                         <div class="truncate">
-                            <span class="block text-xs font-bold text-slate-900 truncate">{{ auth()->user()->name }}</span>
+                            <span class="block text-xs font-bold text-slate-900 group-hover:text-emerald-700 truncate transition-colors">{{ auth()->user()->name }}</span>
                             @php
                                 $roleBadge = [
                                     'admin' => ['label' => 'Super Admin', 'color' => 'bg-emerald-100 text-emerald-800 border-emerald-300'],
@@ -210,7 +210,8 @@
                             </span>
                         </div>
                     </div>
-                </div>
+                    <svg class="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </a>
 
                 <form method="post" action="{{ route('logout') }}" class="w-full">
                     @csrf

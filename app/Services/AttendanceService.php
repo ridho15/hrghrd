@@ -67,8 +67,10 @@ final class AttendanceService
                         $absent = Attendance::create([
                             'shift_id' => $shiftId,
                             'user_id' => $user->id,
+                            'checkin_at' => $now,
                             'status' => 'absent',
                             'late_minutes' => $late,
+                            'checkin_evidence' => $evidence,
                         ]);
 
                         $this->attempt($user->id, $shiftId, $action, 'rejected', 'Lebih dari batas terlambat', $evidence, $now);
@@ -99,7 +101,11 @@ final class AttendanceService
                 }
                 session()->forget('attendance_challenge');
 
-                if (! hash_equals(self::qr($branch), (string) ($input['qr_code'] ?? ''))) {
+                $slot = intdiv(now()->timestamp, 30);
+                $qrValid = hash_equals(self::qr($branch, $slot), (string) ($input['qr_code'] ?? ''))
+                    || hash_equals(self::qr($branch, $slot - 1), (string) ($input['qr_code'] ?? ''));
+
+                if (! $qrValid) {
                     $this->reject($user->id, $shiftId, $action, 'Kode cabang kedaluwarsa atau salah', $evidence, $now);
                 }
 
@@ -110,7 +116,7 @@ final class AttendanceService
                 $distance = self::distance((float) $branch->latitude, (float) $branch->longitude, (float) $input['latitude'], (float) $input['longitude']);
                 $evidence['distance_m'] = round($distance);
 
-                if ((float) $input['accuracy'] > 100 || $distance + (float) $input['accuracy'] > $branch->radius_m) {
+                if ((float) $input['accuracy'] > 100 || $distance > $branch->radius_m) {
                     $this->reject($user->id, $shiftId, $action, 'Lokasi di luar area atau akurasi GPS rendah', $evidence, $now);
                 }
 
@@ -135,13 +141,29 @@ final class AttendanceService
                         'flags' => $prior ? ['Beberapa absensi dalam satu jam'] : [],
                     ]);
                 } else {
+                    $durationMinutes = (int) Carbon::parse($attendance->checkin_at, 'Asia/Jakarta')->diffInMinutes($now);
+                    $flags = $attendance->flags ?? [];
+                    $status = $attendance->status;
+
+                    if ($durationMinutes < Rules::int('min_work_duration_minutes')) {
+                        $flags[] = 'Durasi kerja sangat singkat (< ' . Rules::int('min_work_duration_minutes') . ' menit): ' . $durationMinutes . ' menit';
+                        $status = 'early_checkout';
+                    }
+
                     $extra = max(0, (int) $end->diffInMinutes($now, false));
-                    $overtime = max(0, $extra - Rules::int('overtime_threshold_minutes'));
+                    $rawOvertime = max(0, $extra - Rules::int('overtime_threshold_minutes'));
+                    $maxDailyOvertime = Rules::int('overtime_max_daily_minutes');
+                    $overtime = min($maxDailyOvertime, $rawOvertime);
+                    if ($rawOvertime > $maxDailyOvertime) {
+                        $flags[] = 'Lembur melebihi batas legal harian (' . $maxDailyOvertime . ' menit / 4 jam), dibatasi ke ' . $maxDailyOvertime . ' menit';
+                    }
 
                     $attendance->update([
                         'checkout_at' => $now,
                         'checkout_evidence' => $evidence,
+                        'status' => $status,
                         'overtime_minutes' => $overtime,
+                        'flags' => $flags,
                     ]);
                 }
 
@@ -161,7 +183,10 @@ final class AttendanceService
                 'longitude' => $input['longitude'] ?? null,
                 'accuracy_m' => $input['accuracy'] ?? null,
                 'distance_m' => $distance,
-                'qr_valid' => $branch ? hash_equals(self::qr($branch), (string) ($input['qr_code'] ?? '')) : false,
+                'qr_valid' => $branch ? (
+                    hash_equals(self::qr($branch, intdiv(now()->timestamp, 30)), (string) ($input['qr_code'] ?? '')) ||
+                    hash_equals(self::qr($branch, intdiv(now()->timestamp, 30) - 1), (string) ($input['qr_code'] ?? ''))
+                ) : false,
                 'device_matches' => ! $user->device_hash || hash_equals($user->device_hash, hash('sha256', $deviceToken)),
                 'ip' => request()->ip(),
             ], now('Asia/Jakarta'));
@@ -174,17 +199,27 @@ final class AttendanceService
         }
     }
 
-    public function reviewException(AttendanceException $ex, User $reviewer, string $decision, string $reviewNote): void
+    public function reviewException(AttendanceException $ex, User $reviewer, string $decision, string $reviewNote, ?string $actualTime = null): void
     {
         abort_unless($ex->status === 'pending', 409);
         $shift = $ex->shift;
         abort_unless(Access::branch($shift->branch_id), 403);
+        abort_if($ex->user_id === $reviewer->id && ! Access::admin(), 403, 'Manajer tidak dapat menyetujui pengajuan pengecualian sendiri.');
         Period::writable($shift->branch_id, $shift->start_at->toDateString());
 
-        DB::transaction(function () use ($ex, $shift, $reviewer, $decision, $reviewNote) {
+        DB::transaction(function () use ($ex, $shift, $reviewer, $decision, $reviewNote, $actualTime) {
             if ($decision === 'approved') {
                 $attendance = Attendance::where('shift_id', $shift->id)->first();
-                $claimed = Carbon::parse($ex->created_at, 'Asia/Jakarta');
+                $shiftDate = Carbon::parse($shift->start_at, 'Asia/Jakarta')->toDateString();
+
+                $timeToUse = $actualTime ?: $ex->claimed_time;
+                if ($timeToUse) {
+                    $claimed = Carbon::parse($shiftDate . ' ' . $timeToUse, 'Asia/Jakarta');
+                } else {
+                    $claimed = $ex->action === 'in'
+                        ? Carbon::parse($shift->start_at, 'Asia/Jakarta')
+                        : Carbon::parse($shift->end_at, 'Asia/Jakarta');
+                }
 
                 if ($ex->action === 'in') {
                     abort_if($attendance && $attendance->checkin_at, 409, 'Sudah check-in.');
@@ -205,12 +240,28 @@ final class AttendanceService
                 } else {
                     abort_unless($attendance && $attendance->checkin_at && ! $attendance->checkout_at, 409, 'Check-in belum ada atau sudah check-out.');
                     abort_if($claimed->lt(Carbon::parse($attendance->checkin_at, 'Asia/Jakarta')), 409);
+                    $durationMinutes = (int) Carbon::parse($attendance->checkin_at, 'Asia/Jakarta')->diffInMinutes($claimed);
+                    $flags = $attendance->flags ?? [];
+                    $status = 'corrected';
+                    if ($durationMinutes < Rules::int('min_work_duration_minutes')) {
+                        $flags[] = 'Durasi kerja sangat singkat (< ' . Rules::int('min_work_duration_minutes') . ' menit): ' . $durationMinutes . ' menit';
+                        $status = 'early_checkout';
+                    }
+
                     $extra = max(0, (int) Carbon::parse($shift->end_at, 'Asia/Jakarta')->diffInMinutes($claimed, false));
+                    $rawOvertime = max(0, $extra - Rules::int('overtime_threshold_minutes'));
+                    $maxDailyOvertime = Rules::int('overtime_max_daily_minutes');
+                    $overtime = min($maxDailyOvertime, $rawOvertime);
+                    if ($rawOvertime > $maxDailyOvertime) {
+                        $flags[] = 'Lembur melebihi batas legal harian (' . $maxDailyOvertime . ' menit / 4 jam), dibatasi ke ' . $maxDailyOvertime . ' menit';
+                    }
 
                     $attendance->update([
                         'checkout_at' => $claimed,
                         'checkout_evidence' => ['exception_id' => $ex->id, 'approved_by' => $reviewer->id],
-                        'overtime_minutes' => max(0, $extra - Rules::int('overtime_threshold_minutes')),
+                        'status' => $status,
+                        'overtime_minutes' => $overtime,
+                        'flags' => $flags,
                     ]);
                 }
             }
@@ -230,6 +281,7 @@ final class AttendanceService
     {
         $shift = $attendance->shift;
         abort_unless(Access::branch($shift->branch_id), 403);
+        abort_if($attendance->user_id === auth()->id() && ! Access::admin(), 403, 'Manajer tidak dapat mengoreksi absensi sendiri.');
         Period::writable($shift->branch_id, $shift->start_at->toDateString());
 
         $checkin = $data['checkin_at'] ?? $attendance->checkin_at;
@@ -248,7 +300,7 @@ final class AttendanceService
             'checkout_at' => $checkout,
             'late_minutes' => $late,
             'late_units' => Rules::lateUnits($late),
-            'overtime_minutes' => max(0, $extra - Rules::int('overtime_threshold_minutes')),
+            'overtime_minutes' => min(Rules::int('overtime_max_daily_minutes'), max(0, $extra - Rules::int('overtime_threshold_minutes'))),
             'overtime_approved_by' => null,
         ];
 
@@ -261,6 +313,7 @@ final class AttendanceService
     {
         $shift = $attendance->shift;
         abort_unless(Access::branch($shift->branch_id), 403);
+        abort_if($attendance->user_id === $approver->id && ! Access::admin(), 403, 'Manajer tidak dapat menyetujui lembur sendiri.');
         Period::writable($shift->branch_id, $shift->start_at->toDateString());
         abort_unless($attendance->checkout_at && $attendance->overtime_minutes > 0, 409);
 

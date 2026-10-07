@@ -14,6 +14,7 @@ class AttendanceException extends Model
         'user_id',
         'shift_id',
         'action',
+        'claimed_time',
         'reason',
         'status',
         'reviewed_by',

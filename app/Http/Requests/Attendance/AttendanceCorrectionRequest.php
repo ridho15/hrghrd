@@ -15,7 +15,7 @@ class AttendanceCorrectionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|in:present,late,absent,corrected',
+            'status' => 'required|in:present,late,absent,corrected,early_checkout',
             'checkin_at' => 'nullable|date',
             'checkout_at' => 'nullable|date|after_or_equal:checkin_at',
             'reason' => 'required|string|min:10|max:1000',

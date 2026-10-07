@@ -601,6 +601,17 @@
                                         <input type="hidden" name="action" value="{{ $shift->checkin_at ? 'out' : 'in' }}">
                                         <div>
                                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                                Jam Riil Kejadian (Opsional)
+                                            </label>
+                                            <input 
+                                                type="time" 
+                                                name="claimed_time" 
+                                                class="w-full sm:w-44 px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 mb-1"
+                                            >
+                                            <p class="text-[11px] text-slate-500 m-0">Cantumkan jam tiba/pulang Anda bila berbeda dari jam shift rencana.</p>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                                                 Alasan Kendala / Pengecualian
                                             </label>
                                             <textarea 

@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\PasswordUpdateRequest;
+use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AuthController extends Controller
@@ -39,5 +43,20 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    public function updatePassword(PasswordUpdateRequest $request)
+    {
+        $data = $request->validated();
+        $targetId = (int) ($data['target_user_id'] ?? auth()->id());
+        $user = User::findOrFail($targetId);
+
+        $user->update([
+            'password' => Hash::make($data['password']),
+        ]);
+
+        Audit::record('user', $user->id, 'password_change', 'Kata sandi berhasil diperbarui oleh ' . auth()->user()->name);
+
+        return back()->with('ok', 'Kata sandi berhasil diperbarui.');
     }
 }

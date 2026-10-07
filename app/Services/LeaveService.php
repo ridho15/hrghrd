@@ -33,6 +33,12 @@ class LeaveService
 
         abort_if($overlap, 409, 'Tanggal pengajuan bertumpang tindih.');
 
+        if ($data['type'] === 'leave') {
+            $requestedDays = (int) $start->copy()->daysUntil($end)->count();
+            $remaining = $employee->remainingLeaveDays($start->year);
+            abort_if($requestedDays > $remaining, 422, "Sisa kuota cuti tahunan tidak mencukupi (tersisa {$remaining} hari, diajukan {$requestedDays} hari).");
+        }
+
         $path = null;
         if ($certificate) {
             $path = $certificate->store('certificates', 'local');
@@ -73,7 +79,7 @@ class LeaveService
         abort_unless($leave->status === 'pending', 409);
         $employee = $leave->user;
         abort_unless(Access::branch($employee->branch_id), 403);
-        abort_if((int) $leave->created_by === $reviewer->id, 403, 'Pembuat pengajuan tidak boleh menyetujui sendiri.');
+        abort_if(((int) $leave->created_by === $reviewer->id || (int) $leave->user_id === $reviewer->id) && ! Access::admin(), 403, 'Tidak boleh menyetujui pengajuan cuti/izin sendiri.');
 
         $all = $leave->days()->orderBy('date')->get();
         foreach ($all as $day) {
@@ -83,6 +89,17 @@ class LeaveService
         $allDates = $all->map(fn ($d) => (string) $d->date)->all();
         abort_if(array_diff($approvedDates, $allDates), 422, 'Tanggal persetujuan tidak valid.');
 
+        if ($leave->type === 'leave' && count($approvedDates) > 0) {
+            $year = Carbon::parse($approvedDates[0], 'Asia/Jakarta')->year;
+            $alreadyUsed = (int) LeaveDay::whereHas('leaveRequest', function ($q) use ($employee, $leave) {
+                $q->where('user_id', $employee->id)->where('type', 'leave')->where('id', '!=', $leave->id);
+            })->whereYear('date', $year)->where('status', 'approved')->count();
+
+            $quota = $employee->annual_leave_quota ?? 12;
+            $remaining = max(0, $quota - $alreadyUsed);
+            abort_if(count($approvedDates) > $remaining, 422, "Persetujuan melebihi sisa kuota cuti tahunan karyawan (tersisa {$remaining} hari, disetujui " . count($approvedDates) . " hari).");
+        }
+
         DB::transaction(function () use ($leave, $reviewer, $all, $approvedDates, $paidDates, $note) {
             $paidSick = 0;
             foreach ($all as $day) {
@@ -90,8 +107,14 @@ class LeaveService
                 $isApproved = in_array($dayDate, $approvedDates, true);
                 $isPaid = false;
                 if ($isApproved && $leave->type === 'sick') {
-                    $paidSickLimit = Rules::int('sick_paid_days_per_case');
-                    $isPaid = $paidSick++ < $paidSickLimit;
+                    if (! empty($paidDates)) {
+                        $isPaid = in_array($dayDate, $paidDates, true);
+                    } elseif ($leave->certificate_path) {
+                        $isPaid = true;
+                    } else {
+                        $paidSickLimit = Rules::int('sick_paid_days_per_case');
+                        $isPaid = $paidSick++ < $paidSickLimit;
+                    }
                 }
                 if ($isApproved && $leave->type === 'leave') {
                     $isPaid = in_array($dayDate, $paidDates, true);

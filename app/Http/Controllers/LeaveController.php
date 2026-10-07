@@ -115,7 +115,12 @@ class LeaveController extends Controller
         }
 
         if ($leave->status !== 'pending') {
-            return back()->withErrors(['leave' => 'Pengajuan yang sudah diputuskan tidak dapat dibatalkan.']);
+            if (! Access::manager()) {
+                return back()->withErrors(['leave' => 'Pengajuan yang sudah diputuskan hanya dapat dibatalkan oleh Manajer atau Super Admin.']);
+            }
+            foreach ($leave->days as $d) {
+                \App\Support\Period::writable($leave->user->branch_id, (string) $d->date);
+            }
         }
 
         if ($leave->certificate_path && Storage::disk('local')->exists($leave->certificate_path)) {

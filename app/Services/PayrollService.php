@@ -121,7 +121,7 @@ class PayrollService
         abort_if($saved->count() !== $employees->count(), 409, 'Draf payroll berubah. Buat ulang dan periksa kembali.');
 
         foreach ($employees as $employee) {
-            $expected = $calculator->calculate($employee, $month);
+            $expected = json_decode(json_encode($calculator->calculate($employee, $month)), true);
             $actual = $saved->get($employee->id)?->breakdown;
             if (is_string($actual)) {
                 $actual = json_decode($actual, true);

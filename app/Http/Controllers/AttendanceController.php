@@ -61,6 +61,7 @@ class AttendanceController extends Controller
             'user_id' => auth()->id(),
             'shift_id' => $shiftId,
             'action' => $data['action'],
+            'claimed_time' => $data['claimed_time'] ?? null,
             'reason' => $data['reason'],
             'status' => 'pending',
         ]);
@@ -112,7 +113,7 @@ class AttendanceController extends Controller
     {
         $data = $request->validated();
         $ex = AttendanceException::findOrFail($id);
-        $service->reviewException($ex, auth()->user(), $data['decision'], $data['review_note']);
+        $service->reviewException($ex, auth()->user(), $data['decision'], $data['review_note'], $data['actual_time'] ?? null);
 
         return back()->with('ok', 'Pengecualian diproses.');
     }

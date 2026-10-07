@@ -23,6 +23,7 @@ class User extends Authenticatable
         'hired_at',
         'ended_at',
         'base_salary',
+        'annual_leave_quota',
         'active',
         'device_hash',
     ];
@@ -40,6 +41,7 @@ class User extends Authenticatable
             'hired_at' => 'date',
             'ended_at' => 'date',
             'base_salary' => 'integer',
+            'annual_leave_quota' => 'integer',
             'active' => 'boolean',
         ];
     }
@@ -122,6 +124,24 @@ class User extends Authenticatable
     public function getPositionNameAttribute(): ?string
     {
         return $this->position?->name;
+    }
+
+    public function usedLeaveDays(int $year): int
+    {
+        return (int) LeaveDay::whereHas('leaveRequest', function ($q) {
+            $q->where('user_id', $this->id)->where('type', 'leave');
+        })
+        ->whereYear('date', $year)
+        ->where('status', 'approved')
+        ->count();
+    }
+
+    public function remainingLeaveDays(?int $year = null): int
+    {
+        $yr = $year ?? (int) now('Asia/Jakarta')->year;
+        $quota = $this->annual_leave_quota ?? 12;
+
+        return max(0, $quota - $this->usedLeaveDays($yr));
     }
 }
 

@@ -7,10 +7,17 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
             <div class="flex items-center gap-2 mb-2">
-                <a href="{{ route('people') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-                    <span>Kembali ke Direktori Karyawan</span>
-                </a>
+                @if(\App\Support\Access::manager())
+                    <a href="{{ route('people') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        <span>Kembali ke Direktori Karyawan</span>
+                    </a>
+                @else
+                    <a href="{{ route('home') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        <span>Kembali ke Beranda</span>
+                    </a>
+                @endif
             </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Dossier Karyawan
@@ -135,7 +142,7 @@
     </div>
 
     {{-- Grid 4 Metrik Detail --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
             <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Gaji Pokok Bulanan</span>
             <strong class="text-xl font-extrabold text-slate-900 mt-1 block tabular-nums">
@@ -166,6 +173,14 @@
                 {{ $person->position?->name ?? 'Belum Ada' }}
             </strong>
             <span class="text-[11px] text-slate-400 mt-0.5 block">Struktur resmi</span>
+        </div>
+
+        <div class="bg-white rounded-xl border border-emerald-200 bg-emerald-50/20 p-4 shadow-xs">
+            <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Sisa Cuti ({{ now()->year }})</span>
+            <strong class="text-xl font-extrabold text-emerald-700 mt-1 block">
+                {{ $person->remainingLeaveDays() }} / {{ $person->annual_leave_quota ?? 12 }} <span class="text-xs font-semibold text-emerald-600">Hari</span>
+            </strong>
+            <span class="text-[11px] text-slate-500 mt-0.5 block">Terpakai: {{ $person->usedLeaveDays(now()->year) }} hari</span>
         </div>
     </div>
 
@@ -296,5 +311,87 @@
             </div>
         </section>
     </div>
+
+    @if(auth()->id() === $person->id || \App\Support\Access::admin())
+        {{-- Pengaturan Keamanan & Ganti Kata Sandi --}}
+        <section class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <span class="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </span>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight m-0">
+                        {{ auth()->id() === $person->id ? 'Keamanan Akun & Perbarui Kata Sandi Saya' : 'Reset Kata Sandi Karyawan (' . $person->name . ')' }}
+                    </h3>
+                    <p class="text-xs text-slate-500 m-0">
+                        {{ auth()->id() === $person->id ? 'Pastikan kata sandi Anda kuat dan tidak mudah ditebak.' : 'Sebagai Super Admin, Anda dapat mengatur ulang kata sandi karyawan ini secara langsung.' }}
+                    </p>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ route('password.update') }}" class="max-w-xl space-y-4">
+                @csrf
+                <input type="hidden" name="target_user_id" value="{{ $person->id }}">
+
+                @if(auth()->id() === $person->id && ! \App\Support\Access::admin())
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Kata Sandi Saat Ini <span class="text-rose-500">*</span>
+                        </label>
+                        <input 
+                            type="password" 
+                            name="current_password" 
+                            required 
+                            placeholder="Masukkan kata sandi lama Anda..." 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all @error('current_password') border-rose-300 bg-rose-50/50 @enderror"
+                        >
+                        @error('current_password')
+                            <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                @endif
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Kata Sandi Baru <span class="text-rose-500">*</span>
+                        </label>
+                        <input 
+                            type="password" 
+                            name="password" 
+                            required 
+                            minlength="8" 
+                            placeholder="Minimal 8 karakter..." 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all @error('password') border-rose-300 bg-rose-50/50 @enderror"
+                        >
+                        @error('password')
+                            <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Ulangi Kata Sandi Baru <span class="text-rose-500">*</span>
+                        </label>
+                        <input 
+                            type="password" 
+                            name="password_confirmation" 
+                            required 
+                            minlength="8" 
+                            placeholder="Ulangi kata sandi baru..." 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all"
+                        >
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Simpan Kata Sandi Baru</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+    @endif
 </div>
 @endsection

@@ -31,6 +31,37 @@
         </div>
     </div>
 
+    {{-- Saldo Cuti Tahunan Karyawan --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div class="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between">
+            <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Kuota Cuti ({{ now()->year }})</span>
+                <span class="text-xl font-extrabold text-slate-900 mt-0.5 block">{{ auth()->user()->annual_leave_quota ?? 12 }} <span class="text-xs font-semibold text-slate-500">Hari</span></span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+        </div>
+        <div class="p-4 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between">
+            <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block">Cuti Terpakai</span>
+                <span class="text-xl font-extrabold text-amber-700 mt-0.5 block">{{ auth()->user()->usedLeaveDays(now()->year) }} <span class="text-xs font-semibold text-slate-500">Hari</span></span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center font-bold">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+        <div class="p-4 rounded-xl bg-white border border-emerald-200 bg-emerald-50/20 shadow-2xs flex items-center justify-between">
+            <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">Sisa Kuota Cuti</span>
+                <span class="text-xl font-extrabold text-emerald-700 mt-0.5 block">{{ auth()->user()->remainingLeaveDays() }} <span class="text-xs font-semibold text-emerald-600">Hari</span></span>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+        </div>
+    </div>
+
     {{-- Tabel Bersih Full-Width --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {{-- Toolbar Filter & Pencarian Pengajuan --}}

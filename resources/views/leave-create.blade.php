@@ -56,9 +56,15 @@
                 </p>
             </div>
         </div>
-        <div class="text-left sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-700/60 shrink-0">
-            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block">Notice Days</span>
-            <span class="text-lg font-black text-emerald-400">H-{{ \App\Support\Rules::int('leave_notice_days') }}</span>
+        <div class="flex items-center gap-6 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-700/60 shrink-0">
+            <div class="text-left sm:text-right">
+                <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block">Notice Days</span>
+                <span class="text-base font-black text-emerald-400">H-{{ \App\Support\Rules::int('leave_notice_days') }}</span>
+            </div>
+            <div class="text-left sm:text-right pl-4 border-l border-slate-700/60">
+                <span class="text-[11px] uppercase tracking-wider text-emerald-300 font-bold block">Sisa Cuti Tahunan</span>
+                <span class="text-base font-black text-white">{{ auth()->user()->remainingLeaveDays() }} / {{ auth()->user()->annual_leave_quota ?? 12 }} Hari</span>
+            </div>
         </div>
     </div>
 

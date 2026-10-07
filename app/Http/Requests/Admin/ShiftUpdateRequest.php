@@ -4,12 +4,23 @@ namespace App\Http\Requests\Admin;
 
 use App\Support\Access;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\DB;
 
 class ShiftUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return Access::admin();
+        if (Access::admin()) {
+            return true;
+        }
+
+        if (Access::manager()) {
+            $shiftId = (int) $this->route('id');
+            $shiftBranchId = (int) DB::table('shifts')->where('id', $shiftId)->value('branch_id');
+            return Access::branch($shiftBranchId);
+        }
+
+        return false;
     }
 
     public function rules(): array

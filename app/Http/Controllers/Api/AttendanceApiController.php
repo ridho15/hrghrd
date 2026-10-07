@@ -280,11 +280,12 @@ class AttendanceApiController extends Controller
         }
 
         $exception = AttendanceException::create([
-            'user_id'  => $request->user()->id,
-            'shift_id' => $shiftId,
-            'action'   => $data['action'],
-            'reason'   => $data['reason'],
-            'status'   => 'pending',
+            'user_id'      => $request->user()->id,
+            'shift_id'     => $shiftId,
+            'action'       => $data['action'],
+            'claimed_time' => $data['claimed_time'] ?? null,
+            'reason'       => $data['reason'],
+            'status'       => 'pending',
         ]);
 
         return response()->json([
@@ -293,6 +294,7 @@ class AttendanceApiController extends Controller
             'data'    => [
                 'exception_id' => $exception->id,
                 'action'       => $exception->action,
+                'claimed_time' => $exception->claimed_time,
                 'status'       => $exception->status,
             ],
         ], 201);

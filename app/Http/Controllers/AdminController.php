@@ -236,8 +236,9 @@ class AdminController extends Controller
 
     public function personShow(int $id)
     {
-        abort_unless(Access::manager(), 403);
-        if (! Access::admin()) {
+        if (! Access::manager()) {
+            abort_unless($id === auth()->id(), 403, 'Anda hanya dapat melihat profil diri sendiri.');
+        } elseif (! Access::admin()) {
             abort_unless(Access::employee($id), 403);
         }
 
@@ -395,6 +396,7 @@ class AdminController extends Controller
         if (! Access::admin()) {
             abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
         }
+        abort_if($shift->status === 'approved', 409, 'Shift sudah disetujui, tidak bisa diedit langsung. Silakan batalkan shift dan buat shift baru bila ingin mengubah jadwal.');
 
         return view('shifts-edit', compact('shift'));
     }

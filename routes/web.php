@@ -11,10 +11,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/login',[AuthController::class,'loginForm'])->name('login');
 Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1');
+Route::post('/logout',[AuthController::class,'logout'])->middleware('auth')->name('logout');
 
 Route::middleware(['auth','active'])->group(function () {
     Route::get('/',[DashboardController::class,'index'])->name('home');
-    Route::post('/logout',[AuthController::class,'logout'])->name('logout');
     Route::get('/people',[AdminController::class,'people'])->name('people');
     Route::get('/people/create',[AdminController::class,'personCreate'])->name('people.create');
     Route::post('/people',[AdminController::class,'person'])->name('people.store');
@@ -24,6 +24,7 @@ Route::middleware(['auth','active'])->group(function () {
     Route::post('/people/{id}/toggle-status',[AdminController::class,'personToggleStatus'])->name('people.toggle_status');
     Route::post('/people/{id}/delete',[AdminController::class,'personDestroy'])->name('people.destroy');
     Route::delete('/people/{id}',[AdminController::class,'personDestroy']);
+    Route::post('/password/update', [AuthController::class, 'updatePassword'])->name('password.update');
 
     Route::get('/branches', [AdminController::class, 'branches'])->name('branches.index');
     Route::get('/branches/create', [AdminController::class, 'branchCreate'])->name('branches.create');

@@ -52,6 +52,16 @@ class LeaveStoreRequest extends FormRequest
                     if ($start->lt($minDate)) {
                         $validator->errors()->add('start_date', 'Izin biasa harus diajukan minimal H-' . Rules::int('leave_notice_days') . '.');
                     }
+
+                    $userId = (int) ($this->input('user_id') ?: auth()->id());
+                    $user = \App\Models\User::find($userId);
+                    if ($user) {
+                        $requestedDays = (int) $start->copy()->daysUntil($end)->count();
+                        $remaining = $user->remainingLeaveDays($start->year);
+                        if ($requestedDays > $remaining) {
+                            $validator->errors()->add('end_date', "Sisa kuota cuti tahunan tidak mencukupi (tersisa {$remaining} hari, diajukan {$requestedDays} hari).");
+                        }
+                    }
                 }
             }
         });

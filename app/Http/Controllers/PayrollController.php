@@ -188,7 +188,7 @@ class PayrollController extends Controller
     public function export(PayrollSelectionRequest $request)
     {
         $data = $request->validated();
-        $run = PayrollRun::with(['lines.user'])
+        $run = PayrollRun::with(['lines.user.branch', 'lines.user.position'])
             ->where('branch_id', $data['branch_id'])
             ->where('month', $data['month'])
             ->first();
@@ -199,18 +199,21 @@ class PayrollController extends Controller
 
         return response()->streamDownload(function () use ($lines) {
             $out = fopen('php://output', 'w');
-            fputcsv($out, ['Nama', 'Email', 'Gaji prorata', 'Hari tidak dibayar', 'Potongan absen', 'Lembur', 'Koreksi', 'Jumlah akhir']);
+            fputcsv($out, ['ID', 'Nama', 'Email', 'Cabang', 'Jabatan', 'Gaji Pokok / Prorata', 'Potongan Tidak Masuk', 'Potongan Terlambat', 'Upah Lembur', 'Penyesuaian Manual', 'Gaji Bersih (Net)']);
             foreach ($lines as $row) {
                 $d = is_array($row->breakdown) ? $row->breakdown : json_decode($row->breakdown, true);
                 fputcsv($out, [
+                    $row->user_id,
                     $this->safeCsv($row->user->name ?? ''),
                     $this->safeCsv($row->user->email ?? ''),
-                    $d['prorated_base'],
-                    $d['unpaid_deduction'],
-                    $d['late_deduction'],
-                    $d['overtime_pay'],
-                    $d['manual_total'],
-                    $d['net'],
+                    $this->safeCsv($row->user->branch?->name ?? '-'),
+                    $this->safeCsv($row->user->position?->name ?? '-'),
+                    $d['prorated_base'] ?? 0,
+                    $d['unpaid_deduction'] ?? 0,
+                    $d['late_deduction'] ?? 0,
+                    $d['overtime_pay'] ?? 0,
+                    $d['manual_total'] ?? 0,
+                    $d['net'] ?? 0,
                 ]);
             }
             fclose($out);
