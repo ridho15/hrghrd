@@ -222,28 +222,28 @@
                                     @if($p->id !== auth()->id())
                                         <button 
                                             type="button" 
-                                            data-confirm-modal
+                                            data-confirm="Apakah Anda yakin ingin {{ $p->active ? 'menonaktifkan' : 'mengaktifkan kembali' }} akun {{ $p->name }}?"
                                             data-confirm-title="{{ $p->active ? 'Nonaktifkan Akun?' : 'Aktifkan Akun?' }}"
-                                            data-confirm-message="Apakah Anda yakin ingin {{ $p->active ? 'menonaktifkan' : 'mengaktifkan kembali' }} akun {{ $p->name }}?"
+                                            data-confirm-variant="{{ $p->active ? 'warning' : 'primary' }}"
+                                            data-confirm-btn="{{ $p->active ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan' }}"
                                             data-confirm-action="{{ route('people.toggle_status', $p->id) }}"
-                                            data-confirm-method="POST"
-                                            data-confirm-button-text="{{ $p->active ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan' }}"
-                                            data-confirm-button-class="{{ $p->active ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white' }}"
-                                            class="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                                            title="{{ $p->active ? 'Nonaktifkan' : 'Aktifkan' }}"
+                                            class="p-1.5 rounded-lg hover:bg-slate-100 {{ $p->active ? 'text-amber-600 hover:text-amber-700' : 'text-emerald-600 hover:text-emerald-700' }} transition-colors cursor-pointer"
+                                            title="{{ $p->active ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}"
                                         >
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                                            @if($p->active)
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                            @else
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            @endif
                                         </button>
 
                                         <button 
                                             type="button" 
-                                            data-confirm-modal
+                                            data-confirm="Akun karyawan '{{ $p->name }}' yang dihapus akan dinonaktifkan secara aman jika memiliki riwayat absensi atau dihapus permanen jika belum ada data transaksi."
                                             data-confirm-title="Hapus Karyawan {{ $p->name }}?"
-                                            data-confirm-message="Akun karyawan yang dihapus akan dinonaktifkan secara aman jika memiliki riwayat absensi atau dihapus permanen jika belum ada data transaksi."
+                                            data-confirm-variant="danger"
+                                            data-confirm-btn="Ya, Hapus Data"
                                             data-confirm-action="{{ route('people.destroy', $p->id) }}"
-                                            data-confirm-method="POST"
-                                            data-confirm-button-text="Ya, Hapus Data"
-                                            data-confirm-button-class="bg-rose-600 hover:bg-rose-700 text-white"
                                             class="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                                             title="Hapus Karyawan"
                                         >

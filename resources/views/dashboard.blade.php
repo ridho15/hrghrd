@@ -202,7 +202,7 @@
         </div>
 
         {{-- Pusat Tindakan Cepat (Quick Action Center) Super Admin --}}
-        <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 sm:p-6 text-white shadow-xs">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 text-white shadow-xs">
             <div class="flex items-center justify-between pb-4 border-b border-slate-700/80 mb-4">
                 <div>
                     <h2 class="text-base font-bold text-white tracking-tight">Pusat Tindakan Cepat (Quick Action Center)</h2>

@@ -30,13 +30,11 @@
                 @if($person->id !== auth()->id())
                     <button 
                         type="button" 
-                        data-confirm-modal
+                        data-confirm="Apakah Anda yakin ingin {{ $person->active ? 'menonaktifkan' : 'mengaktifkan kembali' }} akun karyawan {{ $person->name }}?"
                         data-confirm-title="{{ $person->active ? 'Nonaktifkan Akun Karyawan?' : 'Aktifkan Akun Karyawan?' }}"
-                        data-confirm-message="Apakah Anda yakin ingin {{ $person->active ? 'menonaktifkan' : 'mengaktifkan kembali' }} akun karyawan {{ $person->name }}?"
+                        data-confirm-variant="{{ $person->active ? 'warning' : 'primary' }}"
+                        data-confirm-btn="{{ $person->active ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan' }}"
                         data-confirm-action="{{ route('people.toggle_status', $person->id) }}"
-                        data-confirm-method="POST"
-                        data-confirm-button-text="{{ $person->active ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan' }}"
-                        data-confirm-button-class="{{ $person->active ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white' }}"
                         class="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs transition-colors cursor-pointer"
                     >
                         <span>{{ $person->active ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}</span>
@@ -44,16 +42,14 @@
 
                     <button 
                         type="button" 
-                        data-confirm-modal
+                        data-confirm="Akun karyawan '{{ $person->name }}' yang dihapus akan dinonaktifkan secara aman jika memiliki riwayat absensi atau dihapus permanen jika belum ada data transaksi."
                         data-confirm-title="Hapus Karyawan {{ $person->name }}?"
-                        data-confirm-message="Akun karyawan yang dihapus akan dinonaktifkan secara aman jika memiliki riwayat absensi atau dihapus permanen jika belum ada data transaksi."
+                        data-confirm-variant="danger"
+                        data-confirm-btn="Ya, Hapus Data"
                         data-confirm-action="{{ route('people.destroy', $person->id) }}"
-                        data-confirm-method="POST"
-                        data-confirm-button-text="Ya, Hapus Data"
-                        data-confirm-button-class="bg-rose-600 hover:bg-rose-700 text-white"
                         class="px-3.5 py-2.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold shadow-xs transition-colors cursor-pointer"
                     >
-                        <span>Hapus</span>
+                        <span>Hapus Data</span>
                     </button>
                 @endif
             </div>
@@ -64,7 +60,7 @@
     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 sm:p-7">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div class="flex items-start sm:items-center gap-5">
-                <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 text-white font-extrabold text-2xl flex items-center justify-center uppercase shadow-sm shrink-0 border-2 border-white ring-4 ring-emerald-50">
+                <div class="w-20 h-20 rounded-2xl bg-emerald-700 text-white font-extrabold text-2xl flex items-center justify-center uppercase shadow-xs shrink-0 border-2 border-white ring-4 ring-emerald-50">
                     {{ Str::substr($person->name, 0, 2) }}
                 </div>
                 <div>

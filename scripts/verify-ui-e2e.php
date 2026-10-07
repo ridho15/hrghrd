@@ -228,7 +228,7 @@ $allPassed = testRoute('/branches', $admin, 'Master Cabang Bersih', [
 
 $allPassed = testRoute('/branches/create', $admin, 'Halaman Tambah Cabang Mandiri', [
     'Pendaftaran Lokasi Operasional',
-    'Petunjuk Mudah Menyalin Koordinat',
+    'Peta Interaktif Penentuan Lokasi Cabang',
     'Simpan Cabang Baru'
 ]) && $allPassed;
 

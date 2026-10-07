@@ -41,7 +41,7 @@
     </div>
 
     {{-- Kotak Informasi Kebijakan --}}
-    <div class="p-5 bg-gradient-to-r from-emerald-950 to-slate-900 text-white rounded-3xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div class="p-5 bg-slate-900 border border-slate-800 text-white rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex items-start gap-3.5">
             <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 font-extrabold flex items-center justify-center shrink-0 border border-emerald-500/30">
                 📋

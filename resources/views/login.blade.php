@@ -2,7 +2,7 @@
 @section('title', 'Masuk')
 
 @section('content')
-<div class="max-w-5xl mx-auto my-4 sm:my-8 lg:my-10 bg-white border border-slate-200/90 rounded-3xl shadow-xl shadow-slate-900/5 overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+<div class="max-w-5xl mx-auto my-4 sm:my-8 lg:my-10 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12">
     {{-- Sisi Kiri: Form Autentikasi --}}
     <div class="col-span-12 lg:col-span-7 p-6 sm:p-10 lg:p-12 flex flex-col justify-between">
         <div>
@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="pt-2">
-                    <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-emerald-700 via-emerald-700 to-emerald-600 hover:from-emerald-800 hover:to-emerald-700 text-white font-bold text-sm tracking-wide shadow-md shadow-emerald-700/20 transition-all flex items-center justify-center gap-2 group cursor-pointer">
+                    <button type="submit" class="w-full py-3.5 px-6 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm tracking-wide shadow-xs transition-colors flex items-center justify-center gap-2 group cursor-pointer">
                         <span>Masuk ke Akun</span>
                         <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>
@@ -70,10 +70,7 @@
     </div>
 
     {{-- Sisi Kanan: Panel Showcase Korporat --}}
-    <div class="col-span-12 lg:col-span-5 bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950 p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden">
-        {{-- Ambient Glow Efek --}}
-        <div class="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
-
+    <div class="col-span-12 lg:col-span-5 bg-slate-900 p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden border-t lg:border-t-0 lg:border-l border-slate-800">
         <div>
             <div class="flex items-center gap-2.5 mb-6">
                 <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center justify-center font-bold text-sm">H</span>

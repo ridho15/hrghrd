@@ -43,7 +43,7 @@
     </div>
 
     {{-- Info Card Penugasan (Read-only) --}}
-    <div class="p-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-3xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div class="p-5 bg-slate-900 border border-slate-800 text-white rounded-2xl shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
             <div class="w-12 h-12 rounded-2xl bg-white/10 text-emerald-400 font-extrabold text-base flex items-center justify-center border border-white/10 shrink-0">
                 {{ strtoupper(substr($shift->employee_name ?? 'SH', 0, 2)) }}

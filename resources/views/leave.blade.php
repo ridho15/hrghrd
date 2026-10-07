@@ -32,7 +32,7 @@
     </div>
 
     {{-- Tabel Bersih Full-Width --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {{-- Toolbar Filter & Pencarian Pengajuan --}}
         <x-table-toolbar :action="route('leave')" search-placeholder="Cari nama karyawan atau alasan...">
             <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">

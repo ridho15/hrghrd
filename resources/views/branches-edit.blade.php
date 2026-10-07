@@ -105,55 +105,63 @@
             </div>
 
             {{-- Bantuan Praktis Ramah Awam --}}
-            <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-xs text-amber-900 space-y-1.5">
-                <div class="flex items-center gap-2 font-bold text-amber-950">
-                    <svg class="w-4 h-4 text-amber-700 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <div class="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/80 text-xs text-emerald-950 space-y-1.5">
+                <div class="flex items-center gap-2 font-bold text-emerald-900">
+                    <svg class="w-4 h-4 text-emerald-700 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
                     </svg>
-                    <span>Petunjuk Mudah Koordinat:</span>
+                    <span>Penentuan Lokasi Otomatis via Peta Interaktif:</span>
                 </div>
-                <p class="text-[11px] text-amber-800">
-                    Buka <a href="https://maps.google.com/?q={{ $branch->latitude }},{{ $branch->longitude }}" target="_blank" class="underline font-bold hover:text-amber-950">Lokasi Saat Ini di Google Maps ↗</a> untuk memastikan titik koordinat tepat berada di lokasi fisik toko/kantor Anda.
+                <p class="text-[11px] text-emerald-800 leading-relaxed">
+                    Kolom koordinat di bawah bersifat <strong>terisi otomatis</strong>. Cukup <strong>klik titik kantor pada peta</strong>, <strong>geser penanda pin</strong>, atau gunakan tombol <strong>"Lokasi Saya" (GPS)</strong> pada peta di bawah untuk memperbarui posisi cabang.
                 </p>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                 <div>
-                    <label for="latitude" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Titik Lintang (Latitude) <span class="text-rose-500">*</span>
-                    </label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="latitude" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Titik Lintang (Latitude) <span class="text-rose-500">*</span>
+                        </label>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded">Otomatis</span>
+                    </div>
                     <input
                         type="number"
                         step="any"
                         name="latitude"
                         id="latitude"
                         required
+                        readonly
                         value="{{ old('latitude', $branch->latitude) }}"
-                        class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all @error('latitude') border-rose-300 bg-rose-50/50 @enderror"
+                        class="w-full h-11 px-3.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-700 cursor-not-allowed select-all focus:outline-hidden transition-all @error('latitude') border-rose-300 bg-rose-50/50 @enderror"
                     >
                     @error('latitude')
                         <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
                     @enderror
-                    <span class="block text-[11px] text-slate-400 mt-1">Antara -90.0 s.d 90.0</span>
+                    <span class="block text-[11px] text-slate-500 mt-1">Ditentukan lewat pin peta</span>
                 </div>
 
                 <div>
-                    <label for="longitude" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                        Titik Bujur (Longitude) <span class="text-rose-500">*</span>
-                    </label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="longitude" class="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                            Titik Bujur (Longitude) <span class="text-rose-500">*</span>
+                        </label>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.5 rounded">Otomatis</span>
+                    </div>
                     <input
                         type="number"
                         step="any"
                         name="longitude"
                         id="longitude"
                         required
+                        readonly
                         value="{{ old('longitude', $branch->longitude) }}"
-                        class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all @error('longitude') border-rose-300 bg-rose-50/50 @enderror"
+                        class="w-full h-11 px-3.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-700 cursor-not-allowed select-all focus:outline-hidden transition-all @error('longitude') border-rose-300 bg-rose-50/50 @enderror"
                     >
                     @error('longitude')
                         <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
                     @enderror
-                    <span class="block text-[11px] text-slate-400 mt-1">Antara -180.0 s.d 180.0</span>
+                    <span class="block text-[11px] text-slate-500 mt-1">Ditentukan lewat pin peta</span>
                 </div>
 
                 <div>
@@ -180,6 +188,22 @@
                     @enderror
                     <span class="block text-[11px] text-slate-400 mt-1">Jarak toleransi absensi HP karyawan.</span>
                 </div>
+            </div>
+
+            {{-- Peta Interaktif Penentu Titik Geofence --}}
+            <div class="pt-2">
+                <x-map-picker 
+                    id="branch-edit-map"
+                    :latitude="old('latitude', $branch->latitude)"
+                    :longitude="old('longitude', $branch->longitude)"
+                    :radius="old('radius_m', $branch->radius_m)"
+                    latInputId="latitude"
+                    lngInputId="longitude"
+                    radiusInputId="radius_m"
+                    height="380px"
+                    title="Perbarui Titik Lokasi Peta Cabang"
+                    :branchName="$branch->name"
+                />
             </div>
         </div>
 

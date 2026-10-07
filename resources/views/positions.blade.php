@@ -34,7 +34,7 @@
     </div>
 
     {{-- Kartu Tabel Data Jabatan --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {{-- Toolbar Pencarian --}}
         <x-table-toolbar
             action="{{ route('positions.index') }}"

@@ -34,7 +34,7 @@
     </div>
 
     {{-- Tabel Jadwal Shift Bersih (Full-Width) --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {{-- Toolbar Filter & Pencarian --}}
         <x-table-toolbar :action="route('shifts')" search-placeholder="Cari nama karyawan...">
             <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">

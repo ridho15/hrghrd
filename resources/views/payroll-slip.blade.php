@@ -58,7 +58,7 @@
     @endphp
 
     {{-- LEMBAR SLIP GAJI UTAMA (PRINTABLE A4) --}}
-    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-6 print:border-none print:shadow-none print:p-0">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-6 print:border-none print:shadow-none print:p-0">
         {{-- Kop Surat Resmi Korporat --}}
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b-2 border-slate-900">
             <div class="flex items-center gap-3.5">
@@ -189,7 +189,7 @@
         </div>
 
         {{-- Highlight Take Home Pay / Gaji Bersih --}}
-        <div class="p-6 bg-gradient-to-r from-emerald-950 to-slate-900 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="p-6 bg-slate-900 border border-slate-800 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
                 <span class="text-xs font-bold uppercase tracking-wider text-emerald-400 block">Total Gaji Bersih Diterima (Take Home Pay)</span>
                 <p class="text-xs text-slate-300 m-0 mt-0.5">

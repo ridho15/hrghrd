@@ -290,7 +290,7 @@
                                     maxWidth="3xl"
                                 >
                                     {{-- Identitas Karyawan & Relasi Shift --}}
-                                    <div class="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-emerald-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                         <div class="flex items-center gap-3.5">
                                             <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-300 font-extrabold flex items-center justify-center text-base border border-emerald-500/30 shrink-0">
                                                 {{ strtoupper(substr($a->user?->name ?? 'KR', 0, 2)) }}

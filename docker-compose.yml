@@ -1,0 +1,82 @@
+services:
+  # ============================================================================
+  # CONTAINER 1: Aplikasi Web Laravel (PHP 8.4 Apache + Vite Built Assets)
+  # ============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hrghrd_app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:80"
+    environment:
+      APP_NAME: "${APP_NAME:-HR Group}"
+      APP_ENV: "${APP_ENV:-production}"
+      APP_KEY: "${APP_KEY:-base64:E457r9782Vd4062v8a9R5r+e2a6d7f8g0h1i2j3k4l=}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      APP_URL: "${APP_URL:-http://localhost:8000}"
+      APP_TIMEZONE: "Asia/Jakarta"
+      APP_LOCALE: "id"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-hrg_hris}"
+      DB_USERNAME: "${DB_USERNAME:-hrg_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-hrg_password}"
+      RUN_MIGRATIONS: "true"
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - app_storage:/var/www/html/storage
+    networks:
+      - hrghrd_net
+
+  # ============================================================================
+  # CONTAINER 2: Database MySQL 8.4 (Dikonfigurasi Dapat Diakses Secara Remote)
+  # ============================================================================
+  mysql:
+    image: mysql:8.4
+    container_name: hrghrd_mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --bind-address=0.0.0.0
+      - --default-authentication-plugin=mysql_native_password
+    ports:
+      # Port 3306 dibuka ke host agar MySQL dapat di-remote via DBeaver / Navicat / TablePlus / IP Server
+      - "${DB_EXTERNAL_PORT:-3306}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-rootpassword}"
+      MYSQL_DATABASE: "${DB_DATABASE:-hrg_hris}"
+      MYSQL_USER: "${DB_USERNAME:-hrg_user}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-hrg_password}"
+      # Mengizinkan akses root & pengguna dari IP host manapun secara remote (%)
+      MYSQL_ROOT_HOST: "%"
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - hrghrd_net
+
+# ==============================================================================
+# Persistent Volumes & Private Bridge Network
+# ==============================================================================
+volumes:
+  mysql_data:
+    driver: local
+  app_storage:
+    driver: local
+
+networks:
+  hrghrd_net:
+    driver: bridge

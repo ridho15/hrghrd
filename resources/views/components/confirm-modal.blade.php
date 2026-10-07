@@ -24,7 +24,7 @@
 
     {{-- Wrapper Vertikal Tengah --}}
     <div class="min-h-full flex items-center justify-center p-4 sm:p-6">
-        <div class="relative w-full max-w-md bg-white rounded-3xl border border-slate-200/90 shadow-2xl flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
+        <div class="relative w-full max-w-md bg-white rounded-2xl border border-slate-200/90 shadow-2xl flex flex-col overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
             
             {{-- Konten Utama Modal Konfirmasi --}}
             <div class="p-6 text-center space-y-4">

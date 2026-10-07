@@ -213,7 +213,7 @@ window.showToast = function({ type = 'success', title = '', message = '', durati
   const shadowColor = isSuccess ? 'shadow-emerald-950/10' : (isError ? 'shadow-rose-950/10' : 'shadow-slate-900/10');
   const iconBg = isSuccess ? 'bg-emerald-500' : (isError ? 'bg-rose-500' : 'bg-slate-700');
   const titleColor = isSuccess ? 'text-emerald-800' : (isError ? 'text-rose-800' : 'text-slate-800');
-  const progressBg = isSuccess ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : (isError ? 'bg-gradient-to-r from-rose-500 to-rose-400' : 'bg-slate-400');
+  const progressBg = isSuccess ? 'bg-emerald-600' : (isError ? 'bg-rose-600' : 'bg-slate-400');
   
   const iconSvg = isSuccess
     ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>'
@@ -332,11 +332,17 @@ function initConfirmModal() {
   const iconWarning = modal.querySelector('[data-icon-warning]');
 
   let pendingAction = null;
+  let isSubmitting = false;
 
   function closeModal() {
     modal.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
     pendingAction = null;
+    isSubmitting = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
   }
 
   modal.querySelectorAll('[data-close-confirm]').forEach(btn => {
@@ -344,14 +350,25 @@ function initConfirmModal() {
   });
 
   document.addEventListener('click', (e) => {
-    const trigger = e.target.closest('[data-confirm]');
-    if (!trigger) return;
+    const trigger = e.target.closest('[data-confirm], [data-confirm-action], [data-confirm-modal]:not(#global-confirm-modal)');
+    if (!trigger || trigger.id === 'global-confirm-modal' || trigger.closest('#global-confirm-modal')) return;
     e.preventDefault();
 
     const title = trigger.dataset.confirmTitle || 'Konfirmasi Tindakan';
-    const message = trigger.dataset.confirm || 'Apakah Anda yakin ingin melanjutkan tindakan ini?';
-    const btnText = trigger.dataset.confirmBtn || 'Ya, Lanjutkan';
-    const variant = trigger.dataset.confirmVariant || 'danger';
+    const message = trigger.dataset.confirm || trigger.dataset.confirmMessage || 'Apakah Anda yakin ingin melanjutkan tindakan ini?';
+    const btnText = trigger.dataset.confirmBtn || trigger.dataset.confirmButtonText || 'Ya, Lanjutkan';
+    
+    // Resolve variant
+    let variant = trigger.dataset.confirmVariant;
+    if (!variant) {
+      if (trigger.dataset.confirmButtonClass?.includes('amber') || trigger.dataset.confirmButtonClass?.includes('warning')) {
+        variant = 'warning';
+      } else if (trigger.dataset.confirmButtonClass?.includes('emerald') || trigger.dataset.confirmButtonClass?.includes('teal') || trigger.dataset.confirmButtonClass?.includes('primary')) {
+        variant = 'primary';
+      } else {
+        variant = 'danger';
+      }
+    }
 
     if (titleEl) titleEl.textContent = title;
     if (messageEl) messageEl.textContent = message;
@@ -364,6 +381,8 @@ function initConfirmModal() {
 
     // Set submit button visual variant
     if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
       if (variant === 'primary') {
         submitBtn.className = 'h-10 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-xs inline-flex items-center gap-1.5';
       } else if (variant === 'warning') {
@@ -393,6 +412,22 @@ function initConfirmModal() {
           actionForm.appendChild(tokenInput);
           document.body.appendChild(actionForm);
         }
+
+        // Handle HTTP method override jika bukan POST murni
+        let methodInput = actionForm.querySelector('input[name="_method"]');
+        const customMethod = trigger.dataset.confirmMethod?.toUpperCase();
+        if (customMethod && customMethod !== 'POST' && customMethod !== 'GET') {
+          if (!methodInput) {
+            methodInput = document.createElement('input');
+            methodInput.type = 'hidden';
+            methodInput.name = '_method';
+            actionForm.appendChild(methodInput);
+          }
+          methodInput.value = customMethod;
+        } else if (methodInput) {
+          methodInput.remove();
+        }
+
         actionForm.action = trigger.dataset.confirmAction;
         actionForm.submit();
       };
@@ -407,10 +442,16 @@ function initConfirmModal() {
   });
 
   submitBtn?.addEventListener('click', () => {
+    if (isSubmitting) return; // Debounce guard against double submission
     if (typeof pendingAction === 'function') {
+      isSubmitting = true;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
       const action = pendingAction;
-      closeModal();
       action();
+      closeModal();
     } else {
       closeModal();
     }

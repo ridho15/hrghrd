@@ -35,7 +35,7 @@
 
     {{-- Wrapper Vertikal Tengah --}}
     <div class="min-h-full flex items-center justify-center p-3 sm:p-6">
-        <div class="relative w-full {{ $widthClass }} bg-white rounded-2xl sm:rounded-3xl border border-slate-200/90 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
+        <div class="relative w-full {{ $widthClass }} bg-white rounded-2xl border border-slate-200/90 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
             {{-- Header Modal --}}
             <div class="p-5 sm:p-6 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/50 shrink-0">
                 <div class="space-y-1">
@@ -72,20 +72,10 @@
                 {{ $slot }}
             </div>
 
-            {{-- Footer Modal (Opsional) --}}
+            {{-- Footer Modal (Hanya jika dispesifikasi secara eksplisit) --}}
             @if(isset($footer))
                 <div class="p-4 sm:p-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end gap-2.5 shrink-0">
                     {{ $footer }}
-                </div>
-            @else
-                <div class="p-3 sm:p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-end shrink-0">
-                    <button
-                        type="button"
-                        data-close-modal
-                        class="h-9 px-4 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer shadow-xs"
-                    >
-                        Tutup
-                    </button>
                 </div>
             @endif
         </div>

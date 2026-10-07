@@ -13,7 +13,7 @@
     </nav>
 
     {{-- Header Dossier Cabang & Tombol Aksi --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-7">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-7">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
             <div class="flex items-start sm:items-center gap-4">
                 <div class="w-16 h-16 rounded-2xl bg-emerald-600 text-white font-extrabold text-2xl flex items-center justify-center shadow-sm shrink-0">
@@ -142,8 +142,20 @@
         </div>
     </div>
 
+    {{-- Peta Visualisasi Lokasi & Radius Geofence --}}
+    <x-map-picker 
+        id="branch-show-map"
+        :latitude="$branch->latitude"
+        :longitude="$branch->longitude"
+        :radius="$branch->radius_m"
+        :readonly="true"
+        height="320px"
+        title="Batas Lokasi Presensi (Geofence)"
+        :branchName="$branch->name"
+    />
+
     {{-- KONTEN BAGIAN 1: Daftar Karyawan Cabang --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
                 <h2 class="text-base font-bold text-slate-900">Daftar Staf Cabang Ini</h2>
@@ -223,7 +235,7 @@
     </div>
 
     {{-- KONTEN BAGIAN 2: Riwayat Jadwal Shift Terakhir --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="p-5 sm:p-6 border-b border-slate-100">
             <h2 class="text-base font-bold text-slate-900">10 Jadwal Shift Terakhir Cabang Ini</h2>
             <p class="text-xs text-slate-500">Aktivitas jadwal kerja karyawan yang terdaftar di lokasi {{ $branch->name }}.</p>

@@ -39,10 +39,7 @@
     </div>
 
     {{-- Kiosk Card Display --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xl shadow-slate-900/5 p-6 sm:p-10 text-center relative overflow-hidden">
-        {{-- Ambient Glow --}}
-        <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none"></div>
-
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-10 text-center relative overflow-hidden">
         <div class="relative z-10 max-w-md mx-auto space-y-6">
             {{-- Branch Badge --}}
             <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
@@ -52,7 +49,7 @@
 
             {{-- Dynamic QR Display Wrapper (Dikontrol oleh app.js) --}}
             <div class="qr-display flex flex-col items-center justify-center gap-4" data-qr-url="{{ route('qr.code', ['branch_id' => $branch->id]) }}">
-                <div class="p-4 bg-white rounded-3xl border-2 border-slate-200/90 shadow-md inline-block">
+                <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs inline-block">
                     <canvas width="256" height="256" class="w-56 h-56 sm:w-64 sm:h-64 rounded-xl" aria-label="QR kode cabang"></canvas>
                 </div>
 

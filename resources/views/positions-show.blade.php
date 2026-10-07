@@ -13,7 +13,7 @@
     </nav>
 
     {{-- Header Detail Jabatan & Tombol Aksi --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-7">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-7">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
             <div class="flex items-start sm:items-center gap-4">
                 <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-800 font-extrabold text-2xl flex items-center justify-center border border-emerald-200/60 shadow-2xs shrink-0">
@@ -107,7 +107,7 @@
     </div>
 
     {{-- Tabel Karyawan Pemegang Jabatan --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
                 <h2 class="text-base font-bold text-slate-900">Daftar Karyawan dengan Jabatan Ini</h2>

@@ -13,7 +13,7 @@
     </nav>
 
     {{-- Header Dossier & Tombol Aksi --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-7">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-7">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
             <div class="flex items-start sm:items-center gap-4">
                 <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-800 font-extrabold text-xl flex items-center justify-center border border-emerald-200/60 shadow-2xs shrink-0">
@@ -153,7 +153,7 @@
     {{-- Detail Rencana Shift & Realisasi Presensi --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- KARTU 1: Informasi Penugasan & Lokasi --}}
-        <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
             <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
                 <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">
                     📍
@@ -195,7 +195,7 @@
         </div>
 
         {{-- KARTU 2: Realisasi Presensi (Attendance Record) --}}
-        <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
             <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
                 <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm">
                     ⏱️
@@ -262,7 +262,7 @@
             ->get();
     @endphp
 
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-7 space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-sm">

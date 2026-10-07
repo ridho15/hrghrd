@@ -32,7 +32,7 @@
     @endphp
 
     {{-- Header Dossier & Tombol Aksi --}}
-    <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-7">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-7">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
             <div class="flex items-start sm:items-center gap-4">
                 <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-800 font-extrabold text-xl flex items-center justify-center border border-emerald-200/60 shadow-2xs shrink-0">
@@ -134,7 +134,7 @@
         {{-- Sisi Kiri (5 Cols): Alasan & Viewer Berkas --}}
         <div class="lg:col-span-5 space-y-6">
             {{-- Alasan Pengajuan --}}
-            <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-3">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-3">
                 <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100">
                     <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
                         ✍️
@@ -147,7 +147,7 @@
             </div>
 
             {{-- Dokumen Surat Keterangan Dokter --}}
-            <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-3">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-3">
                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
                         <span class="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xs">
@@ -195,7 +195,7 @@
 
             {{-- Catatan Peninjau Terdahulu Jika Ada --}}
             @if($leave->review_note)
-                <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-2">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-2">
                     <div class="flex items-center gap-2 pb-2 border-b border-slate-100">
                         <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-xs">
                             💬
@@ -212,7 +212,7 @@
         {{-- Sisi Kanan (7 Cols): Matriks Hari & Form Keputusan Manajer --}}
         <div class="lg:col-span-7 space-y-6">
             {{-- Tabel / Rincian Keputusan per Hari --}}
-            <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 space-y-4">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div class="flex items-center gap-2.5">
                         <span class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs">
@@ -268,7 +268,7 @@
 
             {{-- Formulir Keputusan Peninjau Manajerial --}}
             @if($canReview)
-                <div class="bg-white rounded-3xl border-2 border-emerald-600/30 shadow-xs p-6 sm:p-7 space-y-5">
+                <div class="bg-white rounded-2xl border-2 border-emerald-600/30 shadow-xs p-6 sm:p-7 space-y-5">
                     <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
                         <div class="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-sm">
                             ⚖️
