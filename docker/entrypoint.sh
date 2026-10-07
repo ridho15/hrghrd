@@ -4,7 +4,7 @@ set -e
 # Tunggu database MySQL siap menerima koneksi (jika koneksi bertipe mysql)
 if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
   echo "Menunggu koneksi database MySQL di $DB_HOST:${DB_PORT:-3306}..."
-  until mysqladmin ping -h "$DB_HOST" -P "${DB_PORT:-3306}" -u "$DB_USERNAME" -p"$DB_PASSWORD" --silent; do
+  until mysqladmin ping -h "$DB_HOST" -P "${DB_PORT:-3306}" --silent; do
     echo "Database belum siap, mencoba lagi dalam 2 detik..."
     sleep 2
   done
