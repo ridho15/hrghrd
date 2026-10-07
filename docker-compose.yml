@@ -9,13 +9,13 @@ services:
     container_name: hrghrd_app
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-8000}:80"
+      - "${APP_PORT:-8017}:80"
     environment:
       APP_NAME: "${APP_NAME:-HR Group}"
       APP_ENV: "${APP_ENV:-production}"
       APP_KEY: "${APP_KEY:-base64:E457r9782Vd4062v8a9R5r+e2a6d7f8g0h1i2j3k4l=}"
       APP_DEBUG: "${APP_DEBUG:-false}"
-      APP_URL: "${APP_URL:-http://localhost:8000}"
+      APP_URL: "${APP_URL:-https://hrd.playgo.id}"
       APP_TIMEZONE: "Asia/Jakarta"
       APP_LOCALE: "id"
       DB_CONNECTION: mysql
