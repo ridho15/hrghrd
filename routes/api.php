@@ -29,12 +29,15 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/logout', [AuthApiController::class, 'logout']);
         Route::get('/me', [AuthApiController::class, 'me']);
         Route::post('/device', [AuthApiController::class, 'registerDevice']);
+        Route::post('/device/reset', [AuthApiController::class, 'resetDevice'])->middleware('throttle:5,1');
+        Route::post('/password', [AuthApiController::class, 'changePassword'])->middleware('throttle:5,1');
         Route::post('/refresh', [AuthApiController::class, 'refresh']);
     });
 
     // Profile Karyawan
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileApiController::class, 'profile']);
+        Route::patch('/', [ProfileApiController::class, 'update']);
         Route::get('/today', [ProfileApiController::class, 'today']);
     });
 
@@ -62,6 +65,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/', [LeaveApiController::class, 'index']);
         Route::post('/', [LeaveApiController::class, 'store']);
         Route::get('/{id}', [LeaveApiController::class, 'show']);
+        Route::get('/{id}/certificate', [LeaveApiController::class, 'certificate']);
         Route::post('/{id}/review', [LeaveApiController::class, 'review']);
         Route::delete('/{id}', [LeaveApiController::class, 'destroy']);
     });

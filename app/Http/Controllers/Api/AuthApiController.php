@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -121,8 +122,13 @@ class AuthApiController extends Controller
 
         $user = $request->user();
 
+        // Disimpan sebagai SHA-256 agar formatnya konsisten dengan perbandingan
+        // perangkat di AttendanceService::act(), yang membandingkan users.device_hash
+        // terhadap hash('sha256', $deviceToken) saat check-in/check-out.
+        $hashedDeviceHash = hash('sha256', $data['device_hash']);
+
         // Cek apakah device_hash sudah terdaftar di user lain
-        $conflict = User::where('device_hash', $data['device_hash'])
+        $conflict = User::where('device_hash', $hashedDeviceHash)
             ->where('id', '!=', $user->id)
             ->exists();
 
@@ -133,12 +139,79 @@ class AuthApiController extends Controller
             ], 409);
         }
 
-        $user->update(['device_hash' => $data['device_hash']]);
+        $user->update(['device_hash' => $hashedDeviceHash]);
 
         return response()->json([
             'success' => true,
             'message' => 'Device berhasil didaftarkan.',
-            'data'    => ['device_hash' => $user->device_hash],
+            'data'    => ['device_hash' => $data['device_hash']],
+        ]);
+    }
+
+    /**
+     * Reset Perangkat Presensi (Self-Service)
+     *
+     * Melepas ikatan device_hash milik akun sendiri, supaya perangkat berikutnya
+     * yang login bisa dipakai presensi tanpa perlu bantuan admin. Mewajibkan
+     * konfirmasi password karena ini melonggarkan kontrol anti-fraud presensi.
+     */
+    public function resetDevice(Request $request)
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($data['password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['Password salah.'],
+            ]);
+        }
+
+        $user->update(['device_hash' => null]);
+        Audit::record('user', $user->id, 'device_reset_self', 'Karyawan mereset sendiri perangkat presensi miliknya.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Perangkat presensi berhasil direset. Login ulang di perangkat yang ingin dipakai presensi.',
+        ]);
+    }
+
+    /**
+     * Ubah Password
+     *
+     * Mengubah password akun yang sedang login. Memerlukan password saat ini
+     * sebagai konfirmasi. Mencabut token di perangkat lain (sesi saat ini
+     * tetap aktif) sebagai tindakan keamanan standar setelah ganti password.
+     */
+    public function changePassword(Request $request)
+    {
+        $data = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password'      => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = $request->user();
+
+        if (! Hash::check($data['current_password'], $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => ['Password saat ini salah.'],
+            ]);
+        }
+
+        $user->update(['password' => Hash::make($data['new_password'])]);
+
+        $currentTokenId = $request->user()->currentAccessToken()?->id;
+        if ($currentTokenId) {
+            $user->tokens()->where('id', '!=', $currentTokenId)->delete();
+        }
+
+        Audit::record('user', $user->id, 'password_change_self', 'Karyawan mengubah password sendiri.');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password berhasil diubah. Sesi di perangkat lain telah dicabut demi keamanan.',
         ]);
     }
 

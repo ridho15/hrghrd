@@ -13,6 +13,36 @@ class AttendanceAntiFraudNegativeTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_web_checkin_with_mismatched_session_challenge_is_rejected(): void
+    {
+        // Memastikan alur web/kiosk (sesi cookie browser, berbeda dari API mobile
+        // Bearer-token) masih benar-benar memverifikasi `attendance_challenge` dan
+        // menolak bila tidak cocok dengan yang ditaruh di sesi — tidak ikut hilang
+        // saat AttendanceApiController berhenti memaksakan pengecekan ini.
+        $branch = $this->createBranch(['latitude' => -6.175392, 'longitude' => 106.827153, 'radius_m' => 100]);
+        $employee = $this->createUser(['branch_id' => $branch->id, 'device_hash' => hash('sha256', 'dev_token_123')]);
+        $shift = $this->createShift($employee, $branch, [
+            'status' => 'approved',
+            'start_at' => now('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'end_at' => now('Asia/Jakarta')->addHours(8)->format('Y-m-d H:i:s'),
+        ]);
+
+        $this->actingAs($employee);
+        session(['attendance_challenge' => 'challenge_from_page_load']);
+
+        $response = $this->withCookie('device_token', 'dev_token_123')->post("/attendance/{$shift->id}", [
+            'action' => 'in',
+            'qr_code' => AttendanceService::qr($branch),
+            'latitude' => -6.175392,
+            'longitude' => 106.827153,
+            'accuracy' => 10,
+            'challenge' => 'a_completely_different_challenge',
+        ]);
+
+        $response->assertSessionHasErrors('attendance');
+        $this->assertDatabaseMissing('attendances', ['shift_id' => $shift->id]);
+    }
+
     public function test_checkin_on_draft_shift_is_rejected(): void
     {
         $branch = $this->createBranch(['latitude' => -6.175392, 'longitude' => 106.827153, 'radius_m' => 100]);

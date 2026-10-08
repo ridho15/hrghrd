@@ -25,12 +25,17 @@ final class AttendanceService
         return strtoupper(substr(hash_hmac('sha256', $branch->id . '|' . $slot, $branch->qr_secret), 0, 8));
     }
 
-    public function act(object $user, int $shiftId, string $action, array $input, string $deviceToken): void
+    // $requireChallenge hanya valid untuk pemanggil berbasis sesi browser (AttendanceController
+    // web), di mana `attendance_challenge` ditaruh di sesi saat halaman dimuat (DashboardController)
+    // dan dicocokkan kembali saat form disubmit lewat sesi cookie yang sama. Klien mobile berbasis
+    // Bearer token (Sanctum) tidak membawa cookie sesi antar-request, sehingga tidak pernah ada
+    // kontinuitas sesi untuk dicocokkan; AttendanceApiController memanggil dengan false.
+    public function act(object $user, int $shiftId, string $action, array $input, string $deviceToken, bool $requireChallenge = true): void
     {
         abort_unless(in_array($action, ['in', 'out'], true), 404);
 
         try {
-            $lateError = DB::transaction(function () use ($user, $shiftId, $action, $input, $deviceToken) {
+            $lateError = DB::transaction(function () use ($user, $shiftId, $action, $input, $deviceToken, $requireChallenge) {
                 $shift = Shift::where('id', $shiftId)->where('user_id', $user->id)->first();
                 $now = now('Asia/Jakarta');
 
@@ -96,10 +101,12 @@ final class AttendanceService
                     $this->reject($user->id, $shiftId, $action, 'Perangkat berbeda', $evidence, $now);
                 }
 
-                if (($input['challenge'] ?? '') !== session('attendance_challenge')) {
-                    $this->reject($user->id, $shiftId, $action, 'Tantangan tidak cocok', $evidence, $now);
+                if ($requireChallenge) {
+                    if (($input['challenge'] ?? '') !== session('attendance_challenge')) {
+                        $this->reject($user->id, $shiftId, $action, 'Tantangan tidak cocok', $evidence, $now);
+                    }
+                    session()->forget('attendance_challenge');
                 }
-                session()->forget('attendance_challenge');
 
                 $slot = intdiv(now()->timestamp, 30);
                 $qrValid = hash_equals(self::qr($branch, $slot), (string) ($input['qr_code'] ?? ''))
@@ -111,6 +118,16 @@ final class AttendanceService
 
                 if ($branch->latitude === null || $branch->longitude === null || ! isset($input['latitude'], $input['longitude'], $input['accuracy'])) {
                     $this->reject($user->id, $shiftId, $action, 'Lokasi cabang atau GPS tidak tersedia', $evidence, $now);
+                }
+
+                // Android melaporkan lokasi yang berasal dari aplikasi fake-GPS/mock
+                // location provider lewat flag ini (dikirim klien dari Position.isMocked
+                // milik package geolocator). Koordinat yang cocok dengan geofence tidak
+                // berarti apa-apa kalau sumbernya memang palsu, jadi ditolak langsung
+                // di sini sebelum pengecekan jarak.
+                $evidence['is_mocked'] = (bool) ($input['is_mocked'] ?? false);
+                if ($evidence['is_mocked']) {
+                    $this->reject($user->id, $shiftId, $action, 'Lokasi GPS terdeteksi palsu (mock location). Matikan aplikasi fake-GPS sebelum presensi', $evidence, $now);
                 }
 
                 $distance = self::distance((float) $branch->latitude, (float) $branch->longitude, (float) $input['latitude'], (float) $input['longitude']);

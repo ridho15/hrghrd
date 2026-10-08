@@ -46,6 +46,21 @@ class AttendanceApiTest extends TestCase
             ->assertJsonPath('data.status', 'not_checked_in');
     }
 
+    public function test_update_own_profile_name(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['branch_id' => $branch->id, 'name' => 'Nama Lama']);
+        Sanctum::actingAs($employee, ['employee']);
+
+        $response = $this->patchJson('/api/v1/profile', ['name' => 'Nama Baru Setelah Edit']);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.name', 'Nama Baru Setelah Edit');
+
+        $this->assertEquals('Nama Baru Setelah Edit', $employee->fresh()->name);
+    }
+
     public function test_qr_generation_manager_access(): void
     {
         $branch = $this->createBranch();
@@ -65,6 +80,49 @@ class AttendanceApiTest extends TestCase
                 'success',
                 'data' => ['code', 'expires_at', 'expires_in', 'branch'],
             ]);
+    }
+
+    public function test_checkin_succeeds_without_any_session_challenge(): void
+    {
+        // Regresi: klien mobile Bearer-token tidak membawa cookie sesi antar-request
+        // (dibuktikan langsung: dua request /profile/today berurutan tanpa cookie jar
+        // menghasilkan nilai attendance_challenge yang berbeda setiap kali). Endpoint
+        // API check-in/check-out karenanya harus sukses walau sesi `attendance_challenge`
+        // tidak pernah diisi sama sekali dan request tidak mengirim field `challenge`.
+        // Sebelumnya endpoint ini "membantu" dengan menimpa sesi memakai nilai yang baru
+        // saja dikirim client lalu membandingkannya terhadap nilai itu sendiri — selalu
+        // lolos secara trivial, tapi tidak pernah benar-benar memverifikasi apa pun.
+        $branch = $this->createBranch([
+            'latitude'  => -6.175392,
+            'longitude' => 106.827153,
+            'radius_m'  => 100,
+        ]);
+        $deviceToken = 'test_token_no_challenge';
+        $employee = $this->createUser([
+            'branch_id'   => $branch->id,
+            'device_hash' => hash('sha256', $deviceToken),
+        ]);
+
+        $shift = $this->createShift($employee, $branch, [
+            'status'   => 'approved',
+            'start_at' => now('Asia/Jakarta')->subMinutes(5)->format('Y-m-d H:i:s'),
+            'end_at'   => now('Asia/Jakarta')->addHours(7)->format('Y-m-d H:i:s'),
+        ]);
+
+        Sanctum::actingAs($employee, ['employee']);
+
+        $response = $this->postJson('/api/v1/attendance/checkin', [
+            'shift_id'     => $shift->id,
+            'qr_code'      => AttendanceService::qr($branch),
+            'latitude'     => -6.175392,
+            'longitude'    => 106.827153,
+            'accuracy'     => 10,
+            'device_token' => $deviceToken,
+            // Sengaja TIDAK mengirim 'challenge' sama sekali, dan sesi tidak pernah
+            // diisi di test ini — meniru request mobile sungguhan.
+        ]);
+
+        $response->assertStatus(201)->assertJsonPath('success', true);
     }
 
     public function test_checkin_successful_with_qr_and_geofence(): void
@@ -106,6 +164,94 @@ class AttendanceApiTest extends TestCase
             'user_id'  => $employee->id,
             'status'   => 'present',
         ]);
+    }
+
+    public function test_checkin_succeeds_after_real_device_registration_flow(): void
+    {
+        // Regresi: reproduksi end-to-end persis seperti aplikasi Flutter (login lalu
+        // memanggil POST /auth/device secara nyata sebelum check-in), bukan men-seed
+        // device_hash langsung ke database seperti test lain di atas. Sebelumnya,
+        // AuthApiController::registerDevice() menyimpan device_hash mentah sementara
+        // AttendanceService::act() membandingkannya terhadap hash SHA-256 dari device
+        // token, sehingga check-in SELALU gagal "Perangkat berbeda" setelah login normal.
+        $branch = $this->createBranch([
+            'latitude'  => -6.175392,
+            'longitude' => 106.827153,
+            'radius_m'  => 100,
+        ]);
+        $deviceToken = 'mob_real_flow_regression_test';
+        $employee = $this->createUser([
+            'branch_id'   => $branch->id,
+            'device_hash' => null,
+        ]);
+
+        $shift = $this->createShift($employee, $branch, [
+            'status'   => 'approved',
+            'start_at' => now('Asia/Jakarta')->subMinutes(5)->format('Y-m-d H:i:s'),
+            'end_at'   => now('Asia/Jakarta')->addHours(7)->format('Y-m-d H:i:s'),
+        ]);
+
+        Sanctum::actingAs($employee, ['employee']);
+
+        // Persis seperti AuthProvider.login() di Flutter: dipanggil otomatis setelah login.
+        $this->postJson('/api/v1/auth/device', [
+            'device_hash' => $deviceToken,
+        ])->assertStatus(200)->assertJsonPath('success', true);
+
+        $response = $this->postJson('/api/v1/attendance/checkin', [
+            'shift_id'     => $shift->id,
+            'qr_code'      => AttendanceService::qr($branch),
+            'latitude'     => -6.175392,
+            'longitude'    => 106.827153,
+            'accuracy'     => 10,
+            'device_token' => $deviceToken,
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.shift_id', $shift->id);
+
+        $this->assertDatabaseHas('attendances', [
+            'shift_id' => $shift->id,
+            'user_id'  => $employee->id,
+        ]);
+    }
+
+    public function test_checkin_rejected_when_location_is_mocked(): void
+    {
+        $branch = $this->createBranch([
+            'latitude'  => -6.175392,
+            'longitude' => 106.827153,
+            'radius_m'  => 100,
+        ]);
+        $deviceToken = 'test_token_mock_gps';
+        $employee = $this->createUser([
+            'branch_id'   => $branch->id,
+            'device_hash' => hash('sha256', $deviceToken),
+        ]);
+
+        $shift = $this->createShift($employee, $branch, [
+            'status'   => 'approved',
+            'start_at' => now('Asia/Jakarta')->subMinutes(5)->format('Y-m-d H:i:s'),
+            'end_at'   => now('Asia/Jakarta')->addHours(7)->format('Y-m-d H:i:s'),
+        ]);
+
+        Sanctum::actingAs($employee, ['employee']);
+
+        // Koordinat PERSIS di titik cabang (lolos jarak & akurasi), tapi ditandai
+        // berasal dari aplikasi fake-GPS/mock location provider.
+        $response = $this->postJson('/api/v1/attendance/checkin', [
+            'shift_id'     => $shift->id,
+            'qr_code'      => AttendanceService::qr($branch),
+            'latitude'     => -6.175392,
+            'longitude'    => 106.827153,
+            'accuracy'     => 5,
+            'is_mocked'    => true,
+            'device_token' => $deviceToken,
+        ]);
+
+        $response->assertStatus(422)->assertJsonPath('success', false);
+        $this->assertDatabaseMissing('attendances', ['shift_id' => $shift->id]);
     }
 
     public function test_checkin_rejected_when_outside_geofence(): void

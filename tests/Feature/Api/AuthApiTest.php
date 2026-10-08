@@ -127,14 +127,17 @@ class AuthApiTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJsonPath('success', true);
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.device_hash', 'device_unique_uuid_12345678');
 
-        $this->assertEquals('device_unique_uuid_12345678', $user->fresh()->device_hash);
+        // Disimpan sebagai SHA-256 agar konsisten dengan perbandingan perangkat
+        // di AttendanceService::act() saat check-in/check-out.
+        $this->assertEquals(hash('sha256', 'device_unique_uuid_12345678'), $user->fresh()->device_hash);
     }
 
     public function test_device_hash_conflict_fails(): void
     {
-        $otherUser = $this->createUser(['device_hash' => 'registered_device_token_hash']);
+        $otherUser = $this->createUser(['device_hash' => hash('sha256', 'registered_device_token_hash')]);
         $currentUser = $this->createUser(['device_hash' => null]);
         Sanctum::actingAs($currentUser, ['employee']);
 
@@ -144,6 +147,60 @@ class AuthApiTest extends TestCase
 
         $response->assertStatus(409)
             ->assertJsonPath('success', false);
+    }
+
+    public function test_self_service_device_reset_requires_correct_password(): void
+    {
+        $user = $this->createUser(['device_hash' => hash('sha256', 'old_device_token'), 'password' => bcrypt('Demo12345!')]);
+        Sanctum::actingAs($user, ['employee']);
+
+        $wrong = $this->postJson('/api/v1/auth/device/reset', ['password' => 'PasswordSalahSekali']);
+        $wrong->assertStatus(422);
+        $this->assertNotNull($user->fresh()->device_hash);
+
+        $correct = $this->postJson('/api/v1/auth/device/reset', ['password' => 'Demo12345!']);
+        $correct->assertStatus(200)->assertJsonPath('success', true);
+        $this->assertNull($user->fresh()->device_hash);
+    }
+
+    public function test_change_password_requires_correct_current_password(): void
+    {
+        $user = $this->createUser(['password' => Hash::make('Demo12345!')]);
+        Sanctum::actingAs($user, ['employee']);
+
+        $wrong = $this->postJson('/api/v1/auth/password', [
+            'current_password'          => 'PasswordSalah',
+            'new_password'              => 'PasswordBaru123!',
+            'new_password_confirmation' => 'PasswordBaru123!',
+        ]);
+        $wrong->assertStatus(422);
+        $this->assertTrue(Hash::check('Demo12345!', $user->fresh()->password));
+
+        $correct = $this->postJson('/api/v1/auth/password', [
+            'current_password'          => 'Demo12345!',
+            'new_password'              => 'PasswordBaru123!',
+            'new_password_confirmation' => 'PasswordBaru123!',
+        ]);
+        $correct->assertStatus(200)->assertJsonPath('success', true);
+        $this->assertTrue(Hash::check('PasswordBaru123!', $user->fresh()->password));
+    }
+
+    public function test_change_password_revokes_other_device_tokens(): void
+    {
+        $user = $this->createUser(['password' => Hash::make('Demo12345!')]);
+        $otherDeviceToken = $user->createToken('Perangkat Lain', ['employee']);
+        $currentToken = $user->createToken('Perangkat Saat Ini', ['employee']);
+
+        $this->withHeader('Authorization', 'Bearer ' . $currentToken->plainTextToken)
+            ->postJson('/api/v1/auth/password', [
+                'current_password'          => 'Demo12345!',
+                'new_password'              => 'PasswordBaru123!',
+                'new_password_confirmation' => 'PasswordBaru123!',
+            ])
+            ->assertStatus(200);
+
+        $this->assertDatabaseMissing('personal_access_tokens', ['id' => $otherDeviceToken->accessToken->id]);
+        $this->assertDatabaseHas('personal_access_tokens', ['id' => $currentToken->accessToken->id]);
     }
 
     public function test_refresh_token_creates_new_token(): void

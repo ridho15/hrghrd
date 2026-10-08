@@ -33,19 +33,37 @@ class ProfileApiController extends Controller
     }
 
     /**
+     * Perbarui Profil
+     *
+     * Memperbarui nama tampilan akun yang sedang login. Data kepegawaian
+     * (jabatan, cabang, gaji, status) tetap dikelola HR lewat web-admin.
+     */
+    public function update(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'min:3', 'max:100'],
+        ]);
+
+        $user = $request->user();
+        $user->update(['name' => $data['name']]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil berhasil diperbarui.',
+            'data'    => new UserResource($user->fresh()->load(['branch', 'position'])),
+        ]);
+    }
+
+    /**
      * Status Hari Ini
      *
-     * Menampilkan shift hari ini, rekaman presensi saat ini, dan token tantangan presensi.
+     * Menampilkan shift hari ini dan rekaman presensi saat ini.
      */
     public function today(Request $request)
     {
         $user = $request->user();
         $now = now('Asia/Jakarta');
         $todayDate = $now->toDateString();
-
-        // Buat atau perbarui challenge untuk sesi presensi mobile
-        $challenge = (string) random_int(100, 999);
-        session(['attendance_challenge' => $challenge]);
 
         // Cari shift hari ini atau shift aktif
         $shift = Shift::with(['branch', 'attendance', 'exceptions'])
@@ -69,7 +87,6 @@ class ProfileApiController extends Controller
             'data'    => [
                 'server_time'       => $now->toIso8601String(),
                 'server_timestamp'  => $now->timestamp,
-                'attendance_challenge' => $challenge,
                 'has_shift'         => $shift !== null,
                 'shift'             => $shift ? new ShiftResource($shift) : null,
                 'attendance'        => $attendance ? new AttendanceResource($attendance) : null,

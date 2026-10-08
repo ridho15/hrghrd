@@ -26,7 +26,7 @@ class AttendanceApiController extends Controller
      * Lakukan check-in ke shift yang telah disetujui menggunakan kode QR cabang.
      * Memerlukan validasi geofence GPS dan device token.
      *
-     * Body: `shift_id`, `qr_code`, `latitude`, `longitude`, `accuracy`, `device_token` (atau `device_hash`), `challenge` (opsional)
+     * Body: `shift_id`, `qr_code`, `latitude`, `longitude`, `accuracy`, `is_mocked` (opsional), `device_token` (atau `device_hash`)
      */
     public function checkIn(Request $request, AttendanceService $service)
     {
@@ -36,16 +36,12 @@ class AttendanceApiController extends Controller
             'latitude'     => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'    => ['nullable', 'numeric', 'between:-180,180'],
             'accuracy'     => ['nullable', 'numeric', 'min:0'],
+            'is_mocked'    => ['nullable', 'boolean'],
             'device_token' => ['nullable', 'string'],
             'device_hash'  => ['nullable', 'string'],
-            'challenge'    => ['nullable', 'string'],
         ]);
 
         $user = $request->user();
-
-        // Siapkan tantangan presensi anti-replay
-        $challenge = (string) ($data['challenge'] ?? session('attendance_challenge') ?? random_int(100, 999));
-        session(['attendance_challenge' => $challenge]);
 
         // Siapkan device token
         $deviceToken = (string) (
@@ -61,11 +57,16 @@ class AttendanceApiController extends Controller
             'latitude'  => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
             'accuracy'  => $data['accuracy'] ?? null,
-            'challenge' => $challenge,
+            'is_mocked' => $data['is_mocked'] ?? false,
         ];
 
         try {
-            $service->act($user, $data['shift_id'], 'in', $actInput, $deviceToken);
+            // requireChallenge: false — klien mobile Bearer-token tidak membawa
+            // cookie sesi antar-request, sehingga tantangan berbasis sesi (dipakai
+            // alur web/kiosk) tidak bisa diverifikasi secara sah di sini. Proteksi
+            // anti-duplikasi untuk jalur ini sudah dijamin oleh pengecekan presensi
+            // yang sudah ada + rotasi QR 30 detik + pengikatan device_hash di atas.
+            $service->act($user, $data['shift_id'], 'in', $actInput, $deviceToken, requireChallenge: false);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -97,7 +98,7 @@ class AttendanceApiController extends Controller
      *
      * Lakukan check-out dari shift aktif. Menghitung keterlambatan dan durasi lembur otomatis.
      *
-     * Body: `shift_id`, `latitude`, `longitude`, `accuracy`, `device_token`, `challenge`
+     * Body: `shift_id`, `latitude`, `longitude`, `accuracy`, `is_mocked` (opsional), `device_token`
      */
     public function checkOut(Request $request, AttendanceService $service)
     {
@@ -107,15 +108,12 @@ class AttendanceApiController extends Controller
             'latitude'     => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'    => ['nullable', 'numeric', 'between:-180,180'],
             'accuracy'     => ['nullable', 'numeric', 'min:0'],
+            'is_mocked'    => ['nullable', 'boolean'],
             'device_token' => ['nullable', 'string'],
             'device_hash'  => ['nullable', 'string'],
-            'challenge'    => ['nullable', 'string'],
         ]);
 
         $user = $request->user();
-
-        $challenge = (string) ($data['challenge'] ?? session('attendance_challenge') ?? random_int(100, 999));
-        session(['attendance_challenge' => $challenge]);
 
         $deviceToken = (string) (
             $data['device_token']
@@ -134,11 +132,12 @@ class AttendanceApiController extends Controller
             'latitude'  => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
             'accuracy'  => $data['accuracy'] ?? null,
-            'challenge' => $challenge,
+            'is_mocked' => $data['is_mocked'] ?? false,
         ];
 
         try {
-            $service->act($user, $data['shift_id'], 'out', $actInput, $deviceToken);
+            // requireChallenge: false — lihat penjelasan di checkIn().
+            $service->act($user, $data['shift_id'], 'out', $actInput, $deviceToken, requireChallenge: false);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,

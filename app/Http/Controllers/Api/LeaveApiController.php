@@ -168,6 +168,21 @@ class LeaveApiController extends Controller
     }
 
     /**
+     * Unduh Lampiran Surat Keterangan
+     *
+     * Mengunduh berkas surat keterangan sakit yang dilampirkan pada pengajuan izin.
+     * Dapat diakses oleh pemilik pengajuan sendiri, atau Manager/Admin cabangnya.
+     */
+    public function certificate(Request $request, int $id)
+    {
+        $leave = LeaveRequest::findOrFail($id);
+        abort_unless($leave->certificate_path, 404);
+        abort_unless(Access::employee($leave->user_id), 403);
+
+        return Storage::disk('local')->download($leave->certificate_path, $leave->certificate_name ?: 'surat-sakit');
+    }
+
+    /**
      * Batalkan Pengajuan Izin
      *
      * Membatalkan pengajuan yang masih berstatus 'pending'.

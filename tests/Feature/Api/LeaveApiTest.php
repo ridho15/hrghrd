@@ -66,6 +66,40 @@ class LeaveApiTest extends TestCase
         Storage::disk('local')->assertExists($leave->certificate_path);
     }
 
+    public function test_leave_certificate_download_authorization(): void
+    {
+        Storage::fake('local');
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['branch_id' => $branch->id]);
+        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
+        $outsider = $this->createUser(['role' => 'employee']);
+
+        $leave = LeaveRequest::create([
+            'user_id'          => $employee->id,
+            'created_by'       => $employee->id,
+            'type'             => 'sick',
+            'start_date'       => '2026-11-05',
+            'end_date'         => '2026-11-05',
+            'reason'           => 'Sakit demam, lampiran surat dokter terlampir.',
+            'status'           => 'pending',
+            'certificate_path' => 'certificates/surat_dokter.pdf',
+            'certificate_name' => 'surat_dokter.pdf',
+        ]);
+        Storage::disk('local')->put($leave->certificate_path, 'fake-pdf-content');
+
+        // Pemilik pengajuan sendiri bisa mengunduh.
+        Sanctum::actingAs($employee, ['employee']);
+        $this->get("/api/v1/leave/{$leave->id}/certificate")->assertStatus(200);
+
+        // Manager cabangnya bisa mengunduh (perlu meninjau sebelum memutuskan).
+        Sanctum::actingAs($manager, ['manager', 'employee']);
+        $this->get("/api/v1/leave/{$leave->id}/certificate")->assertStatus(200);
+
+        // Karyawan dari cabang/tempat lain yang tidak terkait TIDAK bisa mengunduh.
+        Sanctum::actingAs($outsider, ['employee']);
+        $this->get("/api/v1/leave/{$leave->id}/certificate")->assertStatus(403);
+    }
+
     public function test_leave_list_and_detail_endpoints(): void
     {
         $branch = $this->createBranch();

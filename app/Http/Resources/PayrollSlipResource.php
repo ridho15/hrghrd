@@ -12,17 +12,28 @@ class PayrollSlipResource extends JsonResource
         $branch = $this['branch'];
         $employee = $this['employee'];
 
+        // bonus_total/kasbon_total dihitung per baris penyesuaian oleh
+        // PayrollCalculator (bukan dari netto manual_total), supaya keduanya
+        // tidak saling menutupi kalau terjadi di bulan yang sama. Fallback ke
+        // perhitungan netto lama untuk breakdown yang sudah dikunci sebelum
+        // field ini ada.
+        $bonusTotal = $detail['bonus_total'] ?? max(0, $detail['manual_total']);
+        $kasbonTotal = $detail['kasbon_total'] ?? abs(min(0, $detail['manual_total']));
+
         $grossEarnings = $detail['prorated_base']
             + $detail['overtime_pay']
-            + max(0, $detail['manual_total']);
+            + $bonusTotal;
 
         $totalDeductions = $detail['unpaid_deduction']
             + $detail['late_deduction']
-            + abs(min(0, $detail['manual_total']));
+            + $kasbonTotal;
 
         return [
             'ref_number'       => $this['ref_number'] ?? ('SLIP-' . ($branch->code ?? 'BR') . '-' . $employee->id . '-' . str_replace('-', '', $this['month'])),
             'period'           => $this['month'],
+            // 'draft': estimasi berjalan, dihitung real-time dan bisa berubah.
+            // 'approved'/'locked': sudah final, diambil dari payroll_run_lines yang disimpan.
+            'status'           => $this['status'] ?? 'draft',
             'employee'         => [
                 'id'        => $employee->id,
                 'name'      => $employee->name,
@@ -47,7 +58,7 @@ class PayrollSlipResource extends JsonResource
                 'prorated_base'  => $detail['prorated_base'],
                 'overtime_pay'   => $detail['overtime_pay'],
                 'overtime_minutes'=> $detail['overtime_minutes'],
-                'bonus'          => max(0, $detail['manual_total']),
+                'bonus'          => $bonusTotal,
                 'gross_total'    => $grossEarnings,
             ],
             'deductions'       => [
@@ -56,7 +67,7 @@ class PayrollSlipResource extends JsonResource
                 'unpaid_dates'     => $detail['unpaid_dates'],
                 'late_deduction'   => $detail['late_deduction'],
                 'late_units'       => $detail['late_units'],
-                'kasbon'           => abs(min(0, $detail['manual_total'])),
+                'kasbon'           => $kasbonTotal,
                 'total_deductions' => $totalDeductions,
             ],
             'net_pay'          => $detail['net'],

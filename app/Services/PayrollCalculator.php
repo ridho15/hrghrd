@@ -89,6 +89,11 @@ final class PayrollCalculator
             ->map(fn ($item) => (array) $item)
             ->toArray();
         $manual = array_sum(array_column($adjustments, 'amount'));
+        // Dihitung per baris penyesuaian (bukan dari netto manual_total), supaya
+        // bonus dan kasbon di bulan yang sama tidak saling menutupi di slip gaji
+        // — netto saja tidak cukup untuk merekonstruksi dua kategori terpisah.
+        $bonusTotal = array_sum(array_filter(array_column($adjustments, 'amount'), fn ($a) => $a > 0));
+        $kasbonTotal = abs(array_sum(array_filter(array_column($adjustments, 'amount'), fn ($a) => $a < 0)));
         $base = ($employedDays === $days) ? (int) $employee->base_salary : (int) round($daily * $employedDays);
         $unpaid = (int) round($daily * count($unpaidDates));
         $late = $lateUnits * Rules::int('late_penalty_per_unit');
@@ -100,6 +105,7 @@ final class PayrollCalculator
             'late_units'=>$lateUnits, 'late_sources'=>$lateSources, 'late_deduction'=>$late,
             'overtime_minutes'=>$overtimeMinutes, 'overtime_sources'=>$overtimeSources, 'overtime_pay'=>$overtime,
             'adjustments'=>$adjustments, 'manual_total'=>$manual,
+            'bonus_total'=>$bonusTotal, 'kasbon_total'=>$kasbonTotal,
             'net'=>$base-$unpaid-$late+$overtime+$manual,
         ];
     }
