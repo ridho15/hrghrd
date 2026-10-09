@@ -56,6 +56,21 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Username Login (Opsional / Unik)
+                    </label>
+                    <input 
+                        name="username" 
+                        value="{{ old('username') }}" 
+                        placeholder="Contoh: budi.santoso (opsional)" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                    >
+                    @error('username')
+                        <p class="text-xs font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                         Alamat Email Perusahaan <span class="text-rose-500">*</span>
                     </label>
                     <input 
@@ -195,6 +210,66 @@
                         class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
                     >
                     @error('ended_at')
+                        <p class="text-xs font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+        </section>
+
+        {{-- Kartu 4: Data Rekening Bank (Payroll) --}}
+        <section class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 sm:p-7 space-y-5">
+            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm border border-emerald-100">
+                    4
+                </span>
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 tracking-tight m-0">Rekening Bank untuk Penggajian</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Informasi akun bank atau metode pembayaran tunai (CASH) untuk transfer gaji</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Nama Bank
+                    </label>
+                    <input 
+                        name="bank_name" 
+                        value="{{ old('bank_name', 'BCA') }}" 
+                        placeholder="Contoh: BCA / Mandiri / BRI / CASH" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 uppercase"
+                    >
+                    @error('bank_name')
+                        <p class="text-xs font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Nomor Rekening Bank
+                    </label>
+                    <input 
+                        name="bank_account_number" 
+                        value="{{ old('bank_account_number') }}" 
+                        placeholder="Contoh: 0680117845 (atau '-' jika Tunai)" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-mono font-bold tracking-wider focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                    >
+                    @error('bank_account_number')
+                        <p class="text-xs font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Nama Pemilik Rekening
+                    </label>
+                    <input 
+                        name="bank_account_name" 
+                        value="{{ old('bank_account_name') }}" 
+                        placeholder="Nama sesuai buku tabungan" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                    >
+                    @error('bank_account_name')
                         <p class="text-xs font-semibold text-rose-600 mt-1">{{ $message }}</p>
                     @enderror
                 </div>

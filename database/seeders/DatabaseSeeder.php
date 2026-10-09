@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
             BranchSeeder::class,
             UserSeeder::class,
             ShiftSeeder::class,
+            RealEmployeeBankSeeder::class,
         ]);
     }
 }

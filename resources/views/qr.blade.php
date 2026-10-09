@@ -41,6 +41,11 @@
     {{-- Kiosk Card Display --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 sm:p-10 text-center relative overflow-hidden">
         <div class="relative z-10 max-w-md mx-auto space-y-6">
+            {{-- Corporate Header Logo --}}
+            <div class="flex items-center justify-center">
+                <img src="{{ asset('images/logo-hr-group.png') }}" alt="HR Group" class="h-8 w-auto object-contain">
+            </div>
+
             {{-- Branch Badge --}}
             <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>

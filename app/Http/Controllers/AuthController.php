@@ -21,9 +21,18 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         $data = $request->validated();
+        $input = trim((string) ($data['login'] ?? $data['email'] ?? ''));
+        $loginField = filter_var($input, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        if (!Auth::attempt(['email' => $data['email'], 'password' => $data['password'], 'active' => 1])) {
-            return back()->withErrors(['email' => 'Email atau sandi salah, atau akun tidak aktif.']);
+        if (!Auth::attempt([$loginField => $input, 'password' => $data['password'], 'active' => 1])) {
+            $altField = $loginField === 'email' ? 'username' : 'email';
+            if (!Auth::attempt([$altField => $input, 'password' => $data['password'], 'active' => 1])) {
+                return back()->withInput($request->only('login', 'email'))
+                    ->withErrors([
+                        'login' => 'Username/email atau kata sandi salah, atau akun tidak aktif.',
+                        'email' => 'Username/email atau kata sandi salah, atau akun tidak aktif.',
+                    ]);
+            }
         }
 
         $request->session()->regenerate();

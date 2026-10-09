@@ -6,16 +6,44 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#047857">
     <title>@yield('title', 'HR Group') · HR Group Enterprise</title>
+
+    {{-- Favicon & Official App Icons --}}
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/apple-touch-icon.png') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        @media print {
+            #app-sidebar, header, footer, #toast-container, #mobile-sidebar-backdrop, .no-print, [data-open-modal] {
+                display: none !important;
+            }
+            body, html {
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            main {
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                max-width: 100% !important;
+            }
+            .min-h-screen {
+                min-height: auto !important;
+            }
+        }
+    </style>
     @stack('styles')
 </head>
 <body class="h-full text-slate-800 font-sans selection:bg-emerald-500 selection:text-white">
 
     {{-- Floating Toast Notification Container (Global) --}}
-    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm sm:max-w-md w-full pointer-events-none px-4 sm:px-0" aria-live="polite">
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm sm:max-w-md w-full pointer-events-none px-4 sm:px-0 print:hidden" aria-live="polite">
         {{-- Flash Notifikasi Sukses --}}
         @if(session('ok'))
             <div id="flash-success" role="status" class="toast-item pointer-events-auto relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-emerald-200/90 p-4 text-emerald-950 shadow-xl shadow-emerald-950/10 flex items-start justify-between gap-3 transform transition-all duration-300 translate-x-0 opacity-100" data-toast-type="success" data-duration="5000">
@@ -62,14 +90,12 @@
 @guest
     {{-- Tampilan Publik / Tamu (Login) --}}
     <div class="min-h-screen flex flex-col justify-between bg-slate-50">
-        <header class="py-5 px-6 border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-20">
+        <header class="py-5 px-6 border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-20 print:hidden">
             <div class="max-w-6xl mx-auto flex items-center justify-between">
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-3 group">
-                    <span class="w-9 h-9 rounded-xl bg-emerald-700 flex items-center justify-center text-white font-extrabold text-base shadow-xs">H</span>
-                    <div>
-                        <span class="text-base font-bold text-slate-900 tracking-tight block leading-tight">HR Group</span>
-                        <span class="text-[11px] font-semibold text-emerald-700 uppercase tracking-widest block">Enterprise HRIS</span>
-                    </div>
+                    <img src="{{ asset('images/logo-hr-group.png') }}" alt="HR Group" class="h-8 w-auto object-contain">
+                    <span class="h-4 w-px bg-slate-200 hidden sm:inline-block"></span>
+                    <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 hidden sm:inline-block">Enterprise HRIS</span>
                 </a>
                 <div class="flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-100/80 px-3 py-1.5 rounded-full border border-slate-200">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -82,7 +108,7 @@
             @yield('content')
         </main>
 
-        <footer class="py-5 border-t border-slate-200 text-center text-xs text-slate-500">
+        <footer class="py-5 border-t border-slate-200 text-center text-xs text-slate-500 print:hidden">
             HR Group Enterprise HRIS &middot; Sistem presensi dan kalkulasi waktu berstandar Asia/Jakarta
         </footer>
     </div>
@@ -92,19 +118,16 @@
     {{-- Tampilan Aplikasi Lengkap (Sidebar + Topbar + Content) --}}
     <div class="min-h-screen flex bg-slate-50">
         {{-- Mobile Overlay Backdrop --}}
-        <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden lg:hidden transition-opacity duration-200"></div>
+        <div id="mobile-sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden lg:hidden transition-opacity duration-200 print:hidden"></div>
 
         {{-- Sidebar Navigasi Desktop & Mobile Drawer (Light Theme Clean Enterprise) --}}
-        <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white text-slate-700 flex flex-col justify-between shrink-0 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-200 ease-in-out border-r border-slate-200/90 shadow-xl lg:shadow-none">
+        <aside id="app-sidebar" class="fixed inset-y-0 left-0 z-50 w-72 bg-white text-slate-700 flex flex-col justify-between shrink-0 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-200 ease-in-out border-r border-slate-200/90 shadow-xl lg:shadow-none print:hidden">
             {{-- Bagian Atas: Logo Brand --}}
             <div>
                 <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-                    <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
-                        <span class="w-10 h-10 rounded-xl bg-emerald-700 flex items-center justify-center text-white font-extrabold text-lg shadow-xs">H</span>
-                        <div>
-                            <span class="text-base font-extrabold text-slate-900 tracking-tight block leading-tight">HR Group</span>
-                            <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest block">Enterprise HRIS</span>
-                        </div>
+                    <a href="{{ route('home') }}" class="inline-flex items-center gap-2.5">
+                        <img src="{{ asset('images/logo-hr-group.png') }}" alt="HR Group" class="h-7 w-auto object-contain">
+                        <span class="text-[9px] font-extrabold text-emerald-800 uppercase tracking-wider bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/70">HRIS</span>
                     </a>
                     <button id="close-mobile-sidebar" class="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer" aria-label="Tutup menu">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -120,6 +143,10 @@
                             <a href="{{ route('home') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('home') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                                 <span>Beranda</span>
+                            </a>
+                            <a href="{{ route('attendance.today') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('attendance.today') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>Presensi Hari Ini</span>
                             </a>
                             <a href="{{ route('leave') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('leave*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
@@ -226,7 +253,7 @@
         {{-- Area Konten Utama --}}
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
             {{-- Header Top Bar Desktop & Mobile --}}
-            <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs">
+            <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30 shadow-xs print:hidden">
                 <div class="px-4 sm:px-6 lg:px-8 min-h-[4rem] flex items-center justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <button id="open-mobile-sidebar" class="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-hidden" aria-label="Buka navigasi">
@@ -272,7 +299,7 @@
             </main>
 
             {{-- Footer Area Dashboard --}}
-            <footer class="py-4 px-6 border-t border-slate-200/80 bg-white/50 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <footer class="py-4 px-6 border-t border-slate-200/80 bg-white/50 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 print:hidden">
                 <div class="flex items-center gap-2">
                     <span>&copy; {{ date('Y') }} HR Group &middot; Enterprise HRIS & Payroll System</span>
                     <span class="text-slate-300">&middot;</span>

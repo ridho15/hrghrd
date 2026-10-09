@@ -21,22 +21,22 @@
             <form method="post" action="{{ route('login') }}" class="space-y-5">
                 @csrf
                 <div>
-                    <label for="email" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        Alamat Email
+                    <label for="login" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        Username atau Email
                     </label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206"></path></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                         </div>
                         <input 
-                            id="email" 
-                            type="email" 
-                            name="email" 
-                            value="{{ old('email') }}" 
+                            id="login" 
+                            type="text" 
+                            name="login" 
+                            value="{{ old('login', old('email')) }}" 
                             autocomplete="username" 
                             required 
                             autofocus 
-                            placeholder="nama@perusahaan.com"
+                            placeholder="Username atau alamat email Anda"
                             class="w-full pl-12 pr-4 py-3 bg-slate-50/70 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all text-sm font-medium"
                         >
                     </div>
@@ -72,9 +72,10 @@
     {{-- Sisi Kanan: Panel Showcase Korporat --}}
     <div class="col-span-12 lg:col-span-5 bg-slate-900 p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden border-t lg:border-t-0 lg:border-l border-slate-800">
         <div>
-            <div class="flex items-center gap-2.5 mb-6">
-                <span class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center justify-center font-bold text-sm">H</span>
-                <span class="text-xs font-bold uppercase tracking-widest text-emerald-300">HR Group Ecosystem</span>
+            <div class="flex items-center gap-3 mb-6">
+                <img src="{{ asset('images/logo-hr-group-white.png') }}" alt="HR Group" class="h-7 w-auto object-contain">
+                <span class="h-4 w-px bg-slate-700"></span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-400 bg-emerald-950/60 border border-emerald-700/50 px-2 py-0.5 rounded">Ecosystem</span>
             </div>
 
             <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white mb-2 leading-snug">

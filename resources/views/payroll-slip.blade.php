@@ -1,6 +1,31 @@
 @extends('layouts.app')
 @section('title', 'Slip Gaji: ' . $employee->name . ' (' . \Carbon\Carbon::parse($month.'-01')->translatedFormat('F Y') . ')')
 
+@push('styles')
+<style>
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 12mm 15mm;
+    }
+    body, html {
+        background: #ffffff !important;
+        color: #0f172a !important;
+    }
+    .print\:hidden {
+        display: none !important;
+    }
+    .slip-card {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+    }
+}
+</style>
+@endpush
+
 @section('content')
 <div class="max-w-4xl mx-auto space-y-6">
     {{-- Breadcrumb Navigasi (Sembunyi saat cetak) --}}
@@ -58,48 +83,25 @@
     @endphp
 
     {{-- LEMBAR SLIP GAJI UTAMA (PRINTABLE A4) --}}
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-6 print:border-none print:shadow-none print:p-0">
-        {{-- Kop Surat Resmi Korporat --}}
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b-2 border-slate-900">
-            <div class="flex items-center gap-3.5">
-                <div class="w-14 h-14 rounded-2xl bg-emerald-800 text-white font-black flex items-center justify-center text-xl tracking-tighter shrink-0">
-                    HR
-                </div>
-                <div>
-                    <h2 class="text-xl font-extrabold text-slate-900 tracking-tight m-0">HR GROUP ENTERPRISE</h2>
-                    <p class="text-xs text-slate-500 m-0">Sistem Informasi Penggajian & Remunerasi Karyawan</p>
-                    <span class="text-[11px] font-mono text-emerald-700 font-bold">Cabang: {{ $branch->name }} ({{ $branch->code }})</span>
-                </div>
+    <div class="slip-card bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-10 space-y-6 print:border-none print:shadow-none print:p-0">
+        {{-- Kop Surat Resmi Korporat (Clean Header) --}}
+        <div class="flex items-start justify-between gap-4 pb-6 border-b-2 border-slate-900">
+            {{-- Logo Saja di Header Kiri --}}
+            <div class="flex items-center">
+                <img src="{{ asset('images/logo-hr-group.png') }}" alt="HR Group" class="h-10 sm:h-12 w-auto object-contain shrink-0">
             </div>
 
-            <div class="text-left sm:text-right">
-                <span class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">BUKTI PENGGAJIAN RESMI</span>
-                <span class="text-sm font-mono font-black text-slate-900 block mt-0.5">{{ $refSlipNumber }}</span>
+            {{-- Identitas Bukti & Nama Karyawan di Header Kanan --}}
+            <div class="text-right">
+                <span class="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 block">BUKTI PENGGAJIAN RESMI</span>
+                <span class="text-base sm:text-lg font-black text-slate-900 block mt-0.5">{{ $employee->name }}</span>
+                <span class="text-xs font-mono font-bold text-slate-600 block">{{ $refSlipNumber }}</span>
                 <span class="text-xs text-slate-500 block">Periode: {{ \Carbon\Carbon::parse($month.'-01')->translatedFormat('F Y') }}</span>
-            </div>
-        </div>
-
-        {{-- Profil Karyawan & Ketentuan Kerja --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
-            <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Nama Karyawan</span>
-                <strong class="text-slate-900 font-bold block text-sm">{{ $employee->name }}</strong>
-                <span class="text-[11px] text-slate-500">{{ $employee->email }}</span>
-            </div>
-            <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Jabatan / Posisi</span>
-                <strong class="text-slate-800 block">{{ $employee->position?->name ?? 'Staf' }}</strong>
-                <span class="text-[11px] text-slate-500">Status: {{ ucfirst($employee->role) }}</span>
-            </div>
-            <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Hari Aktif Bekerja</span>
-                <strong class="text-slate-800 block tabular-nums">{{ $detail['employed_days'] }} / {{ $detail['calendar_days'] }} Hari Kalender</strong>
-                <span class="text-[11px] text-slate-500">Mulai: {{ $employee->hired_at ?? '—' }}</span>
-            </div>
-            <div>
-                <span class="text-[10px] uppercase font-bold text-slate-400 block">Tarif Satuan Kerja</span>
-                <span class="font-mono text-slate-800 font-bold block tabular-nums text-[11px]">Rp{{ number_format($detail['daily_rate'], 0, ',', '.') }} / hari</span>
-                <span class="font-mono text-slate-500 text-[10px] tabular-nums">Rp{{ number_format($detail['hourly_rate'], 0, ',', '.') }} / jam</span>
+                @if($employee->bank_account_number)
+                    <span class="text-[11px] font-medium text-emerald-800 block mt-1">
+                        {{ $employee->bank_name ?? 'Bank' }}: <strong class="font-mono">{{ $employee->bank_account_number }}</strong> ({{ $employee->bank_account_name ?? $employee->name }})
+                    </span>
+                @endif
             </div>
         </div>
 
@@ -204,29 +206,12 @@
             </div>
         </div>
 
-        {{-- Jejak Audit Transparan --}}
-        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2 font-mono text-[10px] text-slate-600">
-            <span class="font-bold text-slate-800 uppercase tracking-wider font-sans block text-[11px]">Audit Cross-Reference & Validasi Sistem:</span>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                <div>Tanggal Unpaid: <span class="font-bold text-slate-800">{{ implode(', ', $detail['unpaid_dates']) ?: 'Nihil' }}</span></div>
-                <div>ID Presensi Telat: <span class="font-bold text-slate-800">{{ implode(', ', array_column($detail['late_sources'], 'attendance_id')) ?: 'Nihil' }}</span></div>
-                <div>ID Presensi Lembur: <span class="font-bold text-slate-800">{{ implode(', ', array_column($detail['overtime_sources'], 'attendance_id')) ?: 'Nihil' }}</span></div>
-                <div>ID Koreksi Manual: <span class="font-bold text-slate-800">{{ implode(', ', array_column($detail['adjustments'], 'id')) ?: 'Nihil' }}</span></div>
-            </div>
-        </div>
-
-        {{-- Tanda Tangan & Pengesahan Dokumen --}}
-        <div class="grid grid-cols-2 gap-8 pt-8 border-t border-slate-200 text-xs">
-            <div class="text-center space-y-12">
+        {{-- Tanda Tangan Penerima Dokumen (Hanya Kiri Sesuai Permintaan) --}}
+        <div class="pt-8 border-t border-slate-200 text-xs">
+            <div class="max-w-xs space-y-12">
                 <span class="text-slate-500 block">Diterima oleh Karyawan,</span>
-                <div class="border-b border-slate-400 w-40 mx-auto"></div>
+                <div class="border-b border-slate-400 w-48"></div>
                 <strong class="text-slate-900 block font-bold">({{ $employee->name }})</strong>
-            </div>
-
-            <div class="text-center space-y-12">
-                <span class="text-slate-500 block">Disahkan oleh Bagian HR & Finance,</span>
-                <div class="border-b border-slate-400 w-40 mx-auto"></div>
-                <strong class="text-slate-900 block font-bold">(HR Group Enterprise)</strong>
             </div>
         </div>
     </div>

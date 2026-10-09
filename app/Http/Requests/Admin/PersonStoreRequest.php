@@ -16,11 +16,15 @@ class PersonStoreRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:120',
+            'username' => 'nullable|string|max:60|unique:users,username',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:10',
             'role' => 'required|in:admin,manager,employee',
             'branch_id' => 'nullable|required_unless:role,admin|exists:branches,id',
             'position_id' => 'nullable|exists:positions,id',
+            'bank_name' => 'nullable|string|max:60',
+            'bank_account_number' => 'nullable|string|max:60',
+            'bank_account_name' => 'nullable|string|max:120',
             'hired_at' => 'required|date',
             'ended_at' => 'nullable|date|after_or_equal:hired_at',
             'base_salary' => 'required|integer|min:0',

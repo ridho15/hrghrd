@@ -23,13 +23,10 @@ class DashboardController extends Controller
         $challenge = (string) random_int(100, 999);
         session(['attendance_challenge' => $challenge]);
 
-        // Shift pribadi pengguna (untuk presensi / personal schedule)
+        // Shift pribadi pengguna (khusus jadwal per hari / tanggal sekarang saja)
         $shifts = Shift::with(['branch', 'attendance'])
             ->where('user_id', $user->id)
-            ->whereBetween('start_at', [
-                $today->copy()->subDay()->startOfDay(),
-                $today->copy()->addDays(14)->endOfDay(),
-            ])
+            ->whereDate('start_at', $todayDate)
             ->orderBy('start_at')
             ->get();
 

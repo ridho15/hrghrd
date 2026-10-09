@@ -87,6 +87,10 @@
                     </div>
                     <p class="text-sm font-medium text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
                         <span>{{ $person->email }}</span>
+                        @if($person->username)
+                            <span>&middot;</span>
+                            <span class="font-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded text-xs border border-emerald-200">&#64;{{ $person->username }}</span>
+                        @endif
                         <span>&middot;</span>
                         <span class="font-bold text-slate-700">{{ $person->position?->name ?? 'Belum Ditentukan' }}</span>
                         <span>&middot;</span>
@@ -181,6 +185,42 @@
                 {{ $person->remainingLeaveDays() }} / {{ $person->annual_leave_quota ?? 12 }} <span class="text-xs font-semibold text-emerald-600">Hari</span>
             </strong>
             <span class="text-[11px] text-slate-500 mt-0.5 block">Terpakai: {{ $person->usedLeaveDays(now()->year) }} hari</span>
+        </div>
+    </div>
+
+    {{-- Kartu Data Rekening Bank & Identitas Akun Login --}}
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                </span>
+                <h3 class="text-base font-bold text-slate-900 tracking-tight m-0">Rekening Bank untuk Penggajian & Akun</h3>
+            </div>
+            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">Payroll Ready</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Nama Bank</span>
+                <strong class="text-slate-900 font-bold text-sm block uppercase">{{ $person->bank_name ?: 'BCA' }}</strong>
+                <span class="text-[11px] text-slate-500">Penyaluran transfer gaji</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Nomor Rekening</span>
+                <strong class="text-slate-900 font-mono font-bold text-sm block tracking-wider">{{ $person->bank_account_number ?: '-' }}</strong>
+                <span class="text-[11px] text-slate-500">Nomor rekening transfer</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Nama Pemilik Rekening</span>
+                <strong class="text-slate-900 font-bold text-sm block truncate">{{ $person->bank_account_name ?: $person->name }}</strong>
+                <span class="text-[11px] text-slate-500">Sesuai buku tabungan</span>
+            </div>
+            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Username Login</span>
+                <strong class="text-emerald-800 font-mono font-bold text-sm block">&#64;{{ $person->username ?: '(Email)' }}</strong>
+                <span class="text-[11px] text-slate-500">Dapat login via username</span>
+            </div>
         </div>
     </div>
 

@@ -59,6 +59,7 @@ Route::middleware(['auth','active'])->group(function () {
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::get('/audit', [AuditController::class, 'index'])->name('audit');
     Route::post('/settings', [AdminController::class, 'settingsSave'])->name('settings.save');
+    Route::get('/attendance/today', [AttendanceController::class, 'todayPage'])->name('attendance.today');
     Route::post('/attendance/{shiftId}', [AttendanceController::class, 'act'])->middleware('throttle:10,1')->name('attendance.act');
     Route::post('/attendance/{shiftId}/exception', [AttendanceController::class, 'exception'])->name('attendance.exception');
     Route::get('/branch-qr', [AttendanceController::class, 'qrPage'])->name('qr.page');

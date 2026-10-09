@@ -135,5 +135,30 @@ class AttendanceController extends Controller
 
         return back()->with('ok', 'Lembur disetujui.');
     }
+
+    public function todayPage(Request $request)
+    {
+        $user = auth()->user();
+        abort_unless($user->active, 403);
+        $today = now('Asia/Jakarta');
+        $todayDate = $today->toDateString();
+
+        $challenge = (string) random_int(100, 999);
+        session(['attendance_challenge' => $challenge]);
+
+        $shifts = Shift::with(['branch', 'attendance'])
+            ->where('user_id', $user->id)
+            ->whereDate('start_at', $todayDate)
+            ->orderBy('start_at')
+            ->get();
+
+        $attempts = AttendanceAttempt::where('user_id', $user->id)
+            ->whereDate('server_at', $todayDate)
+            ->latest('id')
+            ->limit(5)
+            ->get();
+
+        return view('attendance-today', compact('user', 'shifts', 'attempts', 'today'));
+    }
 }
 
