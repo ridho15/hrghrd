@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Panduan Penggunaan Cepat - Super Admin | HR Group HRIS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ==================== COVER PAGE ==================== -->
+  <div class="cover-page">
+    <div class="cover-header">
+      <div>
+        <img src="assets/logo-hr-group.png" class="cover-logo-img" alt="HR Group Logo">
+        <div class="company-subbrand">HR GROUP &bull; ENTERPRISE HRIS</div>
+      </div>
+      <div class="doc-badge">ADMIN MANUAL</div>
+    </div>
+
+    <div class="cover-body">
+      <div class="cover-tagline">PANDUAN PRAKTIS & LANGKAH PENGGUNAAN SISTEM</div>
+      <h1 class="cover-title">
+        BUKU PANDUAN PENGGUNA
+        <span class="cover-role-highlight">SUPER ADMIN (ADMINISTRATOR PUSAT)</span>
+      </h1>
+      <p class="cover-subtitle">
+        Petunjuk teknis pengoperasian fitur Master Data Cabang & Geofence, Data Karyawan, Penjadwalan Shift, Mitigasi Kendala Presensi, Konsol Payroll, Pengaturan Toleransi, dan Log Audit.
+      </p>
+    </div>
+
+    <div class="cover-footer">
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">Kode Panduan</div>
+          <div class="meta-value">MNL-HRG-001-ADM</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Versi Sistem</div>
+          <div class="meta-value">v1.0 (Oktober 2026)</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Kredensial Default</div>
+          <div class="meta-value">admin@example.test</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DAFTAR ISI RINGKAS ==================== -->
+  <div class="toc-section">
+    <div class="toc-header-bar">
+      <span class="toc-header-title">DAFTAR MODUL PENGGUNAAN SISTEM</span>
+      <span style="font-size: 8.5pt; color: #64748b; font-weight: 700;">HR GROUP HRIS &bull; SUPER ADMIN</span>
+    </div>
+
+    <ul class="toc-list">
+      <li class="toc-item"><span class="toc-title"><b>MODUL 01</b> Login & Akses Masuk Portal Admin</span><span class="toc-page">Hal. 3</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 02</b> Dashboard Eksekutif & Ringkasan Kehadiran</span><span class="toc-page">Hal. 4</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 03</b> Master Cabang & Pengaturan Geofence GPS</span><span class="toc-page">Hal. 5</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 04</b> Master Jabatan Perusahaan</span><span class="toc-page">Hal. 7</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 05</b> Manajemen Data Karyawan & Registrasi Staf Baru</span><span class="toc-page">Hal. 8</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 06</b> Impor Massal Data Karyawan via File CSV</span><span class="toc-page">Hal. 10</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 07</b> Pembuatan & Persetujuan Jadwal Shift Kerja</span><span class="toc-page">Hal. 11</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 08</b> Review Presensi, Koreksi Jam, & Laporan Kendala</span><span class="toc-page">Hal. 13</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 09</b> Otorisasi Pengajuan Cuti & Izin Sakit</span><span class="toc-page">Hal. 14</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 10</b> Konsol Penggajian (Payroll Bulanan) & Slip Gaji</span><span class="toc-page">Hal. 16</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 11</b> Pengaturan Toleransi Keterlambatan & Parameter</span><span class="toc-page">Hal. 18</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 12</b> Pemantauan Jejak Audit Keamanan (Audit Trail)</span><span class="toc-page">Hal. 19</span></li>
+    </ul>
+
+    <div class="mini-tip" style="margin-top: 25px;">
+      <strong>Petunjuk Cepat:</strong> Buku ini disusun secara pragmatis berdasarkan urutan formulir dan tombol aksi nyata pada aplikasi. Langsung ikuti langkah pada setiap kartu modul.
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 01 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 01</span>
+        <span>Login & Akses Masuk Portal Admin</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/login</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/01_login_page.png" alt="Login Admin">
+      </div>
+      <table class="compact-table">
+        <thead>
+          <tr><th style="width: 25%;">Kolom / Elemen</th><th style="width: 25%;">Nilai Contoh</th><th>Keterangan</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Username / Email</strong></td><td><code>admin@example.test</code></td><td>Alamat email resmi akun Super Admin.</td></tr>
+          <tr><td><strong>Kata Sandi</strong></td><td><code>Demo12345!</code></td><td>Password login (klik ikon mata untuk periksa).</td></tr>
+          <tr><td><strong>Tombol Masuk</strong></td><td><i>Masuk ke Akun</i></td><td>Kirim kredensial dan mulai sesi kerja.</td></tr>
+        </tbody>
+      </table>
+      <div class="action-steps-title">Langkah Penggunaan:</div>
+      <ol class="action-steps">
+        <li>Buka peramban Google Chrome dan akses URL: <code>http://127.0.0.1:8003/login</code>.</li>
+        <li>Masukkan email dan kata sandi Super Admin.</li>
+        <li>Klik tombol hijau <strong>Masuk ke Akun</strong>. Sistem otomatis mengalihkan ke Dashboard.</li>
+      </ol>
+      <div class="mini-warn"><strong>Penting:</strong> Batas salah password maksimal 5 kali berturut-turut. Jika melebihi batas, akun terkunci selama 60 detik.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 02 ==================== -->
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 02</span>
+        <span>Dashboard Eksekutif & Ringkasan Kehadiran</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/02_dashboard.png" alt="Dashboard Admin">
+      </div>
+      <table class="compact-table">
+        <thead>
+          <tr><th>Kartu Ringkasan</th><th>Fungsi Utama</th><th>Aksi Cepat</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Karyawan Aktif</strong></td><td>Total personel yang berhak menerima shift & penggajian.</td><td>Klik untuk buka direktori karyawan.</td></tr>
+          <tr><td><strong>Kehadiran Hari Ini</strong></td><td>Persentase staf yang sudah check-in pada shift berjalan.</td><td>Pantau kedisiplinan kantor cabang.</td></tr>
+          <tr><td><strong>Laporan Kendala</strong></td><td>Antrean komplain presensi yang belum diverifikasi.</td><td>Buka tab <i>Review Presensi</i>.</td></tr>
+          <tr><td><strong>Pengajuan Cuti</strong></td><td>Jumlah permohonan izin/cuti yang menunggu persetujuan.</td><td>Buka menu <i>Cuti</i> untuk verifikasi.</td></tr>
+        </tbody>
+      </table>
+      <div class="mini-tip"><strong>Tips:</strong> Periksa kartu <i>Laporan Kendala</i> dan <i>Pengajuan Cuti</i> setiap pagi pukul 09.00 WIB untuk menghindari penumpukan antrean verifikasi.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 03 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 03</span>
+        <span>Master Cabang & Pengaturan Geofence GPS</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/branches</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/07_branches_list.png" alt="Daftar Cabang">
+      </div>
+      <div class="action-steps-title">Cara Menambah Cabang & Geofence Baru:</div>
+      <ol class="action-steps">
+        <li>Klik menu <strong>Cabang</strong> di navigasi atas &rarr; Klik tombol <strong>+ Tambah Cabang</strong>.</li>
+        <li>Isi <strong>Kode Cabang</strong> (contoh: <code>JKT01</code>, <code>SBY01</code>) dan <strong>Nama Cabang</strong>.</li>
+        <li>Tentukan titik GPS: Ketikkan nilai <strong>Latitude</strong> & <strong>Longitude</strong> kantor atau geser pin pada peta.</li>
+        <li>Tentukan <strong>Radius Geofence (Meter)</strong> (default: <code>100</code> meter).</li>
+        <li>Klik tombol <strong>Simpan Cabang</strong>.</li>
+      </ol>
+      <div class="screenshot-box">
+        <img src="assets/admin/08_branches_create.png" alt="Form Tambah Cabang">
+      </div>
+      <div class="screenshot-box">
+        <img src="assets/admin/09_branches_detail.png" alt="Detail Cabang">
+      </div>
+      <div class="mini-warn"><strong>Aturan GPS:</strong> Karyawan tidak bisa melakukan Check-In jika berada di luar radius geofence ini. Pastikan titik koordinat sesuai pintu masuk fisik kantor.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 04 ==================== -->
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 04</span>
+        <span>Master Jabatan Perusahaan</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/positions</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/11_positions_list.png" alt="Daftar Jabatan">
+      </div>
+      <div class="action-steps-title">Cara Menambah Jabatan:</div>
+      <ol class="action-steps">
+        <li>Buka menu <strong>Jabatan</strong> &rarr; Klik <strong>+ Tambah Jabatan</strong>.</li>
+        <li>Ketikkan <strong>Nama Jabatan</strong> (contoh: <i>Staff Gudang, Kasir, Supervisor</i>).</li>
+        <li>Isikan <strong>Deskripsi Singkat</strong> wewenang posisi.</li>
+        <li>Klik tombol <strong>Simpan Jabatan</strong>.</li>
+      </ol>
+      <div class="screenshot-box">
+        <img src="assets/admin/12_positions_create.png" alt="Form Tambah Jabatan">
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 05 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 05</span>
+        <span>Manajemen Data Karyawan & Registrasi Staf Baru</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/people</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/03_people_list.png" alt="Daftar Karyawan">
+      </div>
+      <div class="action-steps-title">Langkah Mendaftarkan Karyawan Baru:</div>
+      <ol class="action-steps">
+        <li>Klik menu <strong>Karyawan</strong> &rarr; Klik tombol <strong>+ Tambah Karyawan</strong>.</li>
+        <li>Isi <strong>Nama Lengkap</strong>, <strong>Email Perusahaan</strong>, dan <strong>Kata Sandi Awal</strong>.</li>
+        <li>Pilih <strong>Peran (Role)</strong>: <code>admin</code>, <code>manager</code>, atau <code>employee</code>.</li>
+        <li>Tentukan <strong>Cabang Penempatan</strong> dan <strong>Jabatan</strong>.</li>
+        <li>Isi <strong>Tanggal Bergabung (Hired At)</strong> dan nominal <strong>Gaji Pokok (Base Salary)</strong> dalam Rupiah angka murni.</li>
+        <li>Klik tombol <strong>Simpan Karyawan</strong>.</li>
+      </ol>
+      <div class="screenshot-box">
+        <img src="assets/admin/04_people_create.png" alt="Form Tambah Karyawan">
+      </div>
+      <div class="screenshot-box">
+        <img src="assets/admin/05_people_detail.png" alt="Detail Karyawan">
+      </div>
+      <div class="mini-tip"><strong>Nonaktifkan Karyawan Resign:</strong> Buka halaman detail karyawan &rarr; Klik tombol merah <i>Nonaktifkan Akun</i>. Karyawan nonaktif otomatis dikeluarkan dari perhitungan payroll bulan depan.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 06 ==================== -->
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 06</span>
+        <span>Impor Massal Data Karyawan via File CSV</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/import</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/14_import_people.png" alt="Impor Massal Karyawan">
+      </div>
+      <div class="action-steps-title">Langkah Impor Data Karyawan:</div>
+      <ol class="action-steps">
+        <li>Buka menu <strong>Impor Karyawan</strong>.</li>
+        <li>Klik <strong>Pilih Berkas CSV</strong> (pastikan kolom: <code>name, email, role, branch_code, position_name, hired_at, base_salary</code>).</li>
+        <li>Klik tombol <strong>Pratinjau Data (Preview)</strong> untuk melihat baris validasi.</li>
+        <li>Jika tabel pratinjau menunjukkan seluruh status hijau tanpa duplikasi email, klik <strong>Simpan ke Database (Commit)</strong>.</li>
+      </ol>
+      <div class="mini-warn"><strong>Perhatian:</strong> Baris dengan format email salah atau kode cabang yang tidak terdaftar akan otomatis dilewati oleh sistem.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 07 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 07</span>
+        <span>Pembuatan & Persetujuan Jadwal Shift Kerja</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/shifts</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/15_shifts_list.png" alt="Manajemen Shift">
+      </div>
+      <div class="action-steps-title">Cara Membuat Jadwal Shift:</div>
+      <ol class="action-steps">
+        <li>Buka menu <strong>Shift</strong> &rarr; Klik tombol <strong>+ Buat Shift Baru</strong>.</li>
+        <li>Pilih <strong>Karyawan</strong> yang bertugas dan <strong>Cabang</strong> lokasi kerja.</li>
+        <li>Pilih <strong>Tanggal Kerja</strong>, <strong>Jam Mulai</strong> (misal: <code>08:00</code>), dan <strong>Jam Selesai</strong> (misal: <code>17:00</code>).</li>
+        <li>Pilih status <strong>Approved</strong> agar shift langsung aktif di aplikasi mobile karyawan.</li>
+        <li>Klik <strong>Simpan Jadwal Shift</strong>.</li>
+      </ol>
+      <div class="screenshot-box">
+        <img src="assets/admin/16_shifts_create.png" alt="Form Buat Shift">
+      </div>
+      <div class="mini-tip"><strong>Tips:</strong> Gunakan filter tanggal di tabel shift untuk memeriksa apakah ada staf yang belum memiliki jadwal shift kerja di minggu berjalan.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 08 ==================== -->
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 08</span>
+        <span>Review Presensi, Koreksi Jam, & Laporan Kendala</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/attendance-review</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/17_attendance_review.png" alt="Review Presensi">
+      </div>
+      <div class="action-steps-title">Prosedur Menyetujui Laporan Kendala (Exception):</div>
+      <ol class="action-steps">
+        <li>Buka menu <strong>Review Presensi</strong> &rarr; Pilih tab <strong>Laporan Kendala (Exceptions)</strong>.</li>
+        <li>Periksa <strong>Jam Datang yang Diklaim</strong> dan alasan yang disampaikan karyawan.</li>
+        <li>Klik tombol hijau <strong>Setujui (Approve)</strong>. Jam check-in staf otomatis diperbarui sesuai jam kedatangan nyata.</li>
+        <li>Untuk lembur staf, klik tombol <strong>Otorisasi Lembur</strong> pada baris absensi yang bersangkutan.</li>
+      </ol>
+      <div class="mini-warn"><strong>Catatan:</strong> Jika klaim tidak logis, klik tombol merah <strong>Tolak</strong>. Staf akan dihitung terlambat atau tidak hadir sesuai jam log server.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 09 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 09</span>
+        <span>Otorisasi Pengajuan Cuti & Izin Sakit</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/leave</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/18_leave_list.png" alt="Manajemen Cuti">
+      </div>
+      <div class="action-steps-title">Langkah Review & Otorisasi Cuti:</div>
+      <ol class="action-steps">
+        <li>Buka menu <strong>Cuti</strong> &rarr; Klik tombol <strong>Lihat Detail</strong> pada pengajuan berstatus <code>Pending</code>.</li>
+        <li>Periksa jenis izin, rentang tanggal, alasan, dan berkas foto surat dokter (khusus izin sakit).</li>
+        <li>Klik <strong>Setujui (Approve)</strong> untuk memotong kuota cuti tahunan, atau <strong>Tolak (Reject)</strong> jika data tidak sesuai.</li>
+      </ol>
+      <div class="screenshot-box">
+        <img src="assets/admin/19b_leave_detail.png" alt="Detail Cuti">
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 10 ==================== -->
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 10</span>
+        <span>Konsol Penggajian (Payroll Bulanan) & Slip Gaji</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/payroll</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/20_payroll_console.png" alt="Konsol Payroll">
+      </div>
+      <div class="action-steps-title">SOP Eksekusi Penggajian Bulanan:</div>
+      <ol class="action-steps">
+        <li>Pilih periode bulan berjalan (contoh: <code>2026-10</code>).</li>
+        <li>Klik tombol <strong>Hitung Gaji Otomatis (Generate)</strong>. Sistem mengkalkulasi gaji pokok, potongan telat, lembur, dan hari alpha.</li>
+        <li>Jika ada bonus atau kasbon staf, klik <strong>+ Tambah Koreksi (Adjustment)</strong>.</li>
+        <li>Setelah nominal sesuai, klik <strong>Kunci Periode (Lock Payroll)</strong> agar angka tidak berubah.</li>
+        <li>Klik <strong>Ekspor CSV</strong> untuk berkas transfer bank atau klik <strong>Lihat Slip</strong> untuk cetak e-Slip gaji staf.</li>
+      </ol>
+      <div class="screenshot-box">
+        <img src="assets/admin/20b_payroll_slip.png" alt="Slip Gaji Karyawan">
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 11 & 12 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 11</span>
+        <span>Pengaturan Toleransi Waktu & Parameter</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/settings</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/21_settings.png" alt="Pengaturan Sistem">
+      </div>
+      <table class="compact-table">
+        <thead>
+          <tr><th>Parameter</th><th>Nilai Default</th><th>Dampak Sistem</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Toleransi Terlambat</strong></td><td><code>15 Menit</code></td><td>Batas menit check-in sebelum potongan gaji keterlambatan dihitung.</td></tr>
+          <tr><td><strong>Radius Geofence Default</strong></td><td><code>100 Meter</code></td><td>Radius lingkaran absensi saat cabang baru ditambahkan.</td></tr>
+        </tbody>
+      </table>
+      <div class="action-steps-title">Cara Ubah:</div>
+      <p style="font-size: 8.5pt;">Ganti angka pada input &rarr; Klik tombol hijau <strong>Simpan Pengaturan</strong>.</p>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 12</span>
+        <span>Pemantauan Jejak Audit Keamanan (Audit Trail)</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/audit</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/admin/22_audit_trail.png" alt="Jejak Audit">
+      </div>
+      <div class="action-steps-title">Fungsi Audit:</div>
+      <p style="font-size: 8.5pt;">
+        Halaman ini mencatat setiap perubahan data sensitif (jam koreksi, pembatalan shift, approval cuti) lengkap dengan <strong>Nama Akun, Tanggal & Jam, Alamat IP, serta Perubahan Nilai Lama ke Baru</strong> untuk keperluan audit kepatuhan.
+      </p>
+    </div>
+  </div>
+
+</body>
+</html>

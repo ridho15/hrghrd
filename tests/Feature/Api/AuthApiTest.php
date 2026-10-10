@@ -227,4 +227,58 @@ class AuthApiTest extends TestCase
             'name' => 'Refreshed Device',
         ]);
     }
+
+    public function test_device_reset_and_change_password_throttles_are_independent(): void
+    {
+        // Regresi: throttle:N,1 tanpa prefix kunci ke hash user id saja
+        // (lihat ThrottleRequests::resolveRequestSignature), jadi SEMUA route
+        // throttle tanpa prefix berbagi satu bucket per-user. Sebelum fix,
+        // menghabiskan limit /auth/device/reset ikut memblokir
+        // /auth/password (dan sebaliknya) walau keduanya route terpisah.
+        $user = $this->createUser();
+        $token = $user->createToken('Device', ['employee'])->plainTextToken;
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->withHeader('Authorization', 'Bearer ' . $token)
+                ->postJson('/api/v1/auth/device/reset', ['password' => 'WrongPassword!'])
+                ->assertStatus(422);
+        }
+
+        // Bucket device/reset sudah habis (percobaan ke-6 harus 429).
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/v1/auth/device/reset', ['password' => 'WrongPassword!'])
+            ->assertStatus(429);
+
+        // Tapi /auth/password harus TETAP bisa diakses (bucket terpisah).
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/v1/auth/password', [
+                'current_password'          => 'WrongPassword!',
+                'new_password'              => 'NewPassword123',
+                'new_password_confirmation' => 'NewPassword123',
+            ])
+            ->assertStatus(422);
+    }
+
+    public function test_validation_errors_are_localized_to_indonesian(): void
+    {
+        // Regresi: APP_LOCALE=id sudah diset di .env, tapi tanpa berkas
+        // lang/id/validation.php, Laravel diam-diam jatuh ke pesan bawaan
+        // bahasa Inggris ("The new password field must be at least 8
+        // characters.") untuk setiap aturan validasi generik (required, min,
+        // max, date_format, dst). Hanya pesan error kustom yang kita tulis
+        // sendiri di controller yang berbahasa Indonesia — jadi pengguna
+        // melihat campuran bahasa yang tidak konsisten. lang/id/validation.php
+        // memperbaiki ini untuk seluruh aturan validasi bawaan Laravel.
+        $user = $this->createUser();
+        $token = $user->createToken('Device', ['employee'])->plainTextToken;
+
+        $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/v1/auth/password', [
+                'current_password'          => 'Password123!',
+                'new_password'              => 'abc',
+                'new_password_confirmation' => 'abc',
+            ])
+            ->assertStatus(422)
+            ->assertJsonFragment(['new_password' => ['Password baru minimal 8 karakter.']]);
+    }
 }

@@ -29,8 +29,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/logout', [AuthApiController::class, 'logout']);
         Route::get('/me', [AuthApiController::class, 'me']);
         Route::post('/device', [AuthApiController::class, 'registerDevice']);
-        Route::post('/device/reset', [AuthApiController::class, 'resetDevice'])->middleware('throttle:5,1');
-        Route::post('/password', [AuthApiController::class, 'changePassword'])->middleware('throttle:5,1');
+        Route::post('/device/reset', [AuthApiController::class, 'resetDevice'])->middleware('throttle:5,1,device-reset');
+        Route::post('/password', [AuthApiController::class, 'changePassword'])->middleware('throttle:5,1,change-password');
         Route::post('/refresh', [AuthApiController::class, 'refresh']);
     });
 
@@ -43,8 +43,8 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     // Presensi & QR
     Route::prefix('attendance')->group(function () {
-        Route::post('/checkin', [AttendanceApiController::class, 'checkIn'])->middleware('throttle:20,1');
-        Route::post('/checkout', [AttendanceApiController::class, 'checkOut'])->middleware('throttle:20,1');
+        Route::post('/checkin', [AttendanceApiController::class, 'checkIn'])->middleware('throttle:20,1,attendance-checkin');
+        Route::post('/checkout', [AttendanceApiController::class, 'checkOut'])->middleware('throttle:20,1,attendance-checkout');
         Route::get('/history', [AttendanceApiController::class, 'history']);
         Route::get('/qr', [AttendanceApiController::class, 'qrCode']);
         Route::post('/{id}/exception', [AttendanceApiController::class, 'exception']);

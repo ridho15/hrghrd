@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Panduan Penggunaan Cepat - Manager Cabang | HR Group HRIS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ==================== COVER PAGE ==================== -->
+  <div class="cover-page">
+    <div class="cover-header">
+      <div>
+        <img src="assets/logo-hr-group.png" class="cover-logo-img" alt="HR Group Logo">
+        <div class="company-subbrand">HR GROUP &bull; ENTERPRISE HRIS</div>
+      </div>
+      <div class="doc-badge">BRANCH MANAGER</div>
+    </div>
+
+    <div class="cover-body">
+      <div class="cover-tagline">PANDUAN OPERASIONAL LAPANGAN & CARA PENGGUNAAN</div>
+      <h1 class="cover-title">
+        BUKU PANDUAN PENGGUNA
+        <span class="cover-role-highlight">MANAGER CABANG (BRANCH MANAGER)</span>
+      </h1>
+      <p class="cover-subtitle">
+        Petunjuk operasional praktis pimpinan cabang: Menampilkan QR Code Presensi Dinamis (Rotasi 30 Detik), Membuat Jadwal Shift Staf, Menyetujui Laporan Kendala Presensi, dan Otorisasi Izin/Cuti Tim Cabang.
+      </p>
+    </div>
+
+    <div class="cover-footer">
+      <div class="meta-grid">
+        <div class="meta-item">
+          <div class="meta-label">Kode Panduan</div>
+          <div class="meta-value">MNL-HRG-002-MGR</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Versi Sistem</div>
+          <div class="meta-value">v1.0 (Oktober 2026)</div>
+        </div>
+        <div class="meta-item">
+          <div class="meta-label">Kredensial Default</div>
+          <div class="meta-value">manager@example.test</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DAFTAR ISI RINGKAS ==================== -->
+  <div class="toc-section">
+    <div class="toc-header-bar">
+      <span class="toc-header-title">DAFTAR MODUL OPERASIONAL CABANG</span>
+      <span style="font-size: 8.5pt; color: #64748b; font-weight: 700;">HR GROUP HRIS &bull; MANAGER CABANG</span>
+    </div>
+
+    <ul class="toc-list">
+      <li class="toc-item"><span class="toc-title"><b>MODUL 01</b> Login & Dashboard Pemantauan Staf Cabang</span><span class="toc-page">Hal. 3</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 02</b> Pengoperasian Layar Display QR Dinamis Cabang</span><span class="toc-page">Hal. 4</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 03</b> Pengaturan Jadwal Kerja & Shift Staf Cabang</span><span class="toc-page">Hal. 5</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 04</b> Verifikasi Laporan Kendala Presensi (Exceptions) & Lembur</span><span class="toc-page">Hal. 7</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 05</b> Otorisasi Pengajuan Cuti & Izin Sakit Tim Cabang</span><span class="toc-page">Hal. 8</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 06</b> Fitur Pengawasan dari Aplikasi Mobile Smartphone</span><span class="toc-page">Hal. 9</span></li>
+    </ul>
+
+    <div class="mini-tip" style="margin-top: 25px;">
+      <strong>Prinsip Hak Akses Cabang:</strong> Seluruh menu yang Anda akses secara otomatis hanya menampilkan data staf yang bertugas di cabang Anda. Data staf cabang lain dilindungi dan tidak ditampilkan.
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 01 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 01</span>
+        <span>Login & Dashboard Pemantauan Staf Cabang</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/manager/01_dashboard_manager.png" alt="Dashboard Manager">
+      </div>
+      <div class="action-steps-title">Langkah Pemantauan Pagi:</div>
+      <ol class="action-steps">
+        <li>Login dengan akun Manager Cabang Anda (misal: <code>manager@example.test</code>).</li>
+        <li>Pada beranda, perhatikan kartu <strong>Presensi Hari Ini</strong>: staf yang sudah check-in dan staf yang belum hadir.</li>
+        <li>Periksa apakah ada angka pada antrean <strong>Laporan Kendala</strong> untuk segera ditindaklanjuti.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 02 ==================== -->
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 02</span>
+        <span>Pengoperasian Layar Display QR Dinamis Cabang</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/branch-qr</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/manager/02_branch_qr_dynamic.png" alt="Display QR Dinamis">
+      </div>
+      <div class="action-steps-title">SOP Menampilkan QR Presensi di Kantor:</div>
+      <ol class="action-steps">
+        <li>Nyalakan PC atau tablet resmi di meja resepsionis/pintu masuk kantor cabang.</li>
+        <li>Buka peramban Google Chrome dan akses alamat: <code>http://127.0.0.1:8003/branch-qr</code>.</li>
+        <li>Tekan tombol <strong>F11</strong> pada keyboard untuk mode layar penuh (Fullscreen).</li>
+        <li>Sistem otomatis memutar token QR baru setiap <strong>30 detik</strong>. Karyawan memindai QR ini melalui aplikasi mobile untuk Check-In dan Check-Out.</li>
+      </ol>
+      <div class="mini-warn"><strong>Anti-Kecurangan:</strong> Kode QR berganti otomatis. Jika ada staf mencoba memfoto QR dan mengirimkannya ke luar gedung, presensi tetap ditolak karena validasi GPS geofence cabang.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 03 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 03</span>
+        <span>Pengaturan Jadwal Kerja & Shift Staf Cabang</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/shifts</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/manager/03_shifts_cabang.png" alt="Daftar Shift Cabang">
+      </div>
+      <div class="action-steps-title">Cara Membuat / Plotting Shift Staf:</div>
+      <ol class="action-steps">
+        <li>Buka menu <strong>Shift</strong> &rarr; Klik tombol <strong>+ Buat Shift Baru</strong>.</li>
+        <li>Pilih <strong>Karyawan Staf Cabang</strong> yang akan ditugaskan.</li>
+        <li>Pilih <strong>Tanggal Kerja</strong>, <strong>Jam Mulai</strong> (contoh: <code>08:00</code>), dan <strong>Jam Selesai</strong> (contoh: <code>17:00</code>).</li>
+        <li>Pilih status <strong>Approved</strong> agar staf dapat langsung absen pada hari tersebut.</li>
+        <li>Klik tombol <strong>Simpan Jadwal Shift</strong>.</li>
+      </ol>
+      <div class="screenshot-box">
+        <img src="assets/manager/04_shifts_create_cabang.png" alt="Form Shift Cabang">
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 04 ==================== -->
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 04</span>
+        <span>Verifikasi Laporan Kendala Presensi & Lembur</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/attendance-review</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/manager/05_attendance_review_cabang.png" alt="Review Presensi Cabang">
+      </div>
+      <div class="action-steps-title">Langkah Verifikasi Kendala (Exception):</div>
+      <ol class="action-steps">
+        <li>Buka menu <strong>Review Presensi</strong> &rarr; Pilih tab <strong>Laporan Kendala (Exceptions)</strong>.</li>
+        <li>Lihat alasan laporan (misal: GPS error di basement atau display mati lampu).</li>
+        <li>Periksa <strong>Jam Kedatangan yang Diklaim</strong> oleh staf.</li>
+        <li>Jika staf memang benar sudah berada di lokasi kerja, klik tombol hijau <strong>Setujui (Approve)</strong>.</li>
+        <li>Untuk tugas lembur resmi cabang, klik tombol <strong>Otorisasi Lembur</strong> pada baris shift staf yang bersangkutan.</li>
+      </ol>
+      <div class="mini-warn"><strong>Penting:</strong> Persetujuan lembur oleh Manager diperlukan agar kompensasi upah lembur masuk ke kalkulasi slip gaji staf di akhir bulan.</div>
+    </div>
+  </div>
+
+  <!-- ==================== MODUL 05 & 06 ==================== -->
+  <div style="page-break-before: always;"></div>
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 05</span>
+        <span>Otorisasi Pengajuan Cuti & Izin Sakit Tim Cabang</span>
+      </div>
+      <span class="module-url">http://127.0.0.1:8003/leave</span>
+    </div>
+    <div class="module-content">
+      <div class="screenshot-box">
+        <img src="assets/manager/06_leave_cabang.png" alt="Review Cuti Cabang">
+      </div>
+      <div class="action-steps-title">Cara Approve Cuti / Izin Sakit:</div>
+      <ol class="action-steps">
+        <li>Klik menu <strong>Cuti</strong> &rarr; Pilih permohonan staf berstatus <code>Pending</code>.</li>
+        <li>Periksa alasan dan pastikan ada staf pengganti jika mengambil cuti tahunan.</li>
+        <li>Jika izin sakit, pastikan lampiran foto surat keterangan dokter terbaca jelas.</li>
+        <li>Klik tombol <strong>Setujui (Approve)</strong> atau <strong>Tolak (Reject)</strong>.</li>
+      </ol>
+      <div class="screenshot-box">
+        <img src="assets/manager/07_leave_create_cabang.png" alt="Form Pengajuan Cuti">
+      </div>
+    </div>
+  </div>
+
+  <div class="module-card">
+    <div class="module-header">
+      <div class="module-number-title">
+        <span class="module-tag">MODUL 06</span>
+        <span>Fitur Pengawasan dari Aplikasi Mobile Smartphone</span>
+      </div>
+      <span class="module-url">Mobile App: Flutter HRGHRD</span>
+    </div>
+    <div class="module-content">
+      <div class="mobile-dual-grid">
+        <div class="mobile-dual-card">
+          <img src="assets/mobile/emulator_presensi.png" class="mobile-dual-img" alt="Mobile Presensi">
+          <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; font-weight: 700;">Status Presensi Tim</div>
+        </div>
+        <div class="mobile-dual-card">
+          <img src="assets/mobile/emulator_jadwal.png" class="mobile-dual-img" alt="Mobile Jadwal">
+          <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; font-weight: 700;">Kalender Shift Cabang</div>
+        </div>
+      </div>
+      <div class="action-steps-title">Solusi Darurat Mati Lampu (Manager QR):</div>
+      <p style="font-size: 8.5pt;">
+        Jika monitor PC kantor cabang mati listrik, buka aplikasi mobile di ponsel Anda &rarr; Masuk ke menu <strong>Manager QR</strong> &rarr; Tampilkan layar ponsel Anda agar dapat discan oleh staf lain untuk absen masuk dan pulang.
+      </p>
+    </div>
+  </div>
+
+</body>
+</html>
