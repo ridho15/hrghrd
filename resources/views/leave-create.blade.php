@@ -90,11 +90,11 @@
                     <div>
                         @php
                             $leavePeopleOpts = collect([
-                                ['value' => (string)auth()->id(), 'label' => 'Saya Sendiri (' . auth()->user()->name . ')', 'sublabel' => auth()->user()->email]
+                                ['value' => (string)auth()->id(), 'label' => 'Saya Sendiri (' . auth()->user()->name . ')', 'sublabel' => (auth()->user()->username ? '@' . auth()->user()->username . ' • ' : '') . auth()->user()->email]
                             ])->merge($people->where('id', '!=', auth()->id())->map(fn($p) => [
                                 'value' => (string)$p->id,
                                 'label' => $p->name,
-                                'sublabel' => ($p->position?->title ?? 'Staf') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
+                                'sublabel' => ($p->username ? '@' . $p->username . ' • ' : '') . ($p->position?->name ?? 'Staf') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
                             ]));
                         @endphp
                         <x-searchable-select

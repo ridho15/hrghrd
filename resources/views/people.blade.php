@@ -43,7 +43,7 @@
                 {{-- Pencarian Kata Kunci --}}
                 <div class="lg:col-span-2">
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                        Pencarian Nama / Email
+                        Pencarian Nama / Email / Username
                     </label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
@@ -52,7 +52,7 @@
                         <input 
                             name="search" 
                             value="{{ request('search') }}" 
-                            placeholder="Ketik nama staf atau alamat email..." 
+                            placeholder="Ketik nama staf, username, atau email..." 
                             class="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-xs font-medium focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
                         >
                     </div>
@@ -114,7 +114,7 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-slate-100">
                 <span class="text-xs text-slate-500 font-medium">
                     Menampilkan <strong>{{ $people->total() }}</strong> total data karyawan
                 </span>
@@ -129,6 +129,61 @@
                     </button>
                 </div>
             </div>
+
+            {{-- Active Filter Chips --}}
+            @if(request()->filled('search') || request()->filled('branch_id') || request()->filled('position_id') || request()->filled('role') || request()->filled('status'))
+                <div class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100 text-xs">
+                    <span class="text-slate-500 font-semibold mr-1">Filter Aktif:</span>
+
+                    @if(request()->filled('search'))
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/60 font-medium">
+                            <span>Pencarian: "<strong>{{ request('search') }}</strong>"</span>
+                            <a href="{{ route('people', request()->except('search', 'page')) }}" class="hover:text-emerald-950 p-0.5 inline-flex items-center" title="Hapus filter pencarian">✕</a>
+                        </span>
+                    @endif
+
+                    @if(request()->filled('branch_id'))
+                        @php
+                            $activeBranch = $branches->firstWhere('id', request('branch_id'));
+                        @endphp
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 text-sky-800 border border-sky-200/60 font-medium">
+                            <span>Cabang: <strong>{{ $activeBranch?->name ?? 'ID #'.request('branch_id') }}</strong></span>
+                            <a href="{{ route('people', request()->except('branch_id', 'page')) }}" class="hover:text-sky-950 p-0.5 inline-flex items-center" title="Hapus filter cabang">✕</a>
+                        </span>
+                    @endif
+
+                    @if(request()->filled('position_id'))
+                        @php
+                            $activePos = $positions->firstWhere('id', request('position_id'));
+                        @endphp
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200/60 font-medium">
+                            <span>Jabatan: <strong>{{ $activePos?->name ?? 'ID #'.request('position_id') }}</strong></span>
+                            <a href="{{ route('people', request()->except('position_id', 'page')) }}" class="hover:text-amber-950 p-0.5 inline-flex items-center" title="Hapus filter jabatan">✕</a>
+                        </span>
+                    @endif
+
+                    @if(request()->filled('role'))
+                        @php
+                            $roleNames = ['employee' => 'Karyawan', 'manager' => 'Manager', 'admin' => 'Super Admin'];
+                        @endphp
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 border border-purple-200/60 font-medium">
+                            <span>Peran: <strong>{{ $roleNames[request('role')] ?? request('role') }}</strong></span>
+                            <a href="{{ route('people', request()->except('role', 'page')) }}" class="hover:text-purple-950 p-0.5 inline-flex items-center" title="Hapus filter peran">✕</a>
+                        </span>
+                    @endif
+
+                    @if(request()->filled('status'))
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 font-medium">
+                            <span>Status: <strong>{{ request('status') === '1' ? 'Aktif' : 'Nonaktif' }}</strong></span>
+                            <a href="{{ route('people', request()->except('status', 'page')) }}" class="hover:text-slate-950 p-0.5 inline-flex items-center" title="Hapus filter status">✕</a>
+                        </span>
+                    @endif
+
+                    <a href="{{ route('people') }}" class="text-xs text-rose-600 hover:text-rose-800 hover:underline font-bold ml-1">
+                        Hapus Semua
+                    </a>
+                </div>
+            @endif
         </form>
     </div>
 
@@ -302,8 +357,31 @@
                         <tr>
                             <td colspan="7" class="py-12 text-center text-slate-400 text-xs">
                                 <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                <p class="font-semibold text-slate-500 m-0">Tidak ada data karyawan yang cocok dengan kriteria pencarian.</p>
-                                <p class="text-slate-400 mt-1">Coba ubah kata kunci atau hapus filter untuk melihat semua data.</p>
+                                <p class="font-semibold text-slate-600 text-sm m-0">Tidak ada data karyawan yang cocok dengan kriteria pencarian.</p>
+                                
+                                @if(request()->filled('search') && request()->filled('branch_id'))
+                                    <p class="text-slate-500 mt-1.5 max-w-md mx-auto">
+                                        Pencarian "<strong>{{ request('search') }}</strong>" dibatasi pada cabang terpilih. Karyawan yang Anda cari mungkin berada di cabang lain.
+                                    </p>
+                                    <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                        <a href="{{ route('people', request()->except('branch_id', 'page')) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-2xs">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                            Cari "{{ request('search') }}" di Semua Cabang
+                                        </a>
+                                        <a href="{{ route('people') }}" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors">
+                                            Reset Semua Filter
+                                        </a>
+                                    </div>
+                                @elseif(request()->hasAny(['search', 'branch_id', 'position_id', 'role', 'status']))
+                                    <p class="text-slate-400 mt-1">Coba periksa ejaan kata kunci atau hapus filter untuk melihat semua data.</p>
+                                    <div class="mt-3">
+                                        <a href="{{ route('people') }}" class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-colors">
+                                            Reset Semua Filter
+                                        </a>
+                                    </div>
+                                @else
+                                    <p class="text-slate-400 mt-1">Belum ada data karyawan terdaftar di sistem.</p>
+                                @endif
                             </td>
                         </tr>
                     @endforelse

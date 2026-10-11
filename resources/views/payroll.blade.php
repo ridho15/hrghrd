@@ -235,7 +235,7 @@
                             id="adjustment-user"
                             label="Pilih Karyawan"
                             required
-                            :options="collect($allBranchEmployees ?? [])->map(fn($emp) => ['value' => $emp->id, 'label' => $emp->name, 'sublabel' => $emp->position?->name ?? 'Staf'])"
+                            :options="collect($allBranchEmployees ?? [])->map(fn($emp) => ['value' => $emp->id, 'label' => $emp->name, 'sublabel' => ($emp->username ? '@'.$emp->username.' • ' : '') . ($emp->position?->name ?? 'Staf')])"
                             placeholder="Pilih Karyawan..."
                             searchPlaceholder="Cari nama karyawan..."
                         />

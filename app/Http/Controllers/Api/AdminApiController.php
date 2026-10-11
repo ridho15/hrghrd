@@ -36,9 +36,15 @@ class AdminApiController extends Controller
             ->when($request->query('branch_id') && Access::admin(), fn ($q) => $q->where('branch_id', $request->query('branch_id')))
             ->when($request->has('active'), fn ($q) => $q->where('active', filter_var($request->query('active'), FILTER_VALIDATE_BOOLEAN)))
             ->when($request->query('search'), function ($q, $search) {
-                $q->where(function ($sub) use ($search) {
+                $search = trim((string) $search);
+                if ($search === '') {
+                    return;
+                }
+                $searchUsername = ltrim($search, '@');
+                $q->where(function ($sub) use ($search, $searchUsername) {
                     $sub->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$searchUsername}%");
                 });
             })
             ->orderBy('name');

@@ -37,9 +37,15 @@ class PayrollController extends Controller
             ->where('hired_at', '<=', $end)
             ->where(fn ($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', $month . '-01'))
             ->when($request->query('search'), function ($q, $search) {
-                $q->where(function ($sub) use ($search) {
+                $search = trim((string) $search);
+                if ($search === '') {
+                    return;
+                }
+                $searchUsername = ltrim($search, '@');
+                $q->where(function ($sub) use ($search, $searchUsername) {
                     $sub->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$searchUsername}%");
                 });
             })
             ->orderBy('name');

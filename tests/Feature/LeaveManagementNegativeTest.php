@@ -160,4 +160,55 @@ class LeaveManagementNegativeTest extends TestCase
 
         $response->assertStatus(422);
     }
+
+    public function test_certificate_download_returns_404_when_physical_file_is_missing(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->actingAsEmployee($branch);
+
+        $leave = LeaveRequest::create([
+            'user_id' => $employee->id,
+            'type' => 'sick',
+            'start_date' => now('Asia/Jakarta')->toDateString(),
+            'end_date' => now('Asia/Jakarta')->toDateString(),
+            'reason' => 'Demam tinggi',
+            'status' => 'pending',
+            'certificate_path' => 'certificates/missing_file.pdf',
+            'certificate_name' => 'surat_dokter.pdf',
+            'created_by' => $employee->id,
+        ]);
+
+        \Illuminate\Support\Facades\Storage::disk('local')->delete('certificates/missing_file.pdf');
+
+        $response = $this->get("/leave/{$leave->id}/certificate");
+        $response->assertStatus(404);
+    }
+
+    public function test_api_certificate_download_returns_404_json_when_physical_file_is_missing(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['role' => 'employee', 'branch_id' => $branch->id]);
+
+        $leave = LeaveRequest::create([
+            'user_id' => $employee->id,
+            'type' => 'sick',
+            'start_date' => now('Asia/Jakarta')->toDateString(),
+            'end_date' => now('Asia/Jakarta')->toDateString(),
+            'reason' => 'Demam tinggi',
+            'status' => 'pending',
+            'certificate_path' => 'certificates/missing_api_file.pdf',
+            'certificate_name' => 'surat_dokter.pdf',
+            'created_by' => $employee->id,
+        ]);
+
+        \Illuminate\Support\Facades\Storage::disk('local')->delete('certificates/missing_api_file.pdf');
+
+        \Laravel\Sanctum\Sanctum::actingAs($employee, ['employee']);
+        $response = $this->getJson("/api/v1/leave/{$leave->id}/certificate");
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Berkas fisik surat keterangan tidak ditemukan di server penyimpanan.',
+            ]);
+    }
 }

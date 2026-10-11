@@ -125,6 +125,7 @@
                     data-select-option
                     data-value="{{ $opt['value'] }}"
                     data-label="{{ $opt['label'] }}"
+                    data-sublabel="{{ $opt['sublabel'] }}"
                     class="px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors {{ $isSelected ? 'bg-emerald-50 text-emerald-900 font-bold' : 'text-slate-700 hover:bg-slate-100' }}"
                 >
                     <div class="truncate">

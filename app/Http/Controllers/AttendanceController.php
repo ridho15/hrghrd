@@ -83,14 +83,23 @@ class AttendanceController extends Controller
             ->paginate(10, ['*'], 'exceptions_page')
             ->withQueryString();
 
+        $searchAttempt = trim((string) $request->query('search_attempt'));
+        $searchAttemptUser = ltrim($searchAttempt, '@');
+
         $attempts = AttendanceAttempt::with('user')
             ->whereHas('user', fn ($q) => Access::admin() ? $q : $q->where('branch_id', $branch))
-            ->when($request->query('search_attempt'), function ($q, $search) {
-                $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
+            ->when($searchAttempt !== '', function ($q) use ($searchAttempt, $searchAttemptUser) {
+                $q->whereHas('user', function ($u) use ($searchAttempt, $searchAttemptUser) {
+                    $u->where('name', 'like', "%{$searchAttempt}%")
+                        ->orWhere('username', 'like', "%{$searchAttemptUser}%");
+                });
             })
             ->latest('id')
             ->paginate(10, ['*'], 'attempts_page')
             ->withQueryString();
+
+        $search = trim((string) $request->query('search'));
+        $searchUser = ltrim($search, '@');
 
         $attendancesQuery = Attendance::with(['user.position', 'user.branch', 'shift.branch', 'overtimeApprover'])
             ->whereHas('shift', function ($q) use ($branch, $request) {
@@ -98,8 +107,12 @@ class AttendanceController extends Controller
                     ->when($request->query('branch_id') && Access::admin(), fn ($x) => $x->where('branch_id', $request->query('branch_id')))
                     ->when($request->query('date'), fn ($x, $d) => $x->whereDate('start_at', $d));
             })
-            ->when($request->query('search'), function ($q, $search) {
-                $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
+            ->when($search !== '', function ($q) use ($search, $searchUser) {
+                $q->whereHas('user', function ($u) use ($search, $searchUser) {
+                    $u->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$searchUser}%");
+                });
             })
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->latest('id');

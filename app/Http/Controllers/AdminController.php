@@ -43,22 +43,26 @@ class AdminController extends Controller
         $branches = Branch::orderBy('name')->get();
         $positions = Position::orderBy('name')->get();
 
+        $search = trim((string) $request->query('search'));
+        $searchUsername = ltrim($search, '@');
+
         $query = User::with([
             'branch',
             'position',
             'shifts' => fn ($q) => $q->latest('start_at')->take(5),
             'leaveRequests' => fn ($q) => $q->latest('id')->take(5),
         ])
-            ->when($request->query('search'), function ($q, $search) {
-                $q->where(function ($sub) use ($search) {
+            ->when($search !== '', function ($q) use ($search, $searchUsername) {
+                $q->where(function ($sub) use ($search, $searchUsername) {
                     $sub->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$searchUsername}%");
                 });
             })
-            ->when($request->query('branch_id'), fn ($q, $b) => $q->where('branch_id', $b))
-            ->when($request->query('role'), fn ($q, $r) => $q->where('role', $r))
-            ->when($request->query('position_id'), fn ($q, $p) => $q->where('position_id', $p))
-            ->when($request->has('status') && $request->query('status') !== '', fn ($q) => $q->where('active', (int) $request->query('status')))
+            ->when($request->filled('branch_id'), fn ($q) => $q->where('branch_id', $request->query('branch_id')))
+            ->when($request->filled('role'), fn ($q) => $q->where('role', $request->query('role')))
+            ->when($request->filled('position_id'), fn ($q) => $q->where('position_id', $request->query('position_id')))
+            ->when($request->filled('status'), fn ($q) => $q->where('active', (int) $request->query('status')))
             ->orderBy('name');
 
         $people = $query->paginate(10)->withQueryString();
@@ -485,12 +489,19 @@ class AdminController extends Controller
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->orderBy('name')->get();
 
+        $search = trim((string) $request->query('search'));
+        $searchUsername = ltrim($search, '@');
+
         $query = Shift::with(['user.position', 'user.branch', 'branch', 'attendance'])
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->when($request->query('branch_id') && Access::admin(), fn ($q, $b) => $q->where('branch_id', $b))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
-            ->when($request->query('search'), function ($q, $search) {
-                $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"));
+            ->when($search !== '', function ($q) use ($search, $searchUsername) {
+                $q->whereHas('user', function ($u) use ($search, $searchUsername) {
+                    $u->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$searchUsername}%");
+                });
             })
             ->when($request->query('date_from'), fn ($q, $d) => $q->whereDate('start_at', '>=', $d))
             ->when($request->query('date_to'), fn ($q, $d) => $q->whereDate('start_at', '<=', $d))

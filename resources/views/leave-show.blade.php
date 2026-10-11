@@ -163,37 +163,61 @@
                 </div>
 
                 @if($leave->certificate_path)
-                    <div class="p-4 rounded-2xl bg-purple-50/50 border border-purple-200/70 space-y-3">
-                        <div class="flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
-                                <svg class="w-5 h-5 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
+                    @php
+                        $hasPhysicalCert = \Illuminate\Support\Facades\Storage::disk('local')->exists($leave->certificate_path);
+                    @endphp
+                    @if($hasPhysicalCert)
+                        <div class="p-4 rounded-2xl bg-purple-50/50 border border-purple-200/70 space-y-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <strong class="text-xs font-bold text-slate-900 block truncate">
+                                        {{ $leave->certificate_name ?: 'surat-keterangan-dokter' }}
+                                    </strong>
+                                    <span class="text-[11px] text-purple-700 font-semibold block mt-0.5">
+                                        Dokumen Resmi Terverifikasi
+                                    </span>
+                                </div>
                             </div>
-                            <div class="min-w-0 flex-1">
-                                <strong class="text-xs font-bold text-slate-900 block truncate">
-                                    {{ $leave->certificate_name ?: 'surat-keterangan-dokter' }}
-                                </strong>
-                                <span class="text-[11px] text-purple-700 font-semibold block mt-0.5">
-                                    Dokumen Resmi Terverifikasi
-                                </span>
-                            </div>
-                        </div>
 
-                        <div class="pt-2">
-                            <a
-                                href="{{ route('leave.certificate', $leave->id) }}"
-                                target="_blank"
-                                class="w-full py-2.5 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                </svg>
-                                <span>Unduh / Buka Dokumen Penuh</span>
-                                <svg class="w-3.5 h-3.5 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                            </a>
+                            <div class="pt-2">
+                                <a
+                                    href="{{ route('leave.certificate', $leave->id) }}"
+                                    target="_blank"
+                                    class="w-full py-2.5 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                    <span>Unduh / Buka Dokumen Penuh</span>
+                                    <svg class="w-3.5 h-3.5 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    @else
+                        <div class="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-2">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                                    <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <strong class="text-xs font-bold text-amber-900 block truncate">
+                                        {{ $leave->certificate_name ?: 'surat-keterangan-dokter' }}
+                                    </strong>
+                                    <span class="text-[11px] text-amber-700 font-semibold block mt-0.5">
+                                        Berkas fisik tidak ditemukan di server penyimpanan
+                                    </span>
+                                </div>
+                            </div>
+                            <p class="text-[11px] text-slate-500 m-0">
+                                Catatan dokumen tercatat di sistem, namun berkas asli di disk server tidak tersedia atau telah terhapus.
+                            </p>
+                        </div>
+                    @endif
                 @else
                     <div class="p-6 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-400">
                         Tidak ada berkas lampiran yang disertakan pada permohonan ini.

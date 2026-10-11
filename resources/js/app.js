@@ -540,8 +540,10 @@ function initSearchableSelects() {
       const q = query.toLowerCase().trim();
       let matchCount = 0;
       wrapper.querySelectorAll('[data-select-option]').forEach(opt => {
-        const text = (opt.dataset.label || opt.textContent).toLowerCase();
-        const matches = text.includes(q);
+        const label = (opt.dataset.label || '').toLowerCase();
+        const sublabel = (opt.dataset.sublabel || '').toLowerCase();
+        const fullText = (opt.textContent || '').toLowerCase();
+        const matches = !q || label.includes(q) || sublabel.includes(q) || fullText.includes(q);
         opt.classList.toggle('hidden', !matches);
         if (matches) matchCount++;
       });

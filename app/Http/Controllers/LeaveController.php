@@ -23,8 +23,16 @@ class LeaveController extends Controller
                 : $q->where('user_id', $user->id)
             )
             ->when($request->query('search'), function ($q, $search) {
-                $q->where(function ($sub) use ($search) {
-                    $sub->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%"))
+                $search = trim((string) $search);
+                if ($search === '') {
+                    return;
+                }
+                $searchUsername = ltrim($search, '@');
+                $q->where(function ($sub) use ($search, $searchUsername) {
+                    $sub->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('username', 'like', "%{$searchUsername}%")
+                        )
                         ->orWhere('reason', 'like', "%{$search}%");
                 });
             })
@@ -94,8 +102,13 @@ class LeaveController extends Controller
     public function certificate(int $id)
     {
         $leave = LeaveRequest::findOrFail($id);
-        abort_unless($leave->certificate_path, 404);
-        abort_unless(Access::employee($leave->user_id), 403);
+        abort_unless($leave->certificate_path, 404, 'Data pengajuan ini tidak memiliki lampiran surat.');
+        abort_unless(Access::employee($leave->user_id), 403, 'Anda tidak memiliki hak akses untuk dokumen ini.');
+        abort_unless(
+            Storage::disk('local')->exists($leave->certificate_path),
+            404,
+            'Berkas surat dokter tidak ditemukan di server penyimpanan.'
+        );
 
         return Storage::disk('local')->download($leave->certificate_path, $leave->certificate_name ?: 'surat-sakit');
     }

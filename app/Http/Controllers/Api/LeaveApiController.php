@@ -176,8 +176,17 @@ class LeaveApiController extends Controller
     public function certificate(Request $request, int $id)
     {
         $leave = LeaveRequest::findOrFail($id);
-        abort_unless($leave->certificate_path, 404);
+        if (! $leave->certificate_path) {
+            return response()->json(['success' => false, 'message' => 'Lampiran tidak ditemukan.'], 404);
+        }
         abort_unless(Access::employee($leave->user_id), 403);
+
+        if (! Storage::disk('local')->exists($leave->certificate_path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Berkas fisik surat keterangan tidak ditemukan di server penyimpanan.',
+            ], 404);
+        }
 
         return Storage::disk('local')->download($leave->certificate_path, $leave->certificate_name ?: 'surat-sakit');
     }
