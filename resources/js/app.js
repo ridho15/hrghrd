@@ -83,7 +83,10 @@ if (qrDisplay) {
         codeNode.textContent = value.code;
       }
       expiry = value.expires_at;
-    } catch { codeNode.textContent = 'Koneksi terputus'; }
+    } catch {
+      codeNode.textContent = 'Koneksi terputus';
+      setTimeout(refresh, 3000);
+    }
   }
   refresh();
   setInterval(() => { timerNode.textContent = expiry ? `Berganti dalam ${Math.max(0, expiry - Math.floor(Date.now()/1000))} detik` : ''; if (expiry && Date.now()/1000 >= expiry) refresh(); }, 1000);

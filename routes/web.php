@@ -5,6 +5,7 @@ use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\KioskController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\PayrollController;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login',[AuthController::class,'loginForm'])->name('login');
 Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1');
 Route::post('/logout',[AuthController::class,'logout'])->middleware('auth')->name('logout');
+
+// Halaman Kiosk Display QR Presensi (Publik / Tanpa Login)
+Route::get('/kiosk/qr/code/{code}', [KioskController::class, 'code'])->middleware('throttle:60,1')->name('kiosk.qr.code');
+Route::get('/kiosk/qr/{code?}', [KioskController::class, 'show'])->name('kiosk.qr');
 
 Route::middleware(['auth','active','must.change.password'])->group(function () {
     Route::get('/',[DashboardController::class,'index'])->name('home');

@@ -22,6 +22,18 @@
 
         <div class="flex items-center gap-2.5 shrink-0">
             <a
+                href="{{ route('kiosk.qr') }}"
+                target="_blank"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all"
+                title="Buka Layar Kiosk QR Universal (Bebas Pilih Cabang)"
+            >
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                </svg>
+                <span>Buka Kiosk Universal</span>
+            </a>
+
+            <a
                 href="{{ route('branches.create') }}"
                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider shadow-sm transition-all"
             >
@@ -106,6 +118,31 @@
                             {{-- Aksi --}}
                             <td class="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">
                                 <div class="inline-flex items-center gap-1.5">
+                                    {{-- Tombol Buka Kiosk Cabang --}}
+                                    <a
+                                        href="{{ route('kiosk.qr', $b->code) }}"
+                                        target="_blank"
+                                        class="p-1.5 rounded-lg text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 transition-colors"
+                                        title="Buka Layar Kiosk QR Cabang {{ $b->name }}"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                                        </svg>
+                                    </a>
+
+                                    {{-- Tombol Salin Link Kiosk Cabang --}}
+                                    <button
+                                        type="button"
+                                        data-url="{{ route('kiosk.qr', $b->code) }}"
+                                        onclick="navigator.clipboard.writeText(this.dataset.url).then(() => { if (typeof window.showToast === 'function') { window.showToast('Link Kiosk ' + '{{ $b->code }}' + ' berhasil disalin!', 'success'); } else { alert('Link Kiosk ' + '{{ $b->code }}' + ' berhasil disalin!'); } })"
+                                        class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                                        title="Salin Tautan Kiosk Cabang {{ $b->code }}"
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </button>
+
                                     {{-- Tombol Detail Mandiri --}}
                                     <a
                                         href="{{ route('branches.show', $b->id) }}"

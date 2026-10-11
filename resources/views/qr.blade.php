@@ -18,24 +18,38 @@
             </p>
         </div>
 
-        {{-- Form Ganti Cabang --}}
-        <form method="get" action="{{ route('qr.page') }}" class="sm:shrink-0">
-            <div class="relative">
-                <label for="branch-selector" class="sr-only">Pilih Cabang</label>
-                <select 
-                    id="branch-selector"
-                    name="branch_id" 
-                    onchange="this.form.submit()"
-                    class="pl-4 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 shadow-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 cursor-pointer"
-                >
-                    @foreach($branches as $b)
-                        <option value="{{ $b->id }}" @selected($branch->id == $b->id)>
-                            {{ $b->name }} ({{ $b->code }})
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-        </form>
+        {{-- Form Ganti Cabang & Tombol Kiosk Mandiri --}}
+        <div class="flex items-center gap-2.5 sm:shrink-0">
+            <a
+                href="{{ route('kiosk.qr', $branch->code) }}"
+                target="_blank"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold uppercase tracking-wider transition-all shadow-xs"
+                title="Buka Layar Kiosk Mandiri Tanpa Menu Apapun"
+            >
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-5h-4m4 0v4m0 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                </svg>
+                <span>Layar Kiosk Bersih</span>
+            </a>
+
+            <form method="get" action="{{ route('qr.page') }}" class="m-0">
+                <div class="relative">
+                    <label for="branch-selector" class="sr-only">Pilih Cabang</label>
+                    <select 
+                        id="branch-selector"
+                        name="branch_id" 
+                        onchange="this.form.submit()"
+                        class="pl-4 pr-10 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold text-slate-800 shadow-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 cursor-pointer"
+                    >
+                        @foreach($branches as $b)
+                            <option value="{{ $b->id }}" @selected($branch->id == $b->id)>
+                                {{ $b->name }} ({{ $b->code }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+            </form>
+        </div>
     </div>
 
     {{-- Kiosk Card Display --}}
