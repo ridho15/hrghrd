@@ -21,13 +21,22 @@
                 </p>
             </div>
 
-            {{-- Real-time Clock Widget --}}
-            <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center min-w-[180px] shrink-0">
-                <div id="live-time" class="text-2xl sm:text-3xl font-black font-mono tracking-wider text-white">
-                    {{ $today->format('H:i:s') }}
-                </div>
-                <div class="text-[11px] font-semibold text-emerald-200 uppercase tracking-wider mt-1">
-                    {{ $today->translatedFormat('l, d F Y') }}
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                @if(\App\Support\Access::manager())
+                    <a href="{{ route('qr.page', ['branch_id' => auth()->user()->branch_id]) }}" target="_blank" class="inline-flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 backdrop-blur-md shadow-xs transition-colors shrink-0">
+                        <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                        <span>Buka Layar QR Kiosk</span>
+                    </a>
+                @endif
+
+                {{-- Real-time Clock Widget --}}
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center min-w-[180px] shrink-0">
+                    <div id="live-time" class="text-2xl sm:text-3xl font-black font-mono tracking-wider text-white">
+                        {{ $today->format('H:i:s') }}
+                    </div>
+                    <div class="text-[11px] font-semibold text-emerald-200 uppercase tracking-wider mt-1">
+                        {{ $today->translatedFormat('l, d F Y') }}
+                    </div>
                 </div>
             </div>
         </div>

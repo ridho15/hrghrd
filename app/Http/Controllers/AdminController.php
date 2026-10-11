@@ -25,6 +25,7 @@ use App\Support\Audit;
 use App\Support\Rules;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -313,6 +314,58 @@ class AdminController extends Controller
         Audit::record('user', $person->id, 'status_change', "Status akun karyawan {$person->name} {$statusStr} oleh Super Admin.");
 
         return back()->with('ok', "Akun {$person->name} berhasil {$statusStr}.");
+    }
+
+    public function personResetPassword(int $id)
+    {
+        $this->admin();
+        $person = User::findOrFail($id);
+        if ($person->id === auth()->id()) {
+            return back()->withErrors(['person' => 'Untuk alasan keamanan, Anda tidak dapat mereset password akun Anda sendiri melalui fitur ini. Silakan gunakan menu ubah kata sandi profil.']);
+        }
+
+        $person->update([
+            'password' => Hash::make('12345678'),
+        ]);
+
+        Audit::record('user', $person->id, 'reset_password', "Password akun {$person->name} direset ke default (12345678) oleh Super Admin.");
+
+        return back()->with('ok', "Password untuk {$person->name} berhasil direset menjadi 12345678.");
+    }
+
+    public function peopleBulkResetPassword(Request $request)
+    {
+        $this->admin();
+        $validated = $request->validate([
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'integer|exists:users,id',
+        ], [
+            'user_ids.required' => 'Pilih setidaknya satu karyawan untuk direset.',
+            'user_ids.min' => 'Pilih setidaknya satu karyawan untuk direset.',
+            'user_ids.*.exists' => 'Data karyawan yang dipilih tidak ditemukan dalam sistem.',
+        ]);
+
+        $userIds = array_values(array_filter($validated['user_ids'], fn ($id) => (int) $id !== auth()->id()));
+
+        if (empty($userIds)) {
+            return back()->withErrors(['bulk' => 'Tidak ada akun karyawan valid yang dapat direset (akun Anda sendiri dikecualikan).']);
+        }
+
+        $users = User::whereIn('id', $userIds)->get();
+
+        DB::transaction(function () use ($userIds, $users) {
+            User::whereIn('id', $userIds)->update([
+                'password' => Hash::make('12345678'),
+            ]);
+
+            foreach ($users as $user) {
+                Audit::record('user', $user->id, 'reset_password', "Password akun {$user->name} direset massal ke default (12345678) oleh Super Admin.");
+            }
+        });
+
+        $count = $users->count();
+
+        return back()->with('ok', "Password untuk {$count} karyawan terpilih berhasil direset menjadi 12345678.");
     }
 
     public function personDestroy(int $id)

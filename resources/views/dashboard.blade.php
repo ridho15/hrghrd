@@ -27,6 +27,10 @@
         </div>
         <div class="flex items-center gap-2.5 flex-wrap">
             @if(\App\Support\Access::admin())
+                <a href="{{ route('qr.page', ['branch_id' => auth()->user()->branch_id]) }}" target="_blank" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-sm font-bold border border-emerald-200/90 shadow-xs transition-colors">
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    <span>Tampilkan QR Presensi</span>
+                </a>
                 <a href="{{ route('people') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold shadow-xs transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                     <span>+ Tambah Karyawan</span>
@@ -246,12 +250,12 @@
                     <span class="block text-[10px] text-slate-400 mt-0.5">Kalkulasi Gaji</span>
                 </a>
 
-                <a href="{{ route('qr.page') }}" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">
+                <a href="{{ route('qr.page', ['branch_id' => auth()->user()->branch_id]) }}" target="_blank" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">
                     <div class="w-9 h-9 mx-auto rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
                     </div>
-                    <span class="block text-xs font-bold text-slate-800 group-hover:text-indigo-700">Kiosk QR Toko</span>
-                    <span class="block text-[10px] text-slate-400 mt-0.5">Display Scanner</span>
+                    <span class="block text-xs font-bold text-slate-800 group-hover:text-indigo-700">QR Presensi Kiosk</span>
+                    <span class="block text-[10px] text-slate-400 mt-0.5">Tampilkan Layar QR</span>
                 </a>
 
                 <a href="{{ route('audit') }}" class="p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 text-center transition-all group hover:border-emerald-500/50">

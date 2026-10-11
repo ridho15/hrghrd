@@ -67,7 +67,8 @@
                 </a>
 
                 <a
-                    href="{{ route('qr.page') }}"
+                    href="{{ route('qr.page', ['branch_id' => $branch->id]) }}"
+                    target="_blank"
                     class="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider transition-all inline-flex items-center gap-1.5 shadow-2xs"
                     title="Buka QR Kiosk Cabang Ini"
                 >

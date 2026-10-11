@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\User;
 use App\Support\Access;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -10,6 +11,27 @@ class PersonUpdateRequest extends FormRequest
     public function authorize(): bool
     {
         return Access::admin();
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $id = (int) $this->route('id');
+        $currentUser = User::find($id);
+
+        $merges = [];
+
+        // Proteksi: Jika akun yang diedit adalah akun admin sendiri, pastikan tetap admin dan aktif
+        if ($id === (int) auth()->id()) {
+            $merges['role'] = 'admin';
+            $merges['active'] = true;
+        } elseif (! $this->has('active')) {
+            // Jika field active tidak dikirimkan, gunakan status akun saat ini
+            $merges['active'] = $currentUser ? (bool) $currentUser->active : true;
+        }
+
+        if (! empty($merges)) {
+            $this->merge($merges);
+        }
     }
 
     public function rules(): array
@@ -55,6 +77,8 @@ class PersonUpdateRequest extends FormRequest
             'branch_id.required_unless' => 'Cabang wajib dipilih untuk peran selain admin.',
             'ended_at.after_or_equal' => 'Tanggal akhir kerja harus sama atau setelah tanggal mulai.',
             'base_salary.min' => 'Gaji bulanan tidak boleh bernilai negatif.',
+            'active.required' => 'Status keaktifan akun wajib ditentukan.',
+            'active.boolean' => 'Status keaktifan akun harus bernilai aktif atau nonaktif.',
         ];
     }
 }

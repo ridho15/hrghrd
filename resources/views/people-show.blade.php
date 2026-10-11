@@ -37,6 +37,19 @@
                 @if($person->id !== auth()->id())
                     <button 
                         type="button" 
+                        data-confirm="Password akun karyawan '{{ $person->name }}' akan direset menjadi default '12345678'. Karyawan dapat langsung login menggunakan kata sandi ini."
+                        data-confirm-title="Reset Password {{ $person->name }}?"
+                        data-confirm-variant="warning"
+                        data-confirm-btn="Ya, Reset ke 12345678"
+                        data-confirm-action="{{ route('people.reset_password', $person->id) }}"
+                        class="px-3.5 py-2.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold shadow-xs transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                        title="Reset Password Karyawan ke 12345678"
+                    >
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                        <span>Reset Password (12345678)</span>
+                    </button>
+                    <button 
+                        type="button" 
                         data-confirm="Apakah Anda yakin ingin {{ $person->active ? 'menonaktifkan' : 'mengaktifkan kembali' }} akun karyawan {{ $person->name }}?"
                         data-confirm-title="{{ $person->active ? 'Nonaktifkan Akun Karyawan?' : 'Aktifkan Akun Karyawan?' }}"
                         data-confirm-variant="{{ $person->active ? 'warning' : 'primary' }}"
@@ -135,6 +148,7 @@
                         <input type="hidden" name="position_id" value="{{ $person->position_id }}">
                         <input type="hidden" name="hired_at" value="{{ $person->hired_at }}">
                         <input type="hidden" name="base_salary" value="{{ $person->base_salary }}">
+                        <input type="hidden" name="active" value="{{ $person->active ? '1' : '0' }}">
                         <input type="hidden" name="reset_device" value="1">
                         <button type="submit" class="w-full py-1.5 px-3 rounded-lg bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold border border-slate-300 transition-colors shadow-2xs cursor-pointer">
                             Reset Kunci HP Karyawan

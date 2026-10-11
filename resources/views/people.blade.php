@@ -138,6 +138,9 @@
             <table class="w-full text-left text-sm">
                 <thead>
                     <tr class="border-b border-slate-100 bg-slate-50/70 text-slate-500 text-[11px] uppercase tracking-wider font-bold">
+                        <th class="py-3 px-4 w-10 text-center">
+                            <input type="checkbox" id="select-all-people" class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" title="Pilih Semua Karyawan">
+                        </th>
                         <th class="py-3 px-4">Nama Karyawan</th>
                         <th class="py-3 px-4">Cabang & Posisi</th>
                         <th class="py-3 px-4">Peran Akun</th>
@@ -149,6 +152,15 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse($people as $p)
                         <tr class="hover:bg-slate-50/70 transition-colors">
+                            {{-- Checkbox Seleksi Massal --}}
+                            <td class="py-3.5 px-4 text-center">
+                                @if($p->id !== auth()->id())
+                                    <input type="checkbox" name="user_ids[]" value="{{ $p->id }}" form="bulk-reset-password-form" class="person-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" data-person-name="{{ $p->name }}">
+                                @else
+                                    <span class="inline-block text-slate-300 text-xs font-bold" title="Akun Anda Sendiri">-</span>
+                                @endif
+                            </td>
+
                             {{-- Nama Karyawan & Avatar --}}
                             <td class="py-3.5 px-4">
                                 <div class="flex items-center gap-3">
@@ -222,6 +234,19 @@
                                     @if($p->id !== auth()->id())
                                         <button 
                                             type="button" 
+                                            data-confirm="Password akun karyawan '{{ $p->name }}' akan direset menjadi default '12345678'. Karyawan dapat langsung login menggunakan kata sandi tersebut."
+                                            data-confirm-title="Reset Password {{ $p->name }}?"
+                                            data-confirm-variant="warning"
+                                            data-confirm-btn="Ya, Reset ke 12345678"
+                                            data-confirm-action="{{ route('people.reset_password', $p->id) }}"
+                                            class="p-1.5 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
+                                            title="Reset Password ke 12345678"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                                        </button>
+
+                                        <button 
+                                            type="button" 
                                             data-confirm="Apakah Anda yakin ingin {{ $p->active ? 'menonaktifkan' : 'mengaktifkan kembali' }} akun {{ $p->name }}?"
                                             data-confirm-title="{{ $p->active ? 'Nonaktifkan Akun?' : 'Aktifkan Akun?' }}"
                                             data-confirm-variant="{{ $p->active ? 'warning' : 'primary' }}"
@@ -255,7 +280,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="py-12 text-center text-slate-400 text-xs">
+                            <td colspan="7" class="py-12 text-center text-slate-400 text-xs">
                                 <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                 <p class="font-semibold text-slate-500 m-0">Tidak ada data karyawan yang cocok dengan kriteria pencarian.</p>
                                 <p class="text-slate-400 mt-1">Coba ubah kata kunci atau hapus filter untuk melihat semua data.</p>
@@ -273,5 +298,106 @@
             </div>
         @endif
     </section>
+
+    {{-- Form Bulk Reset Password (HTML5 Associated) --}}
+    <form id="bulk-reset-password-form" method="POST" action="{{ route('people.bulk_reset_password') }}">
+        @csrf
+        {{-- Floating Bulk Action Bar --}}
+        <div id="bulk-action-bar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 transform translate-y-28 opacity-0 pointer-events-none w-[92%] max-w-xl">
+            <div class="bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center justify-between gap-4 backdrop-blur-md">
+                <div class="flex items-center gap-3">
+                    <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </span>
+                    <div>
+                        <span class="text-xs font-bold text-white block">
+                            <span id="bulk-selected-count">0</span> Karyawan Terpilih
+                        </span>
+                        <span class="text-[11px] text-slate-400 block">Pilihan siap direset password</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button 
+                        type="button" 
+                        id="btn-cancel-bulk"
+                        class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                        Batal
+                    </button>
+                    <button 
+                        type="button" 
+                        id="btn-trigger-bulk-reset"
+                        data-confirm="Password untuk karyawan terpilih akan direset serentak menjadi default '12345678'. Karyawan dapat langsung login menggunakan kata sandi tersebut."
+                        data-confirm-title="Reset Password Karyawan Terpilih?"
+                        data-confirm-variant="warning"
+                        data-confirm-btn="Ya, Reset Semua ke 12345678"
+                        class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-colors cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                    >
+                        <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                        <span>Reset Password (12345678)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('select-all-people');
+    const checkboxes = document.querySelectorAll('.person-checkbox');
+    const bulkBar = document.getElementById('bulk-action-bar');
+    const countEl = document.getElementById('bulk-selected-count');
+    const cancelBtn = document.getElementById('btn-cancel-bulk');
+    const triggerBulkBtn = document.getElementById('btn-trigger-bulk-reset');
+
+    function updateBulkState() {
+        const checked = document.querySelectorAll('.person-checkbox:checked');
+        const count = checked.length;
+        if (countEl) countEl.textContent = count;
+
+        if (count > 0) {
+            bulkBar.classList.remove('translate-y-28', 'opacity-0', 'pointer-events-none');
+            bulkBar.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            if (triggerBulkBtn) {
+                triggerBulkBtn.dataset.confirmTitle = `Reset Password ${count} Karyawan?`;
+                triggerBulkBtn.dataset.confirm = `Password untuk ${count} karyawan terpilih akan direset serentak menjadi default '12345678'. Karyawan dapat langsung login menggunakan kata sandi tersebut.`;
+            }
+        } else {
+            bulkBar.classList.add('translate-y-28', 'opacity-0', 'pointer-events-none');
+            bulkBar.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+        }
+
+        if (selectAll) {
+            selectAll.checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+            selectAll.indeterminate = count > 0 && count < checkboxes.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateBulkState();
+        });
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateBulkState);
+    });
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            checkboxes.forEach(cb => cb.checked = false);
+            if (selectAll) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            }
+            updateBulkState();
+        });
+    }
+});
+</script>
+@endpush
