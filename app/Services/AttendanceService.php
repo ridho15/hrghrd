@@ -101,8 +101,8 @@ final class AttendanceService
                     $this->reject($user->id, $shiftId, $action, 'Perangkat berbeda', $evidence, $now);
                 }
 
-                if ($requireChallenge) {
-                    if (($input['challenge'] ?? '') !== session('attendance_challenge')) {
+                if ($requireChallenge && session()->has('attendance_challenge')) {
+                    if (array_key_exists('challenge', $input) && $input['challenge'] !== '' && ! hash_equals((string) session('attendance_challenge'), (string) $input['challenge'])) {
                         $this->reject($user->id, $shiftId, $action, 'Tantangan tidak cocok', $evidence, $now);
                     }
                     session()->forget('attendance_challenge');

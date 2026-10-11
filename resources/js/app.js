@@ -23,26 +23,46 @@ document.querySelectorAll('.attendance-form').forEach(form => {
   });
   const scan = form.querySelector('[data-scan-qr]');
   if (scan) scan.addEventListener('click', async () => {
+    const fallbackDetails = form.querySelector('details');
     if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
-      status.textContent = 'Pemindai tidak didukung. Ketik kode delapan karakter yang tampil di cabang.'; return;
+      status.textContent = 'Pemindai tidak didukung di browser ini. Silakan masukkan kode manual.';
+      if (fallbackDetails) fallbackDetails.open = true;
+      return;
     }
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}});
       const video = form.querySelector('video'); video.hidden = false; video.srcObject = stream; await video.play();
+      status.textContent = 'Mengarahkan kamera ke QR Code...';
       const detector = new BarcodeDetector({formats: ['qr_code']});
-      const until = Date.now() + 15000;
+      const until = Date.now() + 20000;
       while (Date.now() < until) {
         const codes = await detector.detect(video);
         if (codes.length) {
           const code = codes[0].rawValue.trim().toUpperCase();
-          if (/^[A-F0-9]{8}$/.test(code)) { form.elements.qr_code.value = code; status.textContent = 'Kode terbaca.'; break; }
+          if (/^[A-F0-9]{8}$/.test(code)) {
+            form.elements.qr_code.value = code;
+            status.textContent = 'Kode QR berhasil terbaca: ' + code;
+            const badge = form.querySelector('.qr-detected-badge');
+            const codeEl = form.querySelector('.qr-detected-code');
+            if (badge && codeEl) {
+              codeEl.textContent = code;
+              badge.classList.remove('hidden');
+            }
+            break;
+          }
         }
         await new Promise(resolve => setTimeout(resolve, 250));
       }
-      if (!form.elements.qr_code.value) status.textContent = 'QR belum terbaca. Ketik kode secara manual.';
+      if (!form.elements.qr_code.value) {
+        status.textContent = 'QR belum terbaca. Silakan coba lagi atau gunakan kode manual.';
+        if (fallbackDetails) fallbackDetails.open = true;
+      }
       video.hidden = true;
-    } catch { status.textContent = 'Kamera tidak tersedia. Ketik kode secara manual.'; }
+    } catch {
+      status.textContent = 'Izin kamera ditolak. Silakan masukkan kode manual.';
+      if (fallbackDetails) fallbackDetails.open = true;
+    }
     finally { stream?.getTracks().forEach(track => track.stop()); }
   });
 });

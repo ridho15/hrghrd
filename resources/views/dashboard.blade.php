@@ -543,44 +543,54 @@
                                 <input type="hidden" name="latitude">
                                 <input type="hidden" name="longitude">
                                 <input type="hidden" name="accuracy">
+                                <input type="hidden" name="challenge" value="{{ $challenge }}">
 
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                            Kode Cabang 8 Karakter
-                                        </label>
-                                        <input 
-                                            name="qr_code" 
-                                            maxlength="8" 
-                                            minlength="8" 
-                                            autocapitalize="characters" 
-                                            placeholder="Contoh: A1B2C3D4" 
-                                            required
-                                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold tracking-widest uppercase focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm"
-                                        >
+                                {{-- Area Pindai QR Kamera (Alur Utama) --}}
+                                <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider block">Verifikasi QR Code Cabang</span>
+                                            <p class="text-[11px] text-slate-500 m-0">Arahkan kamera ke layar QR Kiosk cabang Anda.</p>
+                                        </div>
+                                        <button type="button" data-scan-qr class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-300 shadow-2xs transition-colors cursor-pointer shrink-0">
+                                            <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            <span>Buka Kamera Pemindai</span>
+                                        </button>
                                     </div>
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                            Angka Tantangan: Ketik <span class="text-emerald-700 font-extrabold text-sm">{{ $challenge }}</span>
-                                        </label>
-                                        <input 
-                                            name="challenge" 
-                                            inputmode="numeric" 
-                                            maxlength="3" 
-                                            required 
-                                            placeholder="3 Digit"
-                                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-mono font-bold tracking-wider focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-sm"
-                                        >
-                                    </div>
-                                </div>
 
-                                {{-- Area Pemindai Kamera & Viewfinder --}}
-                                <div class="space-y-2">
-                                    <button type="button" data-scan-qr class="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-200 transition-colors cursor-pointer">
-                                        <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                        <span>Buka Kamera Pemindai QR</span>
-                                    </button>
                                     <video class="qr-scanner w-full max-h-56 rounded-xl border border-slate-300 bg-black object-cover" playsinline hidden></video>
+
+                                    {{-- Indikator Kode QR Terdeteksi --}}
+                                    <div class="qr-detected-badge hidden p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2 text-xs">
+                                        <span class="text-emerald-800 font-bold flex items-center gap-1.5">
+                                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                            <span>QR Berhasil Terbaca:</span>
+                                            <code class="qr-detected-code font-mono font-black text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300"></code>
+                                        </span>
+                                        <span class="text-[10px] text-emerald-600 font-semibold">Siap Kirim</span>
+                                    </div>
+
+                                    {{-- Fallback Manual: Disembunyikan rapi dalam menu bantuan --}}
+                                    <details class="text-xs text-slate-500 pt-1 border-t border-slate-200/60">
+                                        <summary class="cursor-pointer hover:text-slate-700 font-medium list-none flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                            <span>Kamera tidak bisa memindai? Masukkan Kode Cabang 8 Karakter manual</span>
+                                        </summary>
+                                        <div class="mt-2.5 pt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Kode Cabang 8 Karakter</label>
+                                                <input 
+                                                    name="qr_code" 
+                                                    maxlength="8" 
+                                                    minlength="8" 
+                                                    autocapitalize="characters" 
+                                                    placeholder="Contoh: A1B2C3D4" 
+                                                    class="w-full sm:w-60 px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono font-bold tracking-widest uppercase focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs"
+                                                >
+                                            </div>
+                                            <span class="text-[11px] text-slate-400 sm:mt-5">Ketik kode dari layar kiosk cabang</span>
+                                        </div>
+                                    </details>
                                 </div>
 
                                 {{-- Tombol Submit Presensi --}}

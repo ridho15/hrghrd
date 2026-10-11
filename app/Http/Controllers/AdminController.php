@@ -538,6 +538,20 @@ class AdminController extends Controller
     public function shift(ShiftStoreRequest $request, ShiftService $service)
     {
         $data = $request->validated();
+
+        if (($data['mode'] ?? 'single') === 'recurring' || isset($data['start_date'])) {
+            $result = $service->createBatch($data, auth()->user());
+            $created = $result['created_count'];
+            $skipped = $result['skipped_count'];
+
+            $msg = "Berhasil membuat {$created} jadwal shift.";
+            if ($skipped > 0) {
+                $msg .= " ({$skipped} jadwal dilewati karena sudah ada shift yang tumpang tindih).";
+            }
+
+            return redirect()->route('shifts')->with('ok', $msg);
+        }
+
         [$start, $end] = $this->times($data);
         $this->noOverlap($data['user_id'], $start, $end);
         $shift = $service->create($data);

@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\Shift;
 use App\Models\User;
+use App\Support\Access;
 use App\Support\Audit;
 use App\Support\Period;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ShiftService
 {
@@ -73,5 +75,96 @@ class ShiftService
         Audit::record('shift', $shift->id, 'approve');
 
         return $shift;
+    }
+
+    /**
+     * Membuat jadwal shift secara massal (berulang / rentang tanggal)
+     * dengan proteksi periode dan pencegahan tumpang tindih cerdas.
+     *
+     * @return array{created_count: int, skipped_count: int, shifts: \Illuminate\Support\Collection}
+     */
+    public function createBatch(array $data, ?User $actor = null): array
+    {
+        $branchId = (int) $data['branch_id'];
+
+        if (! empty($data['select_all_branch'])) {
+            $userIds = User::where('branch_id', $branchId)
+                ->where('active', true)
+                ->whereIn('role', ['employee', 'manager'])
+                ->pluck('id')
+                ->all();
+        } else {
+            $userIds = array_map('intval', (array) ($data['user_ids'] ?? [$data['user_id'] ?? null]));
+            $userIds = array_values(array_filter($userIds));
+        }
+
+        abort_if(empty($userIds), 422, 'Pilih setidaknya satu karyawan aktif.');
+
+        $startDate = Carbon::parse($data['start_date'], 'Asia/Jakarta');
+        $endDate = Carbon::parse($data['end_date'], 'Asia/Jakarta');
+        $daysOfWeek = array_map('intval', (array) ($data['days_of_week'] ?? []));
+
+        $isAutoApprove = ! empty($data['auto_approve']) && ($actor?->role === 'admin' || Access::admin());
+        $status = $isAutoApprove ? 'approved' : 'draft';
+        $approvedBy = $isAutoApprove ? ($actor?->id ?? auth()->id()) : null;
+        $approvedAt = $isAutoApprove ? now('Asia/Jakarta') : null;
+
+        $createdShifts = collect();
+        $skippedCount = 0;
+
+        DB::transaction(function () use (
+            $startDate, $endDate, $daysOfWeek, $userIds, $data, $branchId,
+            $status, $approvedBy, $approvedAt, &$createdShifts, &$skippedCount
+        ) {
+            $currentDate = $startDate->copy();
+            while ($currentDate->lte($endDate)) {
+                $dayNum = $currentDate->dayOfWeekIso; // 1 (Senin) .. 7 (Minggu)
+                $dateStr = $currentDate->toDateString();
+
+                if (in_array($dayNum, $daysOfWeek, true)) {
+                    Period::writable($branchId, $dateStr);
+
+                    $start = Carbon::parse($dateStr . ' ' . $data['start_time'], 'Asia/Jakarta');
+                    $end = Carbon::parse($dateStr . ' ' . $data['end_time'], 'Asia/Jakarta');
+                    if ($end->lte($start)) {
+                        $end->addDay();
+                    }
+                    abort_if($end->diffInHours($start) > 24, 422, 'Durasi shift tidak valid.');
+
+                    foreach ($userIds as $userId) {
+                        $conflict = Shift::where('user_id', $userId)
+                            ->where('start_at', '<', $end)
+                            ->where('end_at', '>', $start)
+                            ->exists();
+
+                        if ($conflict) {
+                            $skippedCount++;
+                            continue;
+                        }
+
+                        $shift = Shift::create([
+                            'user_id'     => $userId,
+                            'branch_id'   => $branchId,
+                            'start_at'    => $start,
+                            'end_at'      => $end,
+                            'status'      => $status,
+                            'version'     => 1,
+                            'approved_by' => $approvedBy,
+                            'approved_at' => $approvedAt,
+                        ]);
+
+                        Audit::record('shift', $shift->id, 'create_batch', 'Shift dibuat melalui generator massal/rutin.');
+                        $createdShifts->push($shift);
+                    }
+                }
+                $currentDate->addDay();
+            }
+        });
+
+        return [
+            'created_count' => $createdShifts->count(),
+            'skipped_count' => $skippedCount,
+            'shifts'        => $createdShifts,
+        ];
     }
 }
