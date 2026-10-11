@@ -35,7 +35,7 @@ final class AttendanceService
         abort_unless(in_array($action, ['in', 'out'], true), 404);
 
         try {
-            $lateError = DB::transaction(function () use ($user, $shiftId, $action, $input, $deviceToken, $requireChallenge) {
+            DB::transaction(function () use ($user, $shiftId, $action, $input, $deviceToken, $requireChallenge) {
                 $shift = Shift::where('id', $shiftId)->where('user_id', $user->id)->first();
                 $now = now('Asia/Jakarta');
 
@@ -45,9 +45,13 @@ final class AttendanceService
 
                 Period::writable($shift->branch_id, $shift->start_at->toDateString());
                 $branch = Branch::find($shift->branch_id);
-                $start = Carbon::parse($shift->start_at, 'Asia/Jakarta');
-                $end = Carbon::parse($shift->end_at, 'Asia/Jakarta');
-                $attendance = Attendance::where('shift_id', $shiftId)->first();
+                if (! $branch) {
+                    $this->reject($user->id, $shiftId, $action, 'Cabang tidak ditemukan', [], $now);
+                }
+
+                if ($user->branch_id && (int) $shift->branch_id !== (int) $user->branch_id) {
+                    $this->reject($user->id, $shiftId, $action, 'Cabang shift tidak sesuai dengan cabang penempatan karyawan', [], $now);
+                }
 
                 $evidence = [
                     'server_at' => $now->toIso8601String(),
@@ -58,44 +62,6 @@ final class AttendanceService
                     'device_hash' => hash('sha256', $deviceToken),
                     'ip' => request()->ip(),
                 ];
-
-                if ($action === 'in') {
-                    if ($attendance) {
-                        $this->reject($user->id, $shiftId, $action, 'Check-in sudah tercatat', $evidence, $now);
-                    }
-                    if ($now->lt($start->copy()->subMinutes(Rules::int('checkin_early_minutes')))) {
-                        $this->reject($user->id, $shiftId, $action, 'Terlalu awal', $evidence, $now);
-                    }
-
-                    $late = max(0, (int) $start->diffInMinutes($now, false));
-                    if ($late > Rules::int('late_reject_minutes')) {
-                        $absent = Attendance::create([
-                            'shift_id' => $shiftId,
-                            'user_id' => $user->id,
-                            'checkin_at' => $now,
-                            'status' => 'absent',
-                            'late_minutes' => $late,
-                            'checkin_evidence' => $evidence,
-                        ]);
-
-                        $this->attempt($user->id, $shiftId, $action, 'rejected', 'Lebih dari batas terlambat', $evidence, $now);
-                        Audit::record('attendance', $absent->id, 'auto_absent', 'Terlambat ' . $late . ' menit');
-
-                        return 'Terlambat lebih dari batas; ditandai alfa. Ajukan pengecualian bila ada kendala.';
-                    }
-
-                    if ($now->gt($end)) {
-                        $this->reject($user->id, $shiftId, $action, 'Shift telah selesai', $evidence, $now);
-                    }
-                } else {
-                    if (! $attendance || ! $attendance->checkin_at || $attendance->checkout_at) {
-                        $this->reject($user->id, $shiftId, $action, 'Check-out tidak sah atau ganda', $evidence, $now);
-                    }
-                    if ($now->lt(Carbon::parse($attendance->checkin_at, 'Asia/Jakarta')) ||
-                        $now->gt($end->copy()->addHours(Rules::int('checkout_late_hours')))) {
-                        $this->reject($user->id, $shiftId, $action, 'Di luar jendela check-out', $evidence, $now);
-                    }
-                }
 
                 if (! $deviceToken || ($user->device_hash && ! hash_equals($user->device_hash, $evidence['device_hash']))) {
                     $this->reject($user->id, $shiftId, $action, 'Perangkat berbeda', $evidence, $now);
@@ -135,6 +101,35 @@ final class AttendanceService
 
                 if ((float) $input['accuracy'] > 100 || $distance > $branch->radius_m) {
                     $this->reject($user->id, $shiftId, $action, 'Lokasi di luar area atau akurasi GPS rendah', $evidence, $now);
+                }
+
+                $start = Carbon::parse($shift->start_at, 'Asia/Jakarta');
+                $end = Carbon::parse($shift->end_at, 'Asia/Jakarta');
+                $attendance = Attendance::where('shift_id', $shiftId)->first();
+
+                if ($action === 'in') {
+                    if ($attendance) {
+                        $this->reject($user->id, $shiftId, $action, 'Check-in sudah tercatat', $evidence, $now);
+                    }
+                    if ($now->lt($start->copy()->subMinutes(Rules::int('checkin_early_minutes')))) {
+                        $this->reject($user->id, $shiftId, $action, 'Terlalu awal', $evidence, $now);
+                    }
+                    if ($now->gt($end)) {
+                        $this->reject($user->id, $shiftId, $action, 'Shift telah selesai', $evidence, $now);
+                    }
+
+                    $late = max(0, (int) $start->diffInMinutes($now, false));
+                    if ($late > Rules::int('late_reject_minutes')) {
+                        $this->reject($user->id, $shiftId, $action, 'Batas waktu keterlambatan check-in telah terlewat (' . $late . ' menit). Silakan ajukan form pengecualian presensi', $evidence, $now);
+                    }
+                } else {
+                    if (! $attendance || ! $attendance->checkin_at || $attendance->checkout_at) {
+                        $this->reject($user->id, $shiftId, $action, 'Check-out tidak sah atau ganda', $evidence, $now);
+                    }
+                    if ($now->lt(Carbon::parse($attendance->checkin_at, 'Asia/Jakarta')) ||
+                        $now->gt($end->copy()->addHours(Rules::int('checkout_late_hours')))) {
+                        $this->reject($user->id, $shiftId, $action, 'Di luar jendela check-out', $evidence, $now);
+                    }
                 }
 
                 if (! $user->device_hash) {
@@ -186,8 +181,6 @@ final class AttendanceService
 
                 $this->attempt($user->id, $shiftId, $action, 'accepted', null, $evidence, $now);
                 Audit::record('attendance', $attendance->id, $action === 'in' ? 'checkin' : 'checkout');
-
-                return null;
             });
         } catch (ValidationException $e) {
             $shift = Shift::find($shiftId);
@@ -209,10 +202,6 @@ final class AttendanceService
             ], now('Asia/Jakarta'));
 
             throw $e;
-        }
-
-        if ($lateError) {
-            throw ValidationException::withMessages(['attendance' => $lateError]);
         }
     }
 

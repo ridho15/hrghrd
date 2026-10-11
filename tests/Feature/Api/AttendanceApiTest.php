@@ -322,6 +322,7 @@ class AttendanceApiTest extends TestCase
 
         $response = $this->postJson('/api/v1/attendance/checkout', [
             'shift_id'     => $shift->id,
+            'qr_code'      => AttendanceService::qr($branch),
             'latitude'     => -6.175392,
             'longitude'    => 106.827153,
             'accuracy'     => 10,

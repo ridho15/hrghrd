@@ -104,7 +104,7 @@ class AttendanceApiController extends Controller
     {
         $data = $request->validate([
             'shift_id'     => ['required', 'integer', 'exists:shifts,id'],
-            'qr_code'      => ['nullable', 'string'],
+            'qr_code'      => ['required', 'string'],
             'latitude'     => ['nullable', 'numeric', 'between:-90,90'],
             'longitude'    => ['nullable', 'numeric', 'between:-180,180'],
             'accuracy'     => ['nullable', 'numeric', 'min:0'],
@@ -123,12 +123,8 @@ class AttendanceApiController extends Controller
             ?? ($user->device_hash ? '' : 'mobile_app_' . $user->id)
         );
 
-        $shift = Shift::find($data['shift_id']);
-        $branch = $shift ? Branch::find($shift->branch_id) : null;
-        $qrCode = $data['qr_code'] ?? ($branch ? AttendanceService::qr($branch) : '');
-
         $actInput = [
-            'qr_code'   => strtoupper(trim($qrCode)),
+            'qr_code'   => strtoupper(trim($data['qr_code'])),
             'latitude'  => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
             'accuracy'  => $data['accuracy'] ?? null,

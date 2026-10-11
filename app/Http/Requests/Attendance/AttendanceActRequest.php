@@ -24,7 +24,7 @@ class AttendanceActRequest extends FormRequest
     {
         return [
             'action' => 'required|in:in,out',
-            'qr_code' => 'nullable|string|max:20',
+            'qr_code' => 'required|string|max:20',
             'challenge' => 'nullable|string',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
@@ -37,6 +37,7 @@ class AttendanceActRequest extends FormRequest
         return [
             'action.required' => 'Aksi presensi (check-in/check-out) wajib ditentukan.',
             'action.in' => 'Tindakan presensi tidak valid.',
+            'qr_code.required' => 'Kode QR cabang wajib dipindai.',
             'latitude.between' => 'Koordinat lintang di luar batas valid.',
             'longitude.between' => 'Koordinat bujur di luar batas valid.',
         ];

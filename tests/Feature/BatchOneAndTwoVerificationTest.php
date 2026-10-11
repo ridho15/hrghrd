@@ -73,6 +73,7 @@ class BatchOneAndTwoVerificationTest extends TestCase
 
         $service = new AttendanceService();
 
+        $exceptionThrown = false;
         try {
             $service->act($employee, $shift->id, 'in', [
                 'action' => 'in',
@@ -82,16 +83,18 @@ class BatchOneAndTwoVerificationTest extends TestCase
                 'longitude' => 106.827153,
                 'accuracy' => 12,
             ], 'test-device-token-absent');
-        } catch (\Illuminate\Validation\ValidationException) {
-            // Service returns message / throws validation exception
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $exceptionThrown = true;
+            $this->assertStringContainsString('Batas waktu keterlambatan', $e->getMessage());
         }
 
-        $absent = Attendance::where('shift_id', $shift->id)->where('user_id', $employee->id)->first();
-        $this->assertNotNull($absent);
-        $this->assertSame('absent', $absent->status);
-        $this->assertNotNull($absent->checkin_at);
-        $this->assertIsArray($absent->checkin_evidence);
-        $this->assertSame(hash('sha256', 'test-device-token-absent'), $absent->checkin_evidence['device_hash']);
+        $this->assertTrue($exceptionThrown);
+        $this->assertDatabaseMissing('attendances', ['shift_id' => $shift->id]);
+
+        $attempt = \App\Models\AttendanceAttempt::where('shift_id', $shift->id)->where('user_id', $employee->id)->first();
+        $this->assertNotNull($attempt);
+        $this->assertSame('rejected', $attempt->result);
+        $this->assertStringContainsString('Batas waktu keterlambatan', $attempt->reason);
     }
 
     public function test_import_rejects_row_with_empty_hired_at(): void
