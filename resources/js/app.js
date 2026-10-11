@@ -395,6 +395,11 @@ function initConfirmModal() {
     const parentForm = trigger.closest('form');
     if (parentForm) {
       pendingAction = () => {
+        if (trigger.getAttribute('formaction')) {
+          parentForm.action = trigger.getAttribute('formaction');
+        } else if (trigger.dataset.confirmAction) {
+          parentForm.action = trigger.dataset.confirmAction;
+        }
         parentForm.submit();
       };
     } else if (trigger.dataset.confirmAction) {

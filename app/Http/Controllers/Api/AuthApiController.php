@@ -20,7 +20,7 @@ class AuthApiController extends Controller
     /**
      * Login — Dapatkan Token API
      *
-     * Autentikasi karyawan dengan email & password.
+     * Autentikasi karyawan dengan email/username & password.
      * Mengembalikan token Sanctum yang digunakan sebagai Bearer token
      * di semua request API selanjutnya.
      *
@@ -29,16 +29,31 @@ class AuthApiController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'       => ['required', 'email'],
+            'login'       => ['nullable', 'string', 'required_without_all:email,username'],
+            'email'       => ['nullable', 'string', 'required_without_all:login,username'],
+            'username'    => ['nullable', 'string', 'required_without_all:login,email'],
             'password'    => ['required', 'string'],
             'device_name' => ['required', 'string', 'max:100'],
+        ], [
+            'login.required_without_all'    => 'Username atau email wajib diisi.',
+            'email.required_without_all'    => 'Username atau email wajib diisi.',
+            'username.required_without_all' => 'Username atau email wajib diisi.',
         ]);
 
-        $user = User::where('email', $data['email'])->first();
+        $identifier = trim((string) ($data['login'] ?? $data['username'] ?? $data['email'] ?? ''));
+        $loginField = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        $user = User::where($loginField, $identifier)->first();
+
+        if (! $user) {
+            $altField = $loginField === 'email' ? 'username' : 'email';
+            $user = User::where($altField, $identifier)->first();
+        }
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Email atau password salah.'],
+                'login' => ['Email/username atau password salah.'],
+                'email' => ['Email/username atau password salah.'],
             ]);
         }
 
@@ -61,13 +76,16 @@ class AuthApiController extends Controller
 
         $token = $user->createToken($data['device_name'], $abilities);
 
+        $requiresPasswordChange = (bool) ($user->must_change_password || Hash::check('12345678', $user->password));
+
         return response()->json([
             'success' => true,
             'data'    => [
-                'token'      => $token->plainTextToken,
-                'token_type' => 'Bearer',
-                'abilities'  => $abilities,
-                'user'       => new UserResource($user->load('branch', 'position')),
+                'token'                => $token->plainTextToken,
+                'token_type'           => 'Bearer',
+                'abilities'            => $abilities,
+                'must_change_password' => $requiresPasswordChange,
+                'user'                 => new UserResource($user->load('branch', 'position')),
             ],
         ]);
     }
@@ -200,7 +218,10 @@ class AuthApiController extends Controller
             ]);
         }
 
-        $user->update(['password' => Hash::make($data['new_password'])]);
+        $user->update([
+            'password'             => Hash::make($data['new_password']),
+            'must_change_password' => false,
+        ]);
 
         $currentTokenId = $request->user()->currentAccessToken()?->id;
         if ($currentTokenId) {

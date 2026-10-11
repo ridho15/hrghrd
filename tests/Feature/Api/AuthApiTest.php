@@ -281,4 +281,145 @@ class AuthApiTest extends TestCase
             ->assertStatus(422)
             ->assertJsonFragment(['new_password' => ['Password baru minimal 8 karakter.']]);
     }
+
+    public function test_login_successful_with_username_returns_token_and_user_resource(): void
+    {
+        $user = $this->createUser([
+            'username' => 'karyawan_ho01',
+            'email'    => 'karyawan_ho01@hrg.test',
+            'password' => Hash::make('Secret123!'),
+            'role'     => 'employee',
+            'active'   => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'username'    => 'karyawan_ho01',
+            'password'    => 'Secret123!',
+            'device_name' => 'Pixel 8',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user.id', $user->id)
+            ->assertJsonPath('data.user.username', 'karyawan_ho01')
+            ->assertJsonPath('data.must_change_password', false);
+
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_id' => $user->id,
+            'name'         => 'Pixel 8',
+        ]);
+    }
+
+    public function test_login_successful_with_generic_login_field_as_username(): void
+    {
+        $user = $this->createUser([
+            'username' => 'karyawan_sub01',
+            'email'    => 'karyawan_sub01@hrg.test',
+            'password' => Hash::make('Secret123!'),
+            'role'     => 'employee',
+            'active'   => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login'       => 'karyawan_sub01',
+            'password'    => 'Secret123!',
+            'device_name' => 'Pixel 8',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user.id', $user->id)
+            ->assertJsonPath('data.user.username', 'karyawan_sub01');
+    }
+
+    public function test_login_successful_with_generic_login_field_as_email(): void
+    {
+        $user = $this->createUser([
+            'username' => 'karyawan_sub02',
+            'email'    => 'karyawan_login@hrg.test',
+            'password' => Hash::make('Secret123!'),
+            'role'     => 'employee',
+            'active'   => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'login'       => 'karyawan_login@hrg.test',
+            'password'    => 'Secret123!',
+            'device_name' => 'Pixel 8',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user.id', $user->id)
+            ->assertJsonPath('data.user.username', 'karyawan_sub02');
+    }
+
+    public function test_login_detects_must_change_password_when_flag_is_true(): void
+    {
+        $user = $this->createUser([
+            'username'             => 'need_reset_01',
+            'email'                => 'need_reset_01@hrg.test',
+            'password'             => Hash::make('CustomPassword123!'),
+            'must_change_password' => true,
+            'active'               => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'username'    => 'need_reset_01',
+            'password'    => 'CustomPassword123!',
+            'device_name' => 'Pixel 8',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.must_change_password', true)
+            ->assertJsonPath('data.user.must_change_password', true);
+    }
+
+    public function test_login_detects_must_change_password_when_password_is_default_12345678(): void
+    {
+        $user = $this->createUser([
+            'username'             => 'default_pwd_user',
+            'email'                => 'default_pwd@hrg.test',
+            'password'             => Hash::make('12345678'),
+            'must_change_password' => false,
+            'active'               => true,
+        ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'username'    => 'default_pwd_user',
+            'password'    => '12345678',
+            'device_name' => 'Pixel 8',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.must_change_password', true)
+            ->assertJsonPath('data.user.must_change_password', true);
+    }
+
+    public function test_change_password_resets_must_change_password_flag(): void
+    {
+        $user = $this->createUser([
+            'password'             => Hash::make('12345678'),
+            'must_change_password' => true,
+        ]);
+
+        $token = $user->createToken('Device', ['employee'])->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->postJson('/api/v1/auth/password', [
+                'current_password'          => '12345678',
+                'new_password'              => 'BrandNewSecret123!',
+                'new_password_confirmation' => 'BrandNewSecret123!',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('users', [
+            'id'                   => $user->id,
+            'must_change_password' => false,
+        ]);
+    }
 }

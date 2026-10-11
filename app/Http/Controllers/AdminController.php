@@ -326,11 +326,12 @@ class AdminController extends Controller
 
         $person->update([
             'password' => Hash::make('12345678'),
+            'must_change_password' => true,
         ]);
 
         Audit::record('user', $person->id, 'reset_password', "Password akun {$person->name} direset ke default (12345678) oleh Super Admin.");
 
-        return back()->with('ok', "Password untuk {$person->name} berhasil direset menjadi 12345678.");
+        return back()->with('ok', "Password untuk {$person->name} berhasil direset menjadi 12345678. Karyawan wajib mengganti kata sandi saat pertama kali login.");
     }
 
     public function peopleBulkResetPassword(Request $request)
@@ -356,6 +357,7 @@ class AdminController extends Controller
         DB::transaction(function () use ($userIds, $users) {
             User::whereIn('id', $userIds)->update([
                 'password' => Hash::make('12345678'),
+                'must_change_password' => true,
             ]);
 
             foreach ($users as $user) {
@@ -365,7 +367,86 @@ class AdminController extends Controller
 
         $count = $users->count();
 
-        return back()->with('ok', "Password untuk {$count} karyawan terpilih berhasil direset menjadi 12345678.");
+        return back()->with('ok', "Password untuk {$count} karyawan terpilih berhasil direset menjadi 12345678. Karyawan wajib mengganti kata sandi saat pertama kali login.");
+    }
+
+    protected function buildUniqueUsername(User $user): string
+    {
+        $cleanName = Str::lower(preg_replace('/[^a-zA-Z0-9]/', '', Str::ascii($user->name)));
+        if ($cleanName === '') {
+            $cleanName = 'karyawan' . $user->id;
+        }
+
+        $branch = $user->branch ?: ($user->branch_id ? Branch::find($user->branch_id) : null);
+        if ($branch) {
+            $branchCode = $branch->code ?: $branch->name;
+            $cleanBranch = Str::lower(preg_replace('/[^a-zA-Z0-9]/', '', Str::ascii($branchCode)));
+            if ($cleanBranch === '') {
+                $cleanBranch = 'cabang';
+            }
+        } else {
+            $cleanBranch = 'pusat';
+        }
+
+        $base = "{$cleanName}_{$cleanBranch}";
+        $candidate = $base;
+        $counter = 1;
+
+        while (User::where('username', $candidate)->where('id', '!=', $user->id)->exists()) {
+            $counter++;
+            $candidate = "{$base}_{$counter}";
+        }
+
+        return $candidate;
+    }
+
+    public function personGenerateUsername(int $id)
+    {
+        $this->admin();
+        $person = User::with('branch')->findOrFail($id);
+        $oldUsername = $person->username;
+        $newUsername = $this->buildUniqueUsername($person);
+
+        $person->update([
+            'username' => $newUsername,
+        ]);
+
+        Audit::record('user', $person->id, 'generate_username', "Username akun {$person->name} di-generate menjadi '{$newUsername}'.", ['old_username' => $oldUsername], ['new_username' => $newUsername]);
+
+        return back()->with('ok', "Username untuk {$person->name} berhasil di-generate menjadi '{$newUsername}'.");
+    }
+
+    public function peopleBulkGenerateUsername(Request $request)
+    {
+        $this->admin();
+        $validated = $request->validate([
+            'user_ids' => 'required|array|min:1',
+            'user_ids.*' => 'integer|exists:users,id',
+        ], [
+            'user_ids.required' => 'Pilih setidaknya satu karyawan untuk di-generate username.',
+            'user_ids.min' => 'Pilih setidaknya satu karyawan untuk di-generate username.',
+            'user_ids.*.exists' => 'Data karyawan yang dipilih tidak ditemukan dalam sistem.',
+        ]);
+
+        $userIds = $validated['user_ids'];
+        $users = User::with('branch')->whereIn('id', $userIds)->get();
+
+        DB::transaction(function () use ($users) {
+            foreach ($users as $user) {
+                $oldUsername = $user->username;
+                $newUsername = $this->buildUniqueUsername($user);
+
+                $user->update([
+                    'username' => $newUsername,
+                ]);
+
+                Audit::record('user', $user->id, 'generate_username', "Username akun {$user->name} di-generate massal menjadi '{$newUsername}'.", ['old_username' => $oldUsername], ['new_username' => $newUsername]);
+            }
+        });
+
+        $count = $users->count();
+
+        return back()->with('ok', "Username untuk {$count} karyawan terpilih berhasil di-generate / direset ke format standar namakaryawan_cabang.");
     }
 
     public function personDestroy(int $id)

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Auth\ForcePasswordUpdateRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\PasswordUpdateRequest;
 use App\Models\User;
@@ -37,12 +38,16 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        $user = Auth::user();
+        $requiresPasswordChange = $user && ($user->must_change_password || Hash::check('12345678', $user->password));
+        $redirectUrl = $requiresPasswordChange ? route('password.force_change') : route('home');
+
         if (!$request->cookie('hrd_device')) {
             $token = Str::random(48);
-            return redirect()->route('home')->cookie('hrd_device', $token, 60 * 24 * 365, '/', null, $request->isSecure(), true, false, 'Lax');
+            return redirect($redirectUrl)->cookie('hrd_device', $token, 60 * 24 * 365, '/', null, $request->isSecure(), true, false, 'Lax');
         }
 
-        return redirect()->route('home');
+        return redirect($redirectUrl);
     }
 
     public function logout(Request $request)
@@ -54,6 +59,31 @@ class AuthController extends Controller
         return redirect()->route('login');
     }
 
+    public function forceChangePasswordView()
+    {
+        $user = auth()->user();
+        $requiresPasswordChange = $user && ($user->must_change_password || Hash::check('12345678', $user->password));
+
+        if (! $requiresPasswordChange) {
+            return redirect()->route('home');
+        }
+
+        return view('password-force-change', compact('user'));
+    }
+
+    public function forceChangePasswordUpdate(ForcePasswordUpdateRequest $request)
+    {
+        $user = auth()->user();
+        $user->update([
+            'password' => Hash::make($request->input('password')),
+            'must_change_password' => false,
+        ]);
+
+        Audit::record('user', $user->id, 'force_password_change', 'Karyawan ' . $user->name . ' berhasil memperbarui kata sandi wajib ganti pertama kali.');
+
+        return redirect()->route('home')->with('ok', 'Kata sandi Anda berhasil diperbarui. Selamat datang di sistem HRG HRD!');
+    }
+
     public function updatePassword(PasswordUpdateRequest $request)
     {
         $data = $request->validated();
@@ -62,6 +92,7 @@ class AuthController extends Controller
 
         $user->update([
             'password' => Hash::make($data['password']),
+            'must_change_password' => false,
         ]);
 
         Audit::record('user', $user->id, 'password_change', 'Kata sandi berhasil diperbarui oleh ' . auth()->user()->name);

@@ -31,7 +31,7 @@ sequenceDiagram
     participant API as Server REST API (/api/v1)
     participant DB as Basis Data (Tokens)
 
-    Mobile->>API: POST /auth/login {email, password, device_name}
+    Mobile->>API: POST /auth/login {email / username, password, device_name}
     API->>API: Validasi kredensial & status user aktif
     API->>DB: Terbitkan Sanctum token dengan abilities [employee/manager/admin]
     API-->>Mobile: 200 OK {token, token_type: "Bearer", user}
@@ -122,7 +122,7 @@ Sistem menerapkan validasi berlapis 4 tingkat untuk menjamin keaslian kehadiran:
 ### 🔐 Autentikasi (`/api/v1/auth`)
 | No | Method | Endpoint | Akses | Deskripsi |
 |----|--------|----------|-------|-----------|
-| 1 | `POST` | `/auth/login` | Public | Login email + password → Sanctum Bearer token |
+| 1 | `POST` | `/auth/login` | Public | Login username/email + password → Sanctum Bearer token |
 | 2 | `POST` | `/auth/logout` | Auth | Cabut token aktif yang sedang dipakai |
 | 3 | `GET` | `/auth/me` | Auth | Cek profil & token abilities pengguna |
 | 4 | `POST` | `/auth/device` | Auth | Daftarkan identitas perangkat mobile (`device_hash`) |
@@ -185,7 +185,7 @@ curl -X POST "http://127.0.0.1:8003/api/v1/auth/login" \
   -H "Content-Type: application/json" \
   -H "Accept: application/json" \
   -d '{
-    "email": "karyawan@example.test",
+    "username": "karyawan_ho01",
     "password": "password",
     "device_name": "iPhone 15 Pro"
   }'

@@ -29,6 +29,7 @@ class User extends Authenticatable
         'bank_account_name',
         'annual_leave_quota',
         'active',
+        'must_change_password',
         'device_hash',
     ];
 
@@ -47,6 +48,7 @@ class User extends Authenticatable
             'base_salary' => 'integer',
             'annual_leave_quota' => 'integer',
             'active' => 'boolean',
+            'must_change_password' => 'boolean',
         ];
     }
 

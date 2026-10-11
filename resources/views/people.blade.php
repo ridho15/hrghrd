@@ -155,7 +155,7 @@
                             {{-- Checkbox Seleksi Massal --}}
                             <td class="py-3.5 px-4 text-center">
                                 @if($p->id !== auth()->id())
-                                    <input type="checkbox" name="user_ids[]" value="{{ $p->id }}" form="bulk-reset-password-form" class="person-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" data-person-name="{{ $p->name }}">
+                                    <input type="checkbox" name="user_ids[]" value="{{ $p->id }}" form="bulk-people-form" class="person-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" data-person-name="{{ $p->name }}">
                                 @else
                                     <span class="inline-block text-slate-300 text-xs font-bold" title="Akun Anda Sendiri">-</span>
                                 @endif
@@ -171,7 +171,14 @@
                                         <a href="{{ route('people.show', $p->id) }}" class="font-bold text-slate-900 hover:text-emerald-700 transition-colors block text-xs sm:text-sm">
                                             {{ $p->name }}
                                         </a>
-                                        <span class="text-[11px] text-slate-400 block">{{ $p->email }}</span>
+                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                            <span class="text-[11px] text-slate-400">{{ $p->email }}</span>
+                                            @if($p->username)
+                                                <span class="inline-flex items-center font-mono text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200/80 font-bold" title="Username Login: {{ $p->username }}">
+                                                    &#64;{{ $p->username }}
+                                                </span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </td>
@@ -234,13 +241,26 @@
                                     @if($p->id !== auth()->id())
                                         <button 
                                             type="button" 
-                                            data-confirm="Password akun karyawan '{{ $p->name }}' akan direset menjadi default '12345678'. Karyawan dapat langsung login menggunakan kata sandi tersebut."
+                                            data-confirm="Username akun karyawan '{{ $p->name }}' akan di-generate/direset menggunakan format baku 'namakaryawan_cabang'. Karyawan dapat langsung login menggunakan username ini."
+                                            data-confirm-title="Generate Username {{ $p->name }}?"
+                                            data-confirm-variant="primary"
+                                            data-confirm-btn="Ya, Generate Username"
+                                            data-confirm-action="{{ route('people.generate_username', $p->id) }}"
+                                            class="p-1.5 rounded-lg hover:bg-sky-50 text-slate-400 hover:text-sky-600 transition-colors cursor-pointer"
+                                            title="Generate / Reset Username (namakaryawan_cabang)"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
+                                        </button>
+
+                                        <button 
+                                            type="button" 
+                                            data-confirm="Password akun karyawan '{{ $p->name }}' akan direset menjadi default '12345678'. Karyawan wajib mengganti kata sandi saat pertama kali login."
                                             data-confirm-title="Reset Password {{ $p->name }}?"
                                             data-confirm-variant="warning"
                                             data-confirm-btn="Ya, Reset ke 12345678"
                                             data-confirm-action="{{ route('people.reset_password', $p->id) }}"
                                             class="p-1.5 rounded-lg hover:bg-amber-50 text-slate-400 hover:text-amber-600 transition-colors cursor-pointer"
-                                            title="Reset Password ke 12345678"
+                                            title="Reset Password ke 12345678 (Wajib ganti pasca-login)"
                                         >
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
                                         </button>
@@ -299,12 +319,12 @@
         @endif
     </section>
 
-    {{-- Form Bulk Reset Password (HTML5 Associated) --}}
-    <form id="bulk-reset-password-form" method="POST" action="{{ route('people.bulk_reset_password') }}">
+    {{-- Form Bulk Actions (HTML5 Associated) --}}
+    <form id="bulk-people-form" method="POST" action="{{ route('people.bulk_reset_password') }}">
         @csrf
         {{-- Floating Bulk Action Bar --}}
-        <div id="bulk-action-bar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 transform translate-y-28 opacity-0 pointer-events-none w-[92%] max-w-xl">
-            <div class="bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center justify-between gap-4 backdrop-blur-md">
+        <div id="bulk-action-bar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 transform translate-y-28 opacity-0 pointer-events-none w-[94%] max-w-2xl">
+            <div class="bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700/80 flex flex-wrap items-center justify-between gap-4 backdrop-blur-md">
                 <div class="flex items-center gap-3">
                     <span class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs border border-emerald-500/30">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -313,11 +333,11 @@
                         <span class="text-xs font-bold text-white block">
                             <span id="bulk-selected-count">0</span> Karyawan Terpilih
                         </span>
-                        <span class="text-[11px] text-slate-400 block">Pilihan siap direset password</span>
+                        <span class="text-[11px] text-slate-400 block">Aksi massal akun & kredensial</span>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
                     <button 
                         type="button" 
                         id="btn-cancel-bulk"
@@ -325,17 +345,35 @@
                     >
                         Batal
                     </button>
+
+                    <button 
+                        type="button" 
+                        id="btn-trigger-bulk-generate-username"
+                        formaction="{{ route('people.bulk_generate_username') }}"
+                        data-confirm="Username untuk karyawan terpilih akan di-generate/direset serentak menggunakan format baku 'namakaryawan_cabang'."
+                        data-confirm-title="Generate Username Karyawan Terpilih?"
+                        data-confirm-variant="primary"
+                        data-confirm-btn="Ya, Generate Semua Username"
+                        class="px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-slate-950 text-xs font-bold transition-colors cursor-pointer shadow-xs inline-flex items-center gap-1.5 shrink-0"
+                        title="Generate / Reset Username (namakaryawan_cabang)"
+                    >
+                        <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>
+                        <span>Generate Username</span>
+                    </button>
+
                     <button 
                         type="button" 
                         id="btn-trigger-bulk-reset"
-                        data-confirm="Password untuk karyawan terpilih akan direset serentak menjadi default '12345678'. Karyawan dapat langsung login menggunakan kata sandi tersebut."
+                        formaction="{{ route('people.bulk_reset_password') }}"
+                        data-confirm="Password untuk karyawan terpilih akan direset serentak menjadi default '12345678'. Karyawan wajib mengganti kata sandi saat pertama kali login."
                         data-confirm-title="Reset Password Karyawan Terpilih?"
                         data-confirm-variant="warning"
                         data-confirm-btn="Ya, Reset Semua ke 12345678"
-                        class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-colors cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                        class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-colors cursor-pointer shadow-xs inline-flex items-center gap-1.5 shrink-0"
+                        title="Reset Password ke default 12345678"
                     >
                         <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                        <span>Reset Password (12345678)</span>
+                        <span>Reset Password</span>
                     </button>
                 </div>
             </div>
@@ -352,7 +390,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const bulkBar = document.getElementById('bulk-action-bar');
     const countEl = document.getElementById('bulk-selected-count');
     const cancelBtn = document.getElementById('btn-cancel-bulk');
-    const triggerBulkBtn = document.getElementById('btn-trigger-bulk-reset');
+    const triggerBulkResetBtn = document.getElementById('btn-trigger-bulk-reset');
+    const triggerBulkUsernameBtn = document.getElementById('btn-trigger-bulk-generate-username');
+    const bulkForm = document.getElementById('bulk-people-form');
 
     function updateBulkState() {
         const checked = document.querySelectorAll('.person-checkbox:checked');
@@ -362,9 +402,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (count > 0) {
             bulkBar.classList.remove('translate-y-28', 'opacity-0', 'pointer-events-none');
             bulkBar.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
-            if (triggerBulkBtn) {
-                triggerBulkBtn.dataset.confirmTitle = `Reset Password ${count} Karyawan?`;
-                triggerBulkBtn.dataset.confirm = `Password untuk ${count} karyawan terpilih akan direset serentak menjadi default '12345678'. Karyawan dapat langsung login menggunakan kata sandi tersebut.`;
+            if (triggerBulkResetBtn) {
+                triggerBulkResetBtn.dataset.confirmTitle = `Reset Password ${count} Karyawan?`;
+                triggerBulkResetBtn.dataset.confirm = `Password untuk ${count} karyawan terpilih akan direset serentak menjadi default '12345678'. Karyawan wajib mengganti kata sandi saat pertama kali login.`;
+            }
+            if (triggerBulkUsernameBtn) {
+                triggerBulkUsernameBtn.dataset.confirmTitle = `Generate Username ${count} Karyawan?`;
+                triggerBulkUsernameBtn.dataset.confirm = `Username untuk ${count} karyawan terpilih akan di-generate/direset serentak menggunakan format baku 'namakaryawan_cabang'.`;
             }
         } else {
             bulkBar.classList.add('translate-y-28', 'opacity-0', 'pointer-events-none');
@@ -396,6 +440,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectAll.indeterminate = false;
             }
             updateBulkState();
+        });
+    }
+
+    if (triggerBulkUsernameBtn && bulkForm) {
+        triggerBulkUsernameBtn.addEventListener('click', function() {
+            bulkForm.action = "{{ route('people.bulk_generate_username') }}";
+        });
+    }
+
+    if (triggerBulkResetBtn && bulkForm) {
+        triggerBulkResetBtn.addEventListener('click', function() {
+            bulkForm.action = "{{ route('people.bulk_reset_password') }}";
         });
     }
 });

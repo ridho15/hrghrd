@@ -13,16 +13,20 @@ Route::get('/login',[AuthController::class,'loginForm'])->name('login');
 Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1');
 Route::post('/logout',[AuthController::class,'logout'])->middleware('auth')->name('logout');
 
-Route::middleware(['auth','active'])->group(function () {
+Route::middleware(['auth','active','must.change.password'])->group(function () {
     Route::get('/',[DashboardController::class,'index'])->name('home');
+    Route::get('/password/force-change', [AuthController::class, 'forceChangePasswordView'])->name('password.force_change');
+    Route::post('/password/force-change', [AuthController::class, 'forceChangePasswordUpdate'])->name('password.force_change.update');
     Route::get('/people',[AdminController::class,'people'])->name('people');
     Route::get('/people/create',[AdminController::class,'personCreate'])->name('people.create');
     Route::post('/people',[AdminController::class,'person'])->name('people.store');
     Route::post('/people/bulk-reset-password',[AdminController::class,'peopleBulkResetPassword'])->name('people.bulk_reset_password');
+    Route::post('/people/bulk-generate-username',[AdminController::class,'peopleBulkGenerateUsername'])->name('people.bulk_generate_username');
     Route::get('/people/{id}',[AdminController::class,'personShow'])->name('people.show');
     Route::get('/people/{id}/edit',[AdminController::class,'personEdit'])->name('people.edit');
     Route::post('/people/{id}',[AdminController::class,'personUpdate'])->name('people.update');
     Route::post('/people/{id}/reset-password',[AdminController::class,'personResetPassword'])->name('people.reset_password');
+    Route::post('/people/{id}/generate-username',[AdminController::class,'personGenerateUsername'])->name('people.generate_username');
     Route::post('/people/{id}/toggle-status',[AdminController::class,'personToggleStatus'])->name('people.toggle_status');
     Route::post('/people/{id}/delete',[AdminController::class,'personDestroy'])->name('people.destroy');
     Route::delete('/people/{id}',[AdminController::class,'personDestroy']);

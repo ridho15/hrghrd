@@ -219,21 +219,53 @@ class NewFeaturesAndFixesTest extends TestCase
 
         $employee->refresh();
         $this->assertTrue(Hash::check('12345678', $employee->password));
+        $this->assertTrue($employee->must_change_password);
 
-        // Verifikasi login dengan password baru
+        // Verifikasi login dengan password reset: diarahkan ke form wajib update password
         $this->post('/logout');
         $loginResponse = $this->post('/login', [
             'login' => 'karyawan.reset',
             'password' => '12345678',
         ]);
-        $loginResponse->assertRedirect('/');
+        $loginResponse->assertRedirect(route('password.force_change'));
         $this->assertAuthenticatedAs($employee);
+
+        // Akses rute dashboard dicegat middleware EnsurePasswordChanged
+        $dashboardResponse = $this->get('/');
+        $dashboardResponse->assertRedirect(route('password.force_change'));
+
+        // Form force change view terbuka normal
+        $forceViewResponse = $this->get('/password/force-change');
+        $forceViewResponse->assertOk();
+        $forceViewResponse->assertSee('Wajib Perbarui Kata Sandi');
+
+        // Melakukan update password baru
+        $updateResponse = $this->post('/password/force-change', [
+            'current_password' => '12345678',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ]);
+        $updateResponse->assertRedirect(route('home'));
+        $updateResponse->assertSessionHas('ok');
+
+        $employee->refresh();
+        $this->assertFalse($employee->must_change_password);
+        $this->assertTrue(Hash::check('NewPassword123!', $employee->password));
+
+        // Verifikasi akses normal terbuka kembali
+        $homeAfter = $this->get('/');
+        $homeAfter->assertOk();
 
         // Verifikasi audit log
         $this->assertDatabaseHas('audit_logs', [
             'subject_type' => 'user',
             'subject_id' => $employee->id,
             'action' => 'reset_password',
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'subject_type' => 'user',
+            'subject_id' => $employee->id,
+            'action' => 'force_password_change',
         ]);
     }
 
@@ -271,8 +303,13 @@ class NewFeaturesAndFixesTest extends TestCase
         $this->assertTrue(Hash::check('12345678', $e2->password));
         $this->assertTrue(Hash::check('12345678', $e3->password));
 
+        $this->assertTrue($e1->must_change_password);
+        $this->assertTrue($e2->must_change_password);
+        $this->assertTrue($e3->must_change_password);
+
         // Password admin harus tetap aman dan tidak diubah
         $this->assertEquals($adminOriginalPassword, $admin->password);
+        $this->assertFalse($admin->must_change_password);
 
         // Verifikasi 3 catatan audit log tercatat
         $this->assertEquals(3, \Illuminate\Support\Facades\DB::table('audit_logs')
@@ -280,6 +317,110 @@ class NewFeaturesAndFixesTest extends TestCase
             ->where('action', 'reset_password')
             ->whereIn('subject_id', [$e1->id, $e2->id, $e3->id])
             ->count());
+    }
+
+    public function test_force_password_change_rejects_reusing_current_default_password(): void
+    {
+        $employee = $this->createUser([
+            'password' => Hash::make('12345678'),
+            'must_change_password' => true,
+        ]);
+        $this->actingAs($employee);
+
+        // Submit dengan password baru sama dengan default 12345678
+        $response = $this->post('/password/force-change', [
+            'current_password' => '12345678',
+            'password' => '12345678',
+            'password_confirmation' => '12345678',
+        ]);
+
+        $response->assertSessionHasErrors(['password']);
+        $employee->refresh();
+        $this->assertTrue($employee->must_change_password);
+    }
+
+    public function test_admin_can_generate_username_for_single_employee(): void
+    {
+        $this->actingAsAdmin();
+        $branch = $this->createBranch(['code' => 'SBY01', 'name' => 'Cabang Surabaya']);
+        $employee = $this->createUser([
+            'name' => 'Ahmad Zaki Pratama',
+            'branch_id' => $branch->id,
+            'username' => null,
+        ]);
+
+        $response = $this->post("/people/{$employee->id}/generate-username");
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('ok');
+
+        $employee->refresh();
+        $this->assertEquals('ahmadzakipratama_sby01', $employee->username);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'subject_type' => 'user',
+            'subject_id' => $employee->id,
+            'action' => 'generate_username',
+        ]);
+    }
+
+    public function test_generate_username_handles_duplicate_collision_gracefully(): void
+    {
+        $this->actingAsAdmin();
+        $branch = $this->createBranch(['code' => 'DEMO', 'name' => 'Cabang Demo']);
+        
+        $e1 = $this->createUser([
+            'name' => 'Budi Santoso',
+            'branch_id' => $branch->id,
+            'username' => 'budisantoso_demo',
+        ]);
+
+        $e2 = $this->createUser([
+            'name' => 'Budi Santoso',
+            'branch_id' => $branch->id,
+            'username' => null,
+        ]);
+
+        $response = $this->post("/people/{$e2->id}/generate-username");
+        $response->assertSessionHasNoErrors();
+
+        $e2->refresh();
+        $this->assertEquals('budisantoso_demo_2', $e2->username);
+
+        // Jika ada karyawan ketiga dengan nama sama
+        $e3 = $this->createUser([
+            'name' => 'Budi Santoso',
+            'branch_id' => $branch->id,
+            'username' => null,
+        ]);
+
+        $this->post("/people/{$e3->id}/generate-username");
+        $e3->refresh();
+        $this->assertEquals('budisantoso_demo_3', $e3->username);
+    }
+
+    public function test_admin_can_bulk_generate_usernames(): void
+    {
+        $this->actingAsAdmin();
+        $branch = $this->createBranch(['code' => 'BDG01', 'name' => 'Cabang Bandung']);
+
+        $e1 = $this->createUser(['name' => 'Dewi Lestari', 'branch_id' => $branch->id, 'username' => null]);
+        $e2 = $this->createUser(['name' => 'Rian Hidayat', 'branch_id' => $branch->id, 'username' => null]);
+        $e3 = $this->createUser(['name' => 'Admin Pusat', 'branch_id' => null, 'username' => null]);
+
+        $response = $this->post('/people/bulk-generate-username', [
+            'user_ids' => [$e1->id, $e2->id, $e3->id],
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertSessionHas('ok');
+
+        $e1->refresh();
+        $e2->refresh();
+        $e3->refresh();
+
+        $this->assertEquals('dewilestari_bdg01', $e1->username);
+        $this->assertEquals('rianhidayat_bdg01', $e2->username);
+        $this->assertEquals('adminpusat_pusat', $e3->username);
     }
 
     public function test_non_admin_cannot_access_reset_password_endpoints(): void
@@ -294,5 +435,143 @@ class NewFeaturesAndFixesTest extends TestCase
             'user_ids' => [$target->id],
         ]);
         $respBulk->assertForbidden();
+    }
+
+    public function test_non_admin_cannot_access_generate_username_endpoints(): void
+    {
+        $this->actingAsEmployee();
+        $target = $this->createUser();
+
+        $respSingle = $this->post("/people/{$target->id}/generate-username");
+        $respSingle->assertForbidden();
+
+        $respBulk = $this->post('/people/bulk-generate-username', [
+            'user_ids' => [$target->id],
+        ]);
+        $respBulk->assertForbidden();
+    }
+
+    public function test_people_list_page_displays_generate_username_button_and_bulk_toolbar(): void
+    {
+        $this->actingAsAdmin();
+        $branch = $this->createBranch(['code' => 'DEMO']);
+        $employee = $this->createUser([
+            'name' => 'Citra Kirana',
+            'branch_id' => $branch->id,
+            'username' => 'citrakirana_demo',
+        ]);
+
+        $response = $this->get('/people');
+        $response->assertOk();
+
+        // Verifikasi badge username tampil
+        $response->assertSee($employee->username);
+        $response->assertSee('&#64;' . $employee->username, false);
+
+        // Verifikasi tombol single generate username per row ada di DOM
+        $response->assertSee(route('people.generate_username', $employee->id));
+        $response->assertSee('Generate / Reset Username (namakaryawan_cabang)');
+
+        // Verifikasi tombol bulk action di floating toolbar
+        $response->assertSee(route('people.bulk_generate_username'));
+        $response->assertSee('btn-trigger-bulk-generate-username');
+        $response->assertSee('Generate Username');
+    }
+
+    public function test_username_generation_with_special_characters_and_accents(): void
+    {
+        $this->actingAsAdmin();
+        $branch = $this->createBranch(['code' => 'JKT-PST', 'name' => 'Jakarta Pusat']);
+        $employee = $this->createUser([
+            'name' => "Dr. M. Syafi'i, S.Kom.",
+            'branch_id' => $branch->id,
+            'username' => null,
+        ]);
+
+        $response = $this->post("/people/{$employee->id}/generate-username");
+        $response->assertSessionHasNoErrors();
+
+        $employee->refresh();
+        // Karakter non-alfanumerik dibersihkan, huruf kecil
+        $this->assertEquals('drmsyafiiskom_jktpst', $employee->username);
+    }
+
+    public function test_employee_must_change_password_cannot_access_leave_or_attendance_pages(): void
+    {
+        $employee = $this->createUser([
+            'password' => Hash::make('12345678'),
+            'must_change_password' => true,
+        ]);
+        $this->actingAs($employee);
+
+        // Uji coba akses ke halaman cuti
+        $respLeave = $this->get('/leave');
+        $respLeave->assertRedirect(route('password.force_change'));
+
+        // Uji coba akses ke halaman absensi
+        $respAttendance = $this->get('/attendance/today');
+        $respAttendance->assertRedirect(route('password.force_change'));
+
+        // Uji coba akses ke halaman profil karyawan
+        $respShow = $this->get("/people/{$employee->id}");
+        $respShow->assertRedirect(route('password.force_change'));
+    }
+
+    public function test_employee_must_change_password_can_logout(): void
+    {
+        $employee = $this->createUser([
+            'password' => Hash::make('12345678'),
+            'must_change_password' => true,
+        ]);
+        $this->actingAs($employee);
+
+        $response = $this->post('/logout');
+        $response->assertRedirect(route('login'));
+        $this->assertGuest();
+    }
+
+    public function test_user_with_default_password_is_intercepted_even_if_flag_was_false(): void
+    {
+        // Simulasi akun yang ber-password 12345678 namun flag must_change_password bernilai false (misal akun historis)
+        $employee = $this->createUser([
+            'email' => 'historis@example.test',
+            'username' => 'historis_demo',
+            'password' => Hash::make('12345678'),
+            'must_change_password' => false,
+        ]);
+
+        // Saat login, sistem langsung redirect ke /password/force-change
+        $loginResponse = $this->post('/login', [
+            'login' => 'historis@example.test',
+            'password' => '12345678',
+        ]);
+        $loginResponse->assertRedirect(route('password.force_change'));
+        $this->assertAuthenticatedAs($employee);
+
+        // Saat mencoba akses Beranda (/), dicegat oleh middleware EnsurePasswordChanged
+        $dashboardResponse = $this->get('/');
+        $dashboardResponse->assertRedirect(route('password.force_change'));
+
+        // View form force change terbuka normal
+        $forceView = $this->get('/password/force-change');
+        $forceView->assertOk();
+        $forceView->assertSee('Wajib Perbarui Kata Sandi');
+
+        // Melakukan update ke password baru
+        $updateResponse = $this->post('/password/force-change', [
+            'current_password' => '12345678',
+            'password' => 'SandiBaruAman123!',
+            'password_confirmation' => 'SandiBaruAman123!',
+        ]);
+        $updateResponse->assertRedirect(route('home'));
+        $updateResponse->assertSessionHas('ok');
+
+        $employee->refresh();
+        $this->assertFalse($employee->must_change_password);
+        $this->assertTrue(Hash::check('SandiBaruAman123!', $employee->password));
+
+        // Setelah ganti password baru, akses ke Beranda terbuka penuh
+        $homeAfter = $this->get('/');
+        $homeAfter->assertOk();
     }
 }
