@@ -4,6 +4,7 @@
     'label' => null,
     'options' => [],
     'value' => null,
+    'selected' => null,
     'placeholder' => 'Pilih opsi...',
     'searchPlaceholder' => 'Ketik untuk mencari...',
     'required' => false,
@@ -13,7 +14,7 @@
 
 @php
     $inputId = $id ?? $name;
-    $selectedValue = $value ?? old($name);
+    $selectedValue = $value ?? $selected ?? old($name);
     
     // Normalisasi opsi ke format terstandar: [['value' => ..., 'label' => ..., 'sublabel' => ...]]
     $normalizedOptions = [];
@@ -24,12 +25,14 @@
                 'value' => (string) ($opt['value'] ?? $key),
                 'label' => (string) ($opt['label'] ?? $opt['name'] ?? ''),
                 'sublabel' => (string) ($opt['sublabel'] ?? $opt['code'] ?? ''),
+                'branch_id' => isset($opt['branch_id']) ? (string) $opt['branch_id'] : null,
             ];
         } else {
             $normalizedOptions[] = [
                 'value' => (string) $key,
                 'label' => (string) $opt,
                 'sublabel' => '',
+                'branch_id' => null,
             ];
         }
     }
@@ -126,6 +129,7 @@
                     data-value="{{ $opt['value'] }}"
                     data-label="{{ $opt['label'] }}"
                     data-sublabel="{{ $opt['sublabel'] }}"
+                    @if(!empty($opt['branch_id'])) data-branch-id="{{ $opt['branch_id'] }}" @endif
                     class="px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors {{ $isSelected ? 'bg-emerald-50 text-emerald-900 font-bold' : 'text-slate-700 hover:bg-slate-100' }}"
                 >
                     <div class="truncate">

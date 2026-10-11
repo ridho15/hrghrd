@@ -67,7 +67,7 @@
                         :options="collect([['value' => '', 'label' => 'Semua Cabang', 'sublabel' => 'Semua Lokasi']])->concat(
                             $branches->map(fn($b) => ['value' => $b->id, 'label' => $b->name, 'sublabel' => $b->code])
                         )"
-                        :selected="request('branch_id', '')"
+                        :value="request('branch_id', '')"
                         placeholder="Semua Cabang"
                         searchPlaceholder="Cari cabang..."
                     />
@@ -82,7 +82,7 @@
                         :options="collect([['value' => '', 'label' => 'Semua Jabatan', 'sublabel' => 'Semua Posisi']])->concat(
                             $positions->map(fn($p) => ['value' => $p->id, 'label' => $p->name, 'sublabel' => 'ID #'.$p->id])
                         )"
-                        :selected="request('position_id', '')"
+                        :value="request('position_id', '')"
                         placeholder="Semua Jabatan"
                         searchPlaceholder="Cari jabatan..."
                     />

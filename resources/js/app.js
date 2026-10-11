@@ -540,6 +540,10 @@ function initSearchableSelects() {
       const q = query.toLowerCase().trim();
       let matchCount = 0;
       wrapper.querySelectorAll('[data-select-option]').forEach(opt => {
+        if (opt.dataset.filteredOut === 'true') {
+          opt.classList.add('hidden');
+          return;
+        }
         const label = (opt.dataset.label || '').toLowerCase();
         const sublabel = (opt.dataset.sublabel || '').toLowerCase();
         const fullText = (opt.textContent || '').toLowerCase();

@@ -171,7 +171,7 @@
                         id="person-edit-branch"
                         label="Cabang Penempatan"
                         :options="$branches->map(fn($b) => ['value' => $b->id, 'label' => $b->name, 'sublabel' => $b->code])"
-                        :selected="old('branch_id', $person->branch_id)"
+                        :value="old('branch_id', $person->branch_id)"
                         placeholder="Pilih Cabang..."
                         searchPlaceholder="Cari nama atau kode cabang..."
                     />
@@ -183,7 +183,7 @@
                         id="person-edit-position"
                         label="Jabatan Organisasi"
                         :options="$positions->map(fn($p) => ['value' => $p->id, 'label' => $p->name, 'sublabel' => 'ID #'.$p->id])"
-                        :selected="old('position_id', $person->position_id)"
+                        :value="old('position_id', $person->position_id)"
                         placeholder="Pilih Jabatan..."
                         searchPlaceholder="Cari nama jabatan..."
                     />

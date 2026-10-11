@@ -16,10 +16,28 @@ class ShiftStoreRequest extends FormRequest
 
         if (Access::manager()) {
             $branchId = (int) $this->input('branch_id');
+            if (! $branchId && $this->filled('user_id')) {
+                $userBranch = (int) DB::table('users')->where('id', $this->input('user_id'))->value('branch_id');
+                return Access::branch($userBranch);
+            }
             return Access::branch($branchId);
         }
 
         return false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $mode = $this->input('mode') ?: ($this->has('start_date') ? 'recurring' : 'single');
+
+        if ($mode === 'single' && $this->filled('user_id')) {
+            $userBranch = DB::table('users')->where('id', $this->input('user_id'))->value('branch_id');
+            if ($userBranch) {
+                $this->merge([
+                    'branch_id' => (int) $userBranch,
+                ]);
+            }
+        }
     }
 
     public function rules(): array

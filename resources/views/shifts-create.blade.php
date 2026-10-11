@@ -122,13 +122,18 @@
 
         {{-- KARTU 1: Cabang Penugasan --}}
         <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 sm:p-7 space-y-5">
-            <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
-                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 font-black text-sm flex items-center justify-center border border-emerald-200/60">
-                    1
+            <div class="flex items-center justify-between gap-3 pb-4 border-b border-slate-100 flex-wrap">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 font-black text-sm flex items-center justify-center border border-emerald-200/60">
+                        1
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Cabang Penugasan</h2>
+                        <p class="text-xs text-slate-500">Pilih cabang operasional tempat shift ini berlaku.</p>
+                    </div>
                 </div>
-                <div>
-                    <h2 class="text-base font-bold text-slate-900">Cabang Penugasan</h2>
-                    <p class="text-xs text-slate-500">Pilih cabang operasional tempat shift ini berlaku.</p>
+                <div id="badge-branch-sync-note" class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-lg {{ $currentMode === 'recurring' ? 'hidden' : '' }}">
+                    ⚡ Cabang otomatis mengikuti staf yang Anda pilih
                 </div>
             </div>
 
@@ -177,6 +182,7 @@
                             'value' => (string)$p->id,
                             'label' => $p->name,
                             'sublabel' => ($p->username ? '@' . $p->username . ' • ' : '') . ($p->position?->name ?? 'Staf') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
+                            'branch_id' => (string)($p->branch_id ?? ''),
                         ]);
                     @endphp
                     <x-searchable-select
@@ -612,6 +618,9 @@
             if (secDateRecurring) secDateRecurring.classList.add('hidden');
             if (secAutoApprove) secAutoApprove.classList.add('hidden');
 
+            const badgeBranchSync = document.getElementById('badge-branch-sync-note');
+            if (badgeBranchSync) badgeBranchSync.classList.remove('hidden');
+
             if (dateSingleInput) dateSingleInput.required = true;
             if (startDateInput) startDateInput.required = false;
             if (endDateInput) endDateInput.required = false;
@@ -633,6 +642,9 @@
             if (secDateSingle) secDateSingle.classList.add('hidden');
             if (secDateRecurring) secDateRecurring.classList.remove('hidden');
             if (secAutoApprove) secAutoApprove.classList.remove('hidden');
+
+            const badgeBranchSync = document.getElementById('badge-branch-sync-note');
+            if (badgeBranchSync) badgeBranchSync.classList.add('hidden');
 
             if (dateSingleInput) dateSingleInput.required = false;
             if (startDateInput) startDateInput.required = true;
@@ -753,13 +765,84 @@
         }
     }
 
+    function filterSingleEmployeesByBranch() {
+        const branchId = getSelectedBranchId();
+        const userWrapper = document.getElementById('shift-user-select-wrapper');
+        if (!userWrapper) return;
+
+        const userInput = document.getElementById('shift-user-select');
+        const currentUserId = userInput ? userInput.value : '';
+        let isCurrentValid = false;
+
+        userWrapper.querySelectorAll('[data-select-option]').forEach(opt => {
+            const empBranch = opt.getAttribute('data-branch-id');
+            const matches = !branchId || empBranch === branchId || !empBranch;
+            opt.dataset.filteredOut = matches ? 'false' : 'true';
+            opt.classList.toggle('hidden', !matches);
+
+            if (matches && opt.getAttribute('data-value') === currentUserId) {
+                isCurrentValid = true;
+            }
+        });
+
+        if (currentUserId && !isCurrentValid && branchId) {
+            userInput.value = '';
+            const labelEl = userWrapper.querySelector('[data-select-label]');
+            if (labelEl) {
+                labelEl.textContent = 'Cari atau pilih nama karyawan...';
+                labelEl.className = 'truncate text-slate-400';
+            }
+            userWrapper.querySelectorAll('[data-select-option]').forEach(o => {
+                o.setAttribute('aria-selected', 'false');
+                o.className = 'px-3 py-2 rounded-xl flex items-center justify-between gap-2 cursor-pointer transition-colors text-slate-700 hover:bg-slate-100';
+            });
+        }
+    }
+
+    let isSyncingBranch = false;
+    function syncBranchFromEmployee() {
+        if (currentMode !== 'single' || isSyncingBranch) return;
+        const userInput = document.getElementById('shift-user-select');
+        if (!userInput || !userInput.value) return;
+
+        const userWrapper = document.getElementById('shift-user-select-wrapper');
+        const selectedOpt = userWrapper?.querySelector(`[data-select-option][data-value="${userInput.value}"]`);
+        const branchId = selectedOpt?.getAttribute('data-branch-id');
+
+        if (branchId) {
+            const currentBranchId = getSelectedBranchId();
+            if (currentBranchId !== branchId) {
+                isSyncingBranch = true;
+                const branchWrapper = document.getElementById('shift-branch-select-wrapper');
+                const branchOpt = branchWrapper?.querySelector(`[data-select-option][data-value="${branchId}"]`);
+                if (branchOpt) {
+                    branchOpt.click();
+                }
+                isSyncingBranch = false;
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         switchMode(currentMode);
         filterEmployeesByBranch();
+        filterSingleEmployeesByBranch();
 
         const branchInput = document.getElementById('shift-branch-select');
         if (branchInput) {
-            branchInput.addEventListener('change', filterEmployeesByBranch);
+            branchInput.addEventListener('change', () => {
+                filterEmployeesByBranch();
+                if (!isSyncingBranch) {
+                    filterSingleEmployeesByBranch();
+                }
+            });
+        }
+
+        const userInput = document.getElementById('shift-user-select');
+        if (userInput) {
+            userInput.addEventListener('change', () => {
+                syncBranchFromEmployee();
+            });
         }
     });
 </script>
