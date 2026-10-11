@@ -58,6 +58,11 @@ class Shift extends Model
         return $this->hasMany(AttendanceException::class);
     }
 
+    public function exception(): HasOne
+    {
+        return $this->hasOne(AttendanceException::class)->latestOfMany();
+    }
+
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');

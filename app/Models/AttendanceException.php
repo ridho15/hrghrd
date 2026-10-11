@@ -44,6 +44,11 @@ class AttendanceException extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function attendance(): BelongsTo
+    {
+        return $this->belongsTo(Attendance::class, 'shift_id', 'shift_id');
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'pending');

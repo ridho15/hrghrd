@@ -281,6 +281,36 @@ final class AttendanceService
                         'flags' => $flags,
                     ]);
                 }
+            } elseif ($decision === 'rejected') {
+                $attendance = Attendance::where('shift_id', $shift->id)
+                    ->where('user_id', $ex->user_id)
+                    ->first();
+
+                $auditFlag = [
+                    'exception_rejected' => true,
+                    'note' => $reviewNote,
+                    'label' => 'Pengajuan pengecualian ditolak oleh ' . $reviewer->name . ($reviewNote ? ': ' . $reviewNote : ''),
+                ];
+
+                if ($attendance) {
+                    $flags = $attendance->flags ?? [];
+                    $flags[] = $auditFlag;
+                    $status = $attendance->checkin_at ? 'rejected' : 'absent';
+                    $attendance->update([
+                        'status' => $status,
+                        'flags' => $flags,
+                    ]);
+                } else {
+                    Attendance::create([
+                        'shift_id' => $shift->id,
+                        'user_id' => $ex->user_id,
+                        'status' => 'absent',
+                        'late_minutes' => 0,
+                        'late_units' => 0,
+                        'overtime_minutes' => 0,
+                        'flags' => [$auditFlag],
+                    ]);
+                }
             }
 
             $ex->update([

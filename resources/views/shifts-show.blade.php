@@ -181,7 +181,7 @@
                 </div>
                 <div class="flex justify-between py-2 border-b border-slate-100">
                     <span class="text-slate-500">Radius Geofence</span>
-                    <span class="font-semibold text-slate-800">{{ $shift->branch?->radius_meters ?? '100' }} meter</span>
+                    <span class="font-semibold text-slate-800">{{ $shift->branch?->radius_m ?? '100' }} meter</span>
                 </div>
                 <div class="flex justify-between py-2 border-b border-slate-100">
                     <span class="text-slate-500">Koordinat</span>

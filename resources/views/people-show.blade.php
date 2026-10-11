@@ -37,7 +37,7 @@
                 @if($person->id !== auth()->id())
                     <button 
                         type="button" 
-                        data-confirm="Password akun karyawan '{{ $person->name }}' akan direset menjadi default '12345678'. Karyawan dapat langsung login menggunakan kata sandi ini."
+                        data-confirm="Password akun karyawan '{{ $person->name }}' akan direset ke default '12345678'. Karyawan akan diwajibkan membuat kata sandi baru saat pertama kali login demi keamanan akun."
                         data-confirm-title="Reset Password {{ $person->name }}?"
                         data-confirm-variant="warning"
                         data-confirm-btn="Ya, Reset ke 12345678"

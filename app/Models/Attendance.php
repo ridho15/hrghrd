@@ -70,4 +70,9 @@ class Attendance extends Model
     {
         return $this->belongsTo(User::class, 'overtime_approved_by');
     }
+
+    public function exception(): BelongsTo
+    {
+        return $this->belongsTo(AttendanceException::class, 'shift_id', 'shift_id');
+    }
 }

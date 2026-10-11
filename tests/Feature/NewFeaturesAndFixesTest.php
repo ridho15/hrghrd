@@ -574,4 +574,232 @@ class NewFeaturesAndFixesTest extends TestCase
         $homeAfter = $this->get('/');
         $homeAfter->assertOk();
     }
+
+    public function test_attendance_review_renders_human_readable_evidence_without_raw_json(): void
+    {
+        $this->actingAsAdmin();
+        $branch = $this->createBranch(['name' => 'Cabang Audit', 'radius_m' => 150]);
+        $employee = $this->createUser(['name' => 'Karyawan Audit Presensi', 'branch_id' => $branch->id]);
+        $shift = $this->createShift($employee, $branch);
+
+        \App\Models\Attendance::create([
+            'shift_id' => $shift->id,
+            'user_id' => $employee->id,
+            'checkin_at' => now()->subHours(8),
+            'checkout_at' => now(),
+            'status' => 'present',
+            'checkin_evidence' => [
+                'latitude' => -6.175392,
+                'longitude' => 106.827153,
+                'accuracy_m' => 12,
+                'distance_m' => 45,
+                'is_mocked' => false,
+                'ip' => '192.168.1.10',
+                'server_at' => now()->toIso8601String(),
+            ],
+            'checkout_evidence' => [
+                'latitude' => -6.175400,
+                'longitude' => 106.827160,
+                'accuracy_m' => 8,
+                'distance_m' => 30,
+                'is_mocked' => false,
+                'ip' => '192.168.1.10',
+                'server_at' => now()->toIso8601String(),
+            ],
+            'flags' => [
+                ['label' => 'Potensi Terlambat Terverifikasi'],
+            ],
+        ]);
+
+        $response = $this->get(route('attendance.review'));
+        $response->assertOk();
+        $response->assertSee('Karyawan Audit Presensi');
+        $response->assertSee('Cabang Audit');
+        $response->assertSee('Akurasi:');
+        $response->assertSee('45 meter');
+        $response->assertSee('Batas Radius: 150m');
+        $response->assertSee('Potensi Terlambat Terverifikasi');
+
+        // Memastikan tidak ada JSON mentah yang bocor di render view utama
+        $content = $response->getContent();
+        $this->assertStringNotContainsString('{"server_at":', $content);
+        $this->assertStringNotContainsString('{"latitude":', $content);
+    }
+
+    public function test_audit_log_renders_comparison_table_for_before_and_after_snapshots(): void
+    {
+        $admin = $this->actingAsAdmin();
+        $employee = $this->createUser(['name' => 'Karyawan Audit Delta']);
+
+        \App\Models\AuditLog::create([
+            'actor_id' => $admin->id,
+            'subject_type' => 'user',
+            'subject_id' => $employee->id,
+            'action' => 'update_profile',
+            'before' => json_encode(['base_salary' => 5000000, 'role' => 'employee']),
+            'after' => json_encode(['base_salary' => 6000000, 'role' => 'employee']),
+            'reason' => 'Kenaikan gaji tahunan',
+            'ip' => '127.0.0.1',
+            'created_at' => now(),
+        ]);
+
+        $response = $this->get('/audit');
+        $response->assertOk();
+        $response->assertSee('Atribut / Field');
+        $response->assertSee('Nilai Sebelum (Before)');
+        $response->assertSee('Nilai Sesudah (After)');
+        $response->assertSee('base salary');
+        $response->assertSee('5000000');
+        $response->assertSee('6000000');
+    }
+
+    public function test_payroll_view_shows_approved_status_label(): void
+    {
+        $admin = $this->actingAsAdmin();
+        $branch = $this->createBranch(['name' => 'Cabang Payroll']);
+
+        \App\Models\PayrollRun::create([
+            'branch_id' => $branch->id,
+            'month' => '2026-09',
+            'status' => 'approved',
+            'approved_by' => $admin->id,
+        ]);
+
+        $response = $this->get("/payroll?branch_id={$branch->id}&month=2026-09");
+        $response->assertOk();
+        $response->assertSee('STATUS: DISETUJUI (APPROVED)');
+        $response->assertDontSee('STATUS: DISETUJUI MANAJER');
+    }
+
+    public function test_review_exception_rejection_creates_absent_attendance_when_none_existed(): void
+    {
+        $admin = $this->actingAsAdmin();
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['branch_id' => $branch->id]);
+        $shift = $this->createShift($employee, $branch);
+
+        $exception = \App\Models\AttendanceException::create([
+            'user_id' => $employee->id,
+            'shift_id' => $shift->id,
+            'action' => 'in',
+            'claimed_time' => '08:00',
+            'reason' => 'Lupa bawa HP',
+            'status' => 'pending',
+        ]);
+
+        $this->assertDatabaseMissing('attendances', [
+            'shift_id' => $shift->id,
+            'user_id' => $employee->id,
+        ]);
+
+        $service = new \App\Services\AttendanceService();
+        $service->reviewException($exception, $admin, 'rejected', 'Bukti tidak meyakinkan');
+
+        $exception->refresh();
+        $this->assertEquals('rejected', $exception->status);
+        $this->assertEquals('Bukti tidak meyakinkan', $exception->review_note);
+
+        $attendance = \App\Models\Attendance::where('shift_id', $shift->id)->first();
+        $this->assertNotNull($attendance);
+        $this->assertEquals('absent', $attendance->status);
+        $this->assertNull($attendance->checkin_at);
+        $this->assertNull($attendance->checkout_at);
+        $this->assertIsArray($attendance->flags);
+
+        $hasRejectedFlag = collect($attendance->flags)->contains(fn ($f) => is_array($f) && ($f['exception_rejected'] ?? false) === true);
+        $this->assertTrue($hasRejectedFlag);
+
+        // Resource contract check
+        $resource = (new \App\Http\Resources\AttendanceResource($attendance))->toArray(request());
+        $this->assertEquals('absent', $resource['status']);
+        $this->assertEquals('rejected', $resource['exception_status']);
+        $this->assertEquals('Bukti tidak meyakinkan', $resource['review_note']);
+        $this->assertTrue($resource['is_rejected']);
+    }
+
+    public function test_review_exception_rejection_updates_existing_attendance_to_rejected(): void
+    {
+        $admin = $this->actingAsAdmin();
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['branch_id' => $branch->id]);
+        $shift = $this->createShift($employee, $branch);
+
+        $attendance = \App\Models\Attendance::create([
+            'shift_id' => $shift->id,
+            'user_id' => $employee->id,
+            'checkin_at' => now()->setTime(8, 0),
+            'status' => 'present',
+            'flags' => ['Initial checkin valid'],
+        ]);
+
+        $exception = \App\Models\AttendanceException::create([
+            'user_id' => $employee->id,
+            'shift_id' => $shift->id,
+            'action' => 'out',
+            'claimed_time' => '17:00',
+            'reason' => 'Kamera rusak saat pulang',
+            'status' => 'pending',
+        ]);
+
+        $service = new \App\Services\AttendanceService();
+        $service->reviewException($exception, $admin, 'rejected', 'Tidak ada rekaman CCTV keluar');
+
+        $exception->refresh();
+        $this->assertEquals('rejected', $exception->status);
+
+        $attendance->refresh();
+        $this->assertEquals('rejected', $attendance->status);
+
+        $hasRejectedFlag = collect($attendance->flags)->contains(fn ($f) => is_array($f) && ($f['exception_rejected'] ?? false) === true);
+        $this->assertTrue($hasRejectedFlag);
+
+        // Resource contract check
+        $resource = (new \App\Http\Resources\AttendanceResource($attendance))->toArray(request());
+        $this->assertEquals('rejected', $resource['status']);
+        $this->assertEquals('rejected', $resource['exception_status']);
+        $this->assertEquals('Tidak ada rekaman CCTV keluar', $resource['review_note']);
+        $this->assertTrue($resource['is_rejected']);
+    }
+
+    public function test_attendance_and_exception_relationships_and_resource_contract(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['branch_id' => $branch->id]);
+        $shift = $this->createShift($employee, $branch);
+
+        $exception = \App\Models\AttendanceException::create([
+            'user_id' => $employee->id,
+            'shift_id' => $shift->id,
+            'action' => 'in',
+            'reason' => 'Test reason',
+            'status' => 'pending',
+            'review_note' => null,
+        ]);
+
+        $attendance = \App\Models\Attendance::create([
+            'shift_id' => $shift->id,
+            'user_id' => $employee->id,
+            'checkin_at' => now(),
+            'status' => 'present',
+        ]);
+
+        // BelongsTo relationship Attendance -> AttendanceException
+        $this->assertInstanceOf(\App\Models\AttendanceException::class, $attendance->exception);
+        $this->assertEquals($exception->id, $attendance->exception->id);
+
+        // Shift relationships
+        $this->assertInstanceOf(\App\Models\AttendanceException::class, $shift->exception);
+        $this->assertCount(1, $shift->exceptions);
+
+        // AttendanceException -> Attendance
+        $this->assertInstanceOf(\App\Models\Attendance::class, $exception->attendance);
+        $this->assertEquals($attendance->id, $exception->attendance->id);
+
+        // AttendanceResource contract with pending exception
+        $resource = (new \App\Http\Resources\AttendanceResource($attendance))->toArray(request());
+        $this->assertEquals('present', $resource['status']);
+        $this->assertEquals('pending', $resource['exception_status']);
+        $this->assertNull($resource['review_note']);
+        $this->assertFalse($resource['is_rejected']);
+    }
 }

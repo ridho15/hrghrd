@@ -11,6 +11,8 @@ class AttendanceResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $latestException = $this->shift?->exceptions?->sortByDesc('id')->first() ?? $this->exception;
+
         return [
             'id'               => $this->id,
             'shift_id'         => $this->shift_id,
@@ -20,6 +22,10 @@ class AttendanceResource extends JsonResource
             'late_minutes'     => $this->late_minutes,
             'late_units'       => $this->late_units,
             'overtime_minutes' => $this->overtime_minutes,
+            // Tambahan field baru untuk sinkronisasi Mobile:
+            'exception_status' => $latestException?->status,
+            'review_note'      => $latestException?->review_note,
+            'is_rejected'      => $this->status === 'rejected' || $this->status === 'absent' || $latestException?->status === 'rejected',
             'flags'            => $this->flags ?? [],
             'shift'            => $this->whenLoaded('shift', fn () => [
                 'id'       => $this->shift->id,

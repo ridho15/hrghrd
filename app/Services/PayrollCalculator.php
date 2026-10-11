@@ -55,7 +55,7 @@ final class PayrollCalculator
             $date = substr($shift->start_at,0,10);
             if (in_array($date,$paidLeave,true) || in_array($date,$deductibleUnpaidLeave,true)) continue;
             if (Carbon::parse($shift->end_at,'Asia/Jakarta')->isPast() &&
-                (!$attendances->get($shift->id) || in_array($attendances->get($shift->id)->status, ['absent', 'early_checkout'], true))) {
+                (!$attendances->get($shift->id) || in_array($attendances->get($shift->id)->status, ['absent', 'early_checkout', 'rejected'], true))) {
                 $missing[] = $date;
             }
         }
@@ -65,7 +65,7 @@ final class PayrollCalculator
         $lateSources = []; $overtimeSources = [];
         $totalWeightedHours = 0.0;
         foreach ($attendances as $attendance) {
-            if (! in_array($attendance->status, ['absent', 'early_checkout'], true) && $attendance->late_units > 0) {
+            if (! in_array($attendance->status, ['absent', 'early_checkout', 'rejected'], true) && $attendance->late_units > 0) {
                 $lateSources[] = ['attendance_id'=>$attendance->id,'units'=>$attendance->late_units];
             }
             $cappedOvertime = min(Rules::int('overtime_max_daily_minutes'), (int) $attendance->overtime_minutes);

@@ -210,9 +210,73 @@
                                     {{-- Inspeksi Bukti --}}
                                     <details class="text-[11px] text-slate-500 pt-0.5">
                                         <summary class="cursor-pointer text-emerald-700 font-semibold hover:underline">Bukti Presensi</summary>
-                                        <div class="mt-1 p-2 bg-slate-100 rounded border border-slate-200 text-[10px] space-y-0.5 font-mono">
-                                            <div><strong>In:</strong> {{ is_array($a->checkin_evidence) ? json_encode($a->checkin_evidence) : ($a->checkin_evidence ?: '—') }}</div>
-                                            <div><strong>Out:</strong> {{ is_array($a->checkout_evidence) ? json_encode($a->checkout_evidence) : ($a->checkout_evidence ?: '—') }}</div>
+                                        <div class="mt-1.5 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[10px] space-y-2">
+                                            @php
+                                                $inEv = is_array($a->checkin_evidence) ? $a->checkin_evidence : json_decode($a->checkin_evidence ?? '', true);
+                                                $outEv = is_array($a->checkout_evidence) ? $a->checkout_evidence : json_decode($a->checkout_evidence ?? '', true);
+                                            @endphp
+                                            {{-- Bukti In --}}
+                                            <div>
+                                                <span class="font-bold text-slate-700 block uppercase tracking-wider text-[9px] mb-0.5">Masuk (In):</span>
+                                                @if($inEv)
+                                                    @if(isset($inEv['exception_id']))
+                                                        <span class="text-amber-800 font-medium bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                                            Pengecualian #{{ $inEv['exception_id'] }}
+                                                        </span>
+                                                    @else
+                                                        <div class="space-y-0.5 text-slate-600">
+                                                            <div>
+                                                                <span>GPS:</span>
+                                                                <span class="font-mono font-bold text-slate-800">
+                                                                    {{ isset($inEv['latitude'], $inEv['longitude']) ? number_format($inEv['latitude'], 5) . ', ' . number_format($inEv['longitude'], 5) : '—' }}
+                                                                </span>
+                                                                @if(isset($inEv['distance_m']))
+                                                                    <span class="text-slate-500">({{ $inEv['distance_m'] }}m)</span>
+                                                                @endif
+                                                            </div>
+                                                            <div class="flex items-center gap-1.5 flex-wrap">
+                                                                @if(isset($inEv['accuracy_m']) || isset($inEv['accuracy']))
+                                                                    <span>Akurasi: &plusmn;{{ $inEv['accuracy_m'] ?? $inEv['accuracy'] }}m</span>
+                                                                @endif
+                                                                @if(!empty($inEv['is_mocked']))
+                                                                    <span class="text-rose-700 bg-rose-50 px-1 py-0.5 rounded font-bold border border-rose-200">Fake GPS</span>
+                                                                @endif
+                                                                @if(isset($inEv['ip']))
+                                                                    <span class="text-slate-400 font-mono">IP: {{ $inEv['ip'] }}</span>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                @else
+                                                    <span class="text-slate-400 italic">Belum ada rekaman masuk</span>
+                                                @endif
+                                            </div>
+
+                                            {{-- Bukti Out --}}
+                                            @if($outEv)
+                                                <div class="pt-1.5 border-t border-slate-200/60">
+                                                    <span class="font-bold text-slate-700 block uppercase tracking-wider text-[9px] mb-0.5">Pulang (Out):</span>
+                                                    <div class="space-y-0.5 text-slate-600">
+                                                        <div>
+                                                            <span>GPS:</span>
+                                                            <span class="font-mono font-bold text-slate-800">
+                                                                {{ isset($outEv['latitude'], $outEv['longitude']) ? number_format($outEv['latitude'], 5) . ', ' . number_format($outEv['longitude'], 5) : '—' }}
+                                                            </span>
+                                                            @if(isset($outEv['distance_m']))
+                                                                <span class="text-slate-500">({{ $outEv['distance_m'] }}m)</span>
+                                                            @endif
+                                                        </div>
+                                                        <div class="flex items-center gap-1.5 flex-wrap">
+                                                            @if(isset($outEv['accuracy_m']) || isset($outEv['accuracy']))
+                                                                <span>Akurasi: &plusmn;{{ $outEv['accuracy_m'] ?? $outEv['accuracy'] }}m</span>
+                                                            @endif
+                                                            @if(isset($outEv['ip']))
+                                                                <span class="text-slate-400 font-mono">IP: {{ $outEv['ip'] }}</span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endif
                                         </div>
                                     </details>
                                 </div>
@@ -351,7 +415,13 @@
                                             </div>
                                             <ul class="text-xs text-rose-700 list-disc list-inside space-y-0.5 m-0 pl-1 font-medium">
                                                 @foreach($flagList as $flag)
-                                                    <li>{{ is_string($flag) ? $flag : json_encode($flag) }}</li>
+                                                    <li>
+                                                        @if(is_array($flag))
+                                                            {{ $flag['message'] ?? ($flag['label'] ?? ($flag['reason'] ?? implode(' &middot; ', array_filter(array_map('strval', $flag))))) }}
+                                                        @else
+                                                            {{ $flag }}
+                                                        @endif
+                                                    </li>
                                                 @endforeach
                                             </ul>
                                         </div>
@@ -423,7 +493,7 @@
                                                             {{ $inEvidence['distance_m'] ?? '0' }} meter
                                                         </strong>
                                                         <span class="text-[10px] text-slate-500">
-                                                            Batas Radius: {{ $a->shift?->branch?->radius_meters ?? 100 }}m
+                                                            Batas Radius: {{ $a->shift?->branch?->radius_m ?? 100 }}m
                                                         </span>
                                                     </div>
 
@@ -433,7 +503,7 @@
                                                             {{ isset($inEvidence['latitude']) ? number_format($inEvidence['latitude'], 6) : '—' }},
                                                             {{ isset($inEvidence['longitude']) ? number_format($inEvidence['longitude'], 6) : '—' }}
                                                         </span>
-                                                        <span class="text-[10px] text-slate-500">Akurasi GPS: &plusmn;{{ $inEvidence['accuracy'] ?? '—' }}m</span>
+                                                        <span class="text-[10px] text-slate-500">Akurasi GPS: &plusmn;{{ $inEvidence['accuracy_m'] ?? ($inEvidence['accuracy'] ?? '—') }}m</span>
                                                     </div>
 
                                                     <div class="p-2.5 bg-slate-50 rounded-lg">
@@ -561,10 +631,38 @@
                             </td>
                             <td class="py-3.5 px-4 sm:px-6 text-xs text-slate-600">
                                 <span class="font-medium text-slate-800">{{ $t->reason ?? '—' }}</span>
-                                <details class="text-[11px] text-slate-400 mt-0.5">
-                                    <summary class="cursor-pointer text-emerald-700 font-semibold hover:underline">Rincian Evaluasi</summary>
-                                    <pre class="mt-1 p-2 bg-slate-50 rounded border border-slate-200 text-[10px] whitespace-pre-wrap font-mono">{{ is_array($t->evidence) ? json_encode($t->evidence, JSON_PRETTY_PRINT) : $t->evidence }}</pre>
-                                </details>
+                                @php
+                                    $evData = is_array($t->evidence) ? $t->evidence : json_decode($t->evidence ?? '', true);
+                                @endphp
+                                @if($evData)
+                                    <details class="text-[11px] text-slate-400 mt-1">
+                                        <summary class="cursor-pointer text-emerald-700 font-semibold hover:underline">Rincian Evaluasi</summary>
+                                        <div class="mt-1.5 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] space-y-1 text-slate-600">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                                                <div>
+                                                    <span class="text-slate-400 text-[10px] block uppercase font-bold">Lokasi GPS:</span>
+                                                    <span class="font-mono font-bold text-slate-800 text-[10px]">
+                                                        {{ isset($evData['latitude'], $evData['longitude']) ? number_format($evData['latitude'], 5) . ', ' . number_format($evData['longitude'], 5) : '—' }}
+                                                    </span>
+                                                    @if(isset($evData['accuracy_m']) || isset($evData['accuracy']))
+                                                        <span class="text-slate-500 text-[10px]">(±{{ $evData['accuracy_m'] ?? $evData['accuracy'] }}m)</span>
+                                                    @endif
+                                                </div>
+                                                <div>
+                                                    <span class="text-slate-400 text-[10px] block uppercase font-bold">Jarak ke Cabang:</span>
+                                                    <span class="font-bold text-slate-800 text-[10px]">{{ $evData['distance_m'] ?? '—' }} meter</span>
+                                                    @if(!empty($evData['is_mocked']))
+                                                        <span class="ml-1 text-[9px] font-bold text-rose-700 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">Mock GPS</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <div class="pt-1 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                                                <span>IP: {{ $evData['ip'] ?? '—' }}</span>
+                                                <span>Waktu: {{ isset($evData['server_at']) ? \Carbon\Carbon::parse($evData['server_at'])->format('H:i:s') : '—' }}</span>
+                                            </div>
+                                        </div>
+                                    </details>
+                                @endif
                             </td>
                         </tr>
                     @empty

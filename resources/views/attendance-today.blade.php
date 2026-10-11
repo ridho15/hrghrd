@@ -145,7 +145,7 @@
                                     </h4>
                                 </div>
                                 <p class="text-xs text-slate-500 mb-5 leading-relaxed">
-                                    Berdirilah di area cabang <strong>{{ $shift->branch?->name }}</strong>. Masukkan kode 8 karakter dari layar QR Cabang atau gunakan kamera pemindai. Koordinat GPS Anda akan diverifikasi otomatis saat pengiriman.
+                                    Berdirilah di area cabang <strong>{{ $shift->branch?->name }}</strong>. Arahkan kamera pemindai ke layar QR Kiosk cabang untuk verifikasi instan. Koordinat GPS Anda akan divalidasi otomatis saat pengiriman.
                                 </p>
 
                                 <form method="post" action="{{ route('attendance.act', $shift->id) }}" class="space-y-4 attendance-form">

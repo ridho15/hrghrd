@@ -23,7 +23,7 @@
             @php
                 $statusConfig = match($run?->status) {
                     'locked' => ['label' => 'TERKUNCI PERMANEN', 'class' => 'bg-emerald-50 text-emerald-800 border-emerald-300 ring-2 ring-emerald-500/20', 'dot' => 'bg-emerald-500'],
-                    'approved' => ['label' => 'DISETUJUI MANAJER', 'class' => 'bg-emerald-50 text-emerald-800 border-emerald-300', 'dot' => 'bg-emerald-500'],
+                    'approved' => ['label' => 'DISETUJUI (APPROVED)', 'class' => 'bg-emerald-50 text-emerald-800 border-emerald-300', 'dot' => 'bg-emerald-500'],
                     'draft' => ['label' => 'DRAF TERSIMPAN', 'class' => 'bg-amber-50 text-amber-800 border-amber-300', 'dot' => 'bg-amber-500 animate-pulse'],
                     default => ['label' => 'BELUM ADA DRAF', 'class' => 'bg-slate-100 text-slate-600 border-slate-200', 'dot' => 'bg-slate-400']
                 };

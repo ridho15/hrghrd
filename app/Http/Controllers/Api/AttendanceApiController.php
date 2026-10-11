@@ -176,7 +176,7 @@ class AttendanceApiController extends Controller
         $user = $request->user();
         $perPage = min((int) ($request->query('per_page', 15)), 50);
 
-        $query = Attendance::with(['shift.branch', 'user'])
+        $query = Attendance::with(['shift.branch', 'shift.exceptions', 'user', 'exception'])
             ->when(! Access::manager(), fn ($q) => $q->where('user_id', $user->id))
             ->when(Access::manager() && ! Access::admin(), fn ($q) => $q->whereHas(
                 'user', fn ($u) => $u->where('branch_id', $user->branch_id)

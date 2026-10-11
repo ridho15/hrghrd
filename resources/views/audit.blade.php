@@ -206,33 +206,103 @@
                                     <div class="space-y-3">
                                         <h5 class="text-xs font-bold text-slate-900 uppercase tracking-wider m-0">Inspeksi Snapshot Data (Before vs After)</h5>
                                         @if($e->before || $e->after)
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-[11px]">
-                                                {{-- Nilai Sebelum (Before) --}}
-                                                <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50/40 space-y-2">
-                                                    <div class="flex items-center justify-between pb-1.5 border-b border-rose-200">
-                                                        <span class="font-bold text-rose-800 uppercase tracking-wider text-[10px]">Keadaan Sebelum (Before)</span>
-                                                        <span class="text-[9px] text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded font-bold">STATE AWAL</span>
-                                                    </div>
-                                                    @if($e->before)
-                                                        <pre class="whitespace-pre-wrap text-rose-950 overflow-x-auto m-0 leading-relaxed">{{ is_string($e->before) ? $e->before : json_encode($e->before, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
-                                                    @else
-                                                        <span class="text-slate-400 italic font-sans text-xs">Tidak ada data sebelumnya (entitas baru dibuat).</span>
-                                                    @endif
-                                                </div>
+                                            @php
+                                                $beforeRaw = $e->before;
+                                                $afterRaw = $e->after;
+                                                $beforeArr = is_array($beforeRaw) ? $beforeRaw : (is_string($beforeRaw) ? json_decode($beforeRaw, true) : null);
+                                                $afterArr = is_array($afterRaw) ? $afterRaw : (is_string($afterRaw) ? json_decode($afterRaw, true) : null);
 
-                                                {{-- Nilai Sesudah (After) --}}
-                                                <div class="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40 space-y-2">
-                                                    <div class="flex items-center justify-between pb-1.5 border-b border-emerald-200">
-                                                        <span class="font-bold text-emerald-800 uppercase tracking-wider text-[10px]">Keadaan Sesudah (After)</span>
-                                                        <span class="text-[9px] text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded font-bold">STATE AKHIR</span>
-                                                    </div>
-                                                    @if($e->after)
-                                                        <pre class="whitespace-pre-wrap text-emerald-950 overflow-x-auto m-0 leading-relaxed">{{ is_string($e->after) ? $e->after : json_encode($e->after, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
-                                                    @else
-                                                        <span class="text-slate-400 italic font-sans text-xs">Tidak ada data sesudah (entitas dihapus / diarsipkan).</span>
-                                                    @endif
+                                                $isStructured = is_array($beforeArr) || is_array($afterArr);
+                                                $diffKeys = [];
+                                                if (is_array($beforeArr)) {
+                                                    $diffKeys = array_merge($diffKeys, array_keys($beforeArr));
+                                                }
+                                                if (is_array($afterArr)) {
+                                                    $diffKeys = array_merge($diffKeys, array_keys($afterArr));
+                                                }
+                                                $diffKeys = array_unique($diffKeys);
+                                                
+                                                $formatVal = function($val) {
+                                                    if (is_null($val)) return '—';
+                                                    if (is_bool($val)) return $val ? 'Ya (true)' : 'Tidak (false)';
+                                                    if (is_array($val)) return implode(', ', array_map(fn($k, $v) => is_numeric($k) ? (string)$v : "$k: $v", array_keys($val), $val));
+                                                    return (string) $val;
+                                                };
+                                            @endphp
+
+                                            @if($isStructured && count($diffKeys) > 0)
+                                                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                                                    <table class="w-full text-left text-xs border-collapse">
+                                                        <thead>
+                                                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold text-[11px]">
+                                                                <th class="py-2.5 px-3 uppercase tracking-wider">Atribut / Field</th>
+                                                                <th class="py-2.5 px-3 uppercase tracking-wider text-rose-700 bg-rose-50/50">Nilai Sebelum (Before)</th>
+                                                                <th class="py-2.5 px-3 uppercase tracking-wider text-emerald-700 bg-emerald-50/50">Nilai Sesudah (After)</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-slate-100 bg-white font-sans">
+                                                            @foreach($diffKeys as $key)
+                                                                @php
+                                                                    $bVal = is_array($beforeArr) && array_key_exists($key, $beforeArr) ? $beforeArr[$key] : null;
+                                                                    $aVal = is_array($afterArr) && array_key_exists($key, $afterArr) ? $afterArr[$key] : null;
+                                                                    $bExists = is_array($beforeArr) && array_key_exists($key, $beforeArr);
+                                                                    $aExists = is_array($afterArr) && array_key_exists($key, $afterArr);
+                                                                    $isChanged = $bVal !== $aVal;
+                                                                @endphp
+                                                                <tr class="{{ $isChanged ? 'bg-amber-50/20' : '' }} hover:bg-slate-50/80 transition-colors">
+                                                                    <td class="py-2.5 px-3 align-top font-medium text-slate-800">
+                                                                        <div class="capitalize text-slate-900 font-semibold">{{ str_replace(['_', '-'], ' ', $key) }}</div>
+                                                                        <span class="text-[10px] font-mono text-slate-400">{{ $key }}</span>
+                                                                    </td>
+                                                                    <td class="py-2.5 px-3 align-top font-mono text-[11px] {{ $isChanged ? 'text-rose-700 bg-rose-50/30' : 'text-slate-600' }}">
+                                                                        @if($bExists)
+                                                                            <span class="{{ $isChanged ? 'line-through opacity-80' : '' }}">{{ $formatVal($bVal) }}</span>
+                                                                        @else
+                                                                            <span class="text-slate-400 italic font-sans text-xs">(Belum ada)</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td class="py-2.5 px-3 align-top font-mono text-[11px] {{ $isChanged ? 'text-emerald-700 font-bold bg-emerald-50/30' : 'text-slate-600' }}">
+                                                                        @if($aExists)
+                                                                            <span>{{ $formatVal($aVal) }}</span>
+                                                                        @else
+                                                                            <span class="text-rose-500 italic font-sans text-xs">(Dihapus)</span>
+                                                                        @endif
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
                                                 </div>
-                                            </div>
+                                            @else
+                                                {{-- Tampilan data non-struktur --}}
+                                                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                                    <div class="p-3.5 rounded-xl border border-rose-200 bg-rose-50/40">
+                                                        <span class="font-bold text-rose-800 uppercase tracking-wider text-[10px] block mb-1">Keadaan Sebelum (Before)</span>
+                                                        <div class="text-rose-950 font-medium">{{ $beforeRaw ?? '— Tidak ada data sebelum' }}</div>
+                                                    </div>
+                                                    <div class="p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/40">
+                                                        <span class="font-bold text-emerald-800 uppercase tracking-wider text-[10px] block mb-1">Keadaan Sesudah (After)</span>
+                                                        <div class="text-emerald-950 font-medium">{{ $afterRaw ?? '— Tidak ada data sesudah' }}</div>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            {{-- Toggle Data Teknis Mentah (JSON) --}}
+                                            <details class="text-[11px] text-slate-500 pt-1">
+                                                <summary class="cursor-pointer text-slate-600 hover:text-slate-900 font-semibold inline-flex items-center gap-1 select-none">
+                                                    <span>Lihat Payload Mentah Teknis (JSON Raw)</span>
+                                                </summary>
+                                                <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 font-mono text-[10px]">
+                                                    <div class="p-2 bg-slate-100 rounded-lg border border-slate-200 text-slate-700 overflow-x-auto max-h-40">
+                                                        <span class="font-bold text-slate-500 block mb-1">RAW BEFORE:</span>
+                                                        <pre class="whitespace-pre-wrap m-0">{{ is_string($beforeRaw) ? $beforeRaw : json_encode($beforeRaw, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                                    </div>
+                                                    <div class="p-2 bg-slate-100 rounded-lg border border-slate-200 text-slate-700 overflow-x-auto max-h-40">
+                                                        <span class="font-bold text-slate-500 block mb-1">RAW AFTER:</span>
+                                                        <pre class="whitespace-pre-wrap m-0">{{ is_string($afterRaw) ? $afterRaw : json_encode($afterRaw, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+                                                    </div>
+                                                </div>
+                                            </details>
                                         @else
                                             <div class="p-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-center">
                                                 <svg class="w-7 h-7 text-slate-300 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
