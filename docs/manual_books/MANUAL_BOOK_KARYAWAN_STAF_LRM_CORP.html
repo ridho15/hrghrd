@@ -24,7 +24,7 @@
         <span class="cover-role-highlight">KARYAWAN & STAF (EMPLOYEE SELF-SERVICE)</span>
       </h1>
       <p class="cover-subtitle">
-        Petunjuk penggunaan mandiri aplikasi Web Portal & Mobile App: Prosedur Presensi Masuk & Pulang (GPS Geofence + Dynamic QR Scan), Lapor Kendala Presensi, Cek Jadwal Shift, Pengajuan Cuti/Sakit, dan Akses Slip Gaji Elektronik Resmi.
+        Petunjuk operasional praktis penggunaan Web Portal & Mobile App: Prosedur Presensi Kamera Scan QR Dinamis & Fallback Kode Cabang, Status Kerja Hari Ini, Lapor Kendala Presensi & Konsekuensi Penolakan, Jadwal Shift, Pengajuan Cuti/Sakit, E-Payslip, dan Wajib Ganti Sandi Akun Baru.
       </p>
     </div>
 
@@ -36,7 +36,7 @@
         </div>
         <div class="meta-item">
           <div class="meta-label">Versi Sistem</div>
-          <div class="meta-value">v1.2 (Oktober 2026)</div>
+          <div class="meta-value">v1.3 (Oktober 2026)</div>
         </div>
         <div class="meta-item">
           <div class="meta-label">Akses Pengguna</div>
@@ -54,10 +54,10 @@
     </div>
 
     <ul class="toc-list">
-      <li class="toc-item"><span class="toc-title"><b>MODUL 01</b> Login & Pengikatan Smartphone Resmi (Device Binding)</span><span class="toc-page">Hal. 3</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 01</b> Login, Pengikatan Gawai (Device Binding), & Wajib Ganti Sandi</span><span class="toc-page">Hal. 3</span></li>
       <li class="toc-item"><span class="toc-title"><b>MODUL 02</b> Memahami Status Kerja Hari Ini (Today Status)</span><span class="toc-page">Hal. 4</span></li>
       <li class="toc-item"><span class="toc-title"><b>MODUL 03</b> Prosedur Absen Masuk (Check-In) & Pulang (Check-Out)</span><span class="toc-page">Hal. 5</span></li>
-      <li class="toc-item"><span class="toc-title"><b>MODUL 04</b> Cara Lapor Kendala Presensi (Attendance Exception)</span><span class="toc-page">Hal. 6</span></li>
+      <li class="toc-item"><span class="toc-title"><b>MODUL 04</b> Pengajuan Kendala Presensi & Konsekuensi Penolakan</span><span class="toc-page">Hal. 6</span></li>
       <li class="toc-item"><span class="toc-title"><b>MODUL 05</b> Memeriksa Jadwal Shift Kerja Pribadi</span><span class="toc-page">Hal. 7</span></li>
       <li class="toc-item"><span class="toc-title"><b>MODUL 06</b> Pengajuan Cuti Tahunan & Izin Sakit (Upload Surat Dokter)</span><span class="toc-page">Hal. 8</span></li>
       <li class="toc-item"><span class="toc-title"><b>MODUL 07</b> Membaca Rincian Slip Gaji Elektronik (E-Payslip)</span><span class="toc-page">Hal. 9</span></li>
@@ -65,7 +65,7 @@
     </ul>
 
     <div class="mini-tip" style="margin-top: 25px;">
-      <strong>Aturan Presensi Utama:</strong> Presensi masuk dan pulang wajib dilakukan di area cabang kantor resmi (radius GPS 100 meter) menggunakan pemindai kamera smartphone pribadi ke layar monitor display QR kantor.
+      <strong>Aturan Presensi Utama:</strong> Presensi masuk dan pulang wajib dilakukan di area cabang kantor resmi (radius GPS kantor) menggunakan pemindai kamera smartphone pribadi ke layar monitor display QR Kiosk kantor.
     </div>
   </div>
 
@@ -75,7 +75,7 @@
     <div class="module-header">
       <div class="module-number-title">
         <span class="module-tag">MODUL 01</span>
-        <span>Login & Pengikatan Smartphone Resmi (Device Binding)</span>
+        <span>Login, Pengikatan Gawai (Device Binding), & Wajib Ganti Sandi</span>
       </div>
       <span class="module-url">Mobile App & Web Portal</span>
     </div>
@@ -83,22 +83,23 @@
       <div class="mobile-dual-grid">
         <div class="mobile-dual-card">
           <img src="assets/mobile/emulator_profil.png" class="mobile-dual-img" alt="Profil Mobile">
-          <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; font-weight: 700;">Status Device Terikat</div>
+          <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; font-weight: 700;">Status Gawai Terikat</div>
         </div>
         <div class="mobile-dual-card">
           <img src="assets/mobile/emulator_screenshot.png" class="mobile-dual-img" alt="Login Sukses">
           <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; font-weight: 700;">Beranda Akun Karyawan</div>
         </div>
       </div>
-      <div class="action-steps-title">Cara Aktivasi Akun Pertama Kali:</div>
+      <div class="action-steps-title">Langkah Aktivasi & Login Pertama Kali:</div>
       <ol class="action-steps">
         <li>Buka aplikasi <strong>HR Group HRD Mobile</strong> pada smartphone pribadi Anda (atau buka web portal pada peramban).</li>
         <li>Ketikkan <strong>Username</strong> atau <strong>Email</strong> resmi Anda yang telah didaftarkan oleh HRD.</li>
-        <li>Masukkan kata sandi awal Anda (default: <code>12345678</code> jika baru direset oleh HRD).</li>
+        <li>Masukkan <strong>Kata Sandi Sementara</strong> yang diberikan oleh HRD/Super Admin.</li>
         <li>Klik tombol <strong>Masuk ke Akun</strong>.</li>
+        <li><strong>Alur Wajib Ganti Password (First Login Enforcement):</strong> Jika akun Anda baru dibuat atau baru saja direset oleh HRD, sistem otomatis mengalihkan layar ke form pembuatan sandi baru (<code>/password/force-change</code>). Buat kata sandi baru pribadi Anda (minimal 8 karakter kombinasi huruf & angka) sebelum melanjutkan ke menu utama.</li>
         <li>Pada saat login pertama kali, sistem secara otomatis mengikat smartphone Anda ke akun Anda (<i>Device Hash Binding</i>).</li>
       </ol>
-      <div class="mini-warn"><strong>Kebijakan 1 HP = 1 Akun:</strong> Anda dilarang login di smartphone rekan kerja. Jika Anda berganti HP baru, segera laporkan ke Super Admin / HRD untuk melakukan <i>Reset Kunci HP</i>.</div>
+      <div class="mini-warn"><strong>Kebijakan 1 HP = 1 Akun:</strong> Anda dilarang login di smartphone rekan kerja. Jika Anda berganti HP baru, segera laporkan ke Super Admin / HRD untuk melakukan <i>Reset Kunci Gawai</i>.</div>
     </div>
   </div>
 
@@ -109,7 +110,7 @@
         <span class="module-tag">MODUL 02</span>
         <span>Memahami Status Kerja Hari Ini (Today Status)</span>
       </div>
-      <span class="module-url">Rute: /attendance/today</span>
+      <span class="module-url">Rute: /attendance/today & Dashboard</span>
     </div>
     <div class="module-content">
       <div class="screenshot-box">
@@ -120,9 +121,10 @@
           <tr><th>Indikator Layar</th><th>Arti Kondisi</th><th>Tindakan yang Harus Dilakukan</th></tr>
         </thead>
         <tbody>
-          <tr><td><span class="badge badge-warning">BELUM HADIR</span></td><td>Anda belum melakukan Check-In untuk shift hari ini.</td><td>Segera scan QR di monitor cabang sebelum jam toleransi berakhir.</td></tr>
-          <tr><td><span class="badge badge-success">SEDANG BEKERJA</span></td><td>Check-In berhasil diverifikasi. Shift kerja aktif.</td><td>Laksanakan tugas kerja hingga jam selesai shift.</td></tr>
-          <tr><td><span class="badge badge-primary">SELESAI (CHECKED OUT)</span></td><td>Presensi pulang telah tercatat lengkap.</td><td>Sesi kerja hari ini telah selesai secara resmi.</td></tr>
+          <tr><td><span class="badge badge-warning">BELUM CHECK-IN</span></td><td>Anda belum melakukan Check-In untuk shift kerja hari ini.</td><td>Buka menu Presensi dan scan QR di layar kiosk cabang sebelum batas toleransi berakhir.</td></tr>
+          <tr><td><span class="badge badge-primary">SEDANG BERTUGAS</span></td><td>Check-In berhasil diverifikasi. Jam kerja Anda sedang berjalan.</td><td>Laksanakan tugas kerja hingga jam selesai shift penugasan.</td></tr>
+          <tr><td><span class="badge badge-success">SHIFT SELESAI</span></td><td>Presensi pulang (Check-Out) telah tercatat lengkap.</td><td>Sesi kerja hari ini telah tuntas secara resmi dan tercatat di riwayat.</td></tr>
+          <tr><td><span class="badge badge-warning">MENUNGGU PERSETUJUAN</span></td><td>Jadwal shift Anda masih menunggu otorisasi pimpinan.</td><td>Hubungi Manager Cabang jika penugasan shift belum berstatus disetujui.</td></tr>
         </tbody>
       </table>
     </div>
@@ -136,33 +138,28 @@
         <span class="module-tag">MODUL 03</span>
         <span>Prosedur Absen Masuk (Check-In) & Pulang (Check-Out)</span>
       </div>
-      <span class="module-url">Tab Presensi Aplikasi Mobile</span>
+      <span class="module-url">Rute: /attendance/today & Tab Presensi Mobile</span>
     </div>
     <div class="module-content">
-      <div class="mobile-dual-grid">
-        <div class="mobile-dual-card">
-          <img src="assets/mobile/emulator_presensi.png" class="mobile-dual-img" alt="Layar Presensi">
-          <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; font-weight: 700;">1. Indikator GPS Hijau</div>
-        </div>
-        <div class="mobile-dual-card">
-          <img src="assets/mobile/emulator_jadwal.png" class="mobile-dual-img" alt="Jadwal Shift">
-          <div style="font-size: 7.5pt; color: #64748b; margin-top: 4px; font-weight: 700;">2. Shift Kerja Hari Ini</div>
-        </div>
+      <div class="screenshot-box">
+        <img src="assets/employee/02_attendance_today.png" alt="Presensi Hari Ini - Kamera Pemindai">
       </div>
-      <div class="action-steps-title">Langkah Melakukan Check-In Masuk:</div>
+      <div class="action-steps-title">Alur Utama: Pindai Kamera QR Kiosk (Check-In & Check-Out):</div>
       <ol class="action-steps">
-        <li>Nyalakan <strong>Lokasi / GPS</strong> pada smartphone Anda sebelum memasuki area kantor cabang.</li>
-        <li>Buka aplikasi mobile &rarr; Masuk ke tab <strong>Presensi</strong>.</li>
-        <li>Pastikan indikator lokasi berbunyi hijau: <i>"Lokasi Valid (Di Dalam Radius Cabang)"</i>.</li>
-        <li>Arahkan kamera smartphone Anda ke layar monitor display kantor yang menampilkan QR Code Dinamis.</li>
-        <li>Pindai QR Code hingga muncul notifikasi hijau <strong>Check-In Berhasil</strong>.</li>
+        <li>Nyalakan <strong>Lokasi / GPS</strong> pada smartphone Anda sebelum memasuki area kantor cabang resmi.</li>
+        <li>Buka menu <strong>Presensi Hari Ini</strong> &rarr; Klik tombol <strong>Buka Form Check-in</strong> (atau <strong>Buka Form Check-out</strong> saat jam pulang).</li>
+        <li>Klik tombol <strong>Buka Kamera Pemindai</strong> &rarr; Arahkan kamera smartphone ke layar monitor QR Kiosk cabang.</li>
+        <li>Saat kode terbaca, indikator hijau <strong>QR Berhasil Terbaca</strong> akan muncul menampilkan token cabang.</li>
+        <li>Klik tombol hijau <strong>Ambil Lokasi & Kirim Presensi</strong>. Sistem mencatat jam kedatangan dan mengonfirmasi posisi GPS Anda.</li>
       </ol>
-      <div class="action-steps-title">Langkah Melakukan Check-Out Pulang:</div>
+
+      <div class="action-steps-title">Alur Darurat: Fallback Input Kode Cabang Manual:</div>
       <ol class="action-steps">
-        <li>Setelah jam kerja shift selesai, buka kembali tab <strong>Presensi</strong>.</li>
-        <li>Arahkan kamera ke QR Code monitor kantor untuk melakukan konfirmasi Check-Out.</li>
+        <li>Jika lensa kamera ponsel Anda buram, bermasalah, atau tidak merespons, buka accordion: <i>"Kamera tidak bisa memindai? Masukkan Kode Cabang 8 Karakter manual"</i>.</li>
+        <li>Ketikkan <strong>Kode Cabang 8 Karakter</strong> yang tertera tepat di bawah QR Code pada layar monitor kiosk cabang.</li>
+        <li>Klik tombol <strong>Ambil Lokasi & Kirim Presensi</strong>. Sistem tetap memvalidasi radius GPS perangkat Anda.</li>
       </ol>
-      <div class="mini-warn"><strong>Toleransi Keterlambatan:</strong> Batas maksimal toleransi keterlambatan adalah <strong>15 menit</strong>. Keterlambatan melebihi 15 menit otomatis tercatat dan dikenakan pemotongan pada slip gaji bulanan.</div>
+      <div class="mini-warn"><strong>Toleransi Keterlambatan:</strong> Batas maksimal toleransi keterlambatan adalah <strong>15 menit</strong>. Keterlambatan melebihi 15 menit otomatis tercatat menit keterlambatannya dan dikenakan pemotongan denda pada slip gaji bulanan.</div>
     </div>
   </div>
 
@@ -171,24 +168,41 @@
     <div class="module-header">
       <div class="module-number-title">
         <span class="module-tag">MODUL 04</span>
-        <span>Cara Lapor Kendala Presensi (Attendance Exception)</span>
+        <span>Pengajuan Kendala Presensi (Exception) & Konsekuensi Penolakan</span>
       </div>
-      <span class="module-url">Tab Presensi &rarr; Lapor Kendala</span>
+      <span class="module-url">Rute: /attendance/today &rarr; Ajukan Pengecualian</span>
     </div>
     <div class="module-content">
-      <div class="action-steps-title">Kapan Fitur Ini Digunakan?</div>
+      <div class="action-steps-title">Kapan Fitur Pengecualian Digunakan?</div>
       <p style="font-size: 8pt; margin-bottom: 6px;">
-        Gunakan formulir ini jika Anda sudah berada di lokasi kerja namun smartphone mengalami kendala GPS di basement gedung, kamera ponsel error, atau monitor display QR kantor mati lampu.
+        Gunakan formulir ini <strong>hanya jika</strong> Anda telah berada di lokasi kerja tetapi mengalami kendala teknis darurat: sinyal GPS hilang total di basement gedung, kamera smartphone error, atau layar kiosk cabang padam listrik.
       </p>
-      <div class="action-steps-title">Cara Mengirimkan Laporan:</div>
+      <div class="action-steps-title">Langkah Pengiriman Laporan:</div>
       <ol class="action-steps">
-        <li>Pada tab Presensi, klik tombol <strong>Lapor Kendala Presensi</strong>.</li>
-        <li>Pilih tipe kendala (<i>GPS Lemah / Layar Display Mati / Kamera Error</i>).</li>
-        <li>Isi <strong>Jam Kedatangan Sebenarnya</strong> saat Anda tiba di kantor secara jujur.</li>
-        <li>Tuliskan uraian singkat kendala pada kolom catatan &rarr; Klik <strong>Kirim Laporan</strong>.</li>
-        <li>Manager Cabang akan memverifikasi dan menyetujui klaim jam kedatangan Anda.</li>
+        <li>Pada kartu shift hari ini, buka accordion <i>"Mengalami kendala GPS atau kamera? Ajukan permohonan pengecualian"</i>.</li>
+        <li>Tuliskan <strong>Alasan Kendala</strong> secara jelas dan jujur (contoh: <i>"GPS smartphone tidak terkunci di basement kantor, layar kiosk cabang mati listrik"</i>).</li>
+        <li>Klik tombol <strong>Kirim Permohonan Pengecualian</strong>. Laporan otomatis terkirim ke panel verifikasi Manager Cabang.</li>
       </ol>
-      <div class="mini-tip"><strong>Tips:</strong> Segera laporkan kendala di awal jam kerja agar Manager Cabang dapat segera melakukan verifikasi sebelum shift berakhir.</div>
+
+      <div class="action-steps-title">Konsekuensi Hasil Evaluasi Atasan:</div>
+      <table class="compact-table">
+        <thead>
+          <tr><th>Keputusan Review</th><th>Dampak pada Status Absensi</th><th>Konsekuensi Payroll</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-success">DISETUJUI (APPROVED)</span></td>
+            <td>Kehadiran disahkan sebagai hadir kerja sesuai jam kedatangan.</td>
+            <td>Gaji pokok utuh, tidak ada denda mangkir.</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-danger">DITOLAK (REJECTED)</span></td>
+            <td>Status absensi ditetapkan sebagai <strong>MANGKIR / DITOLAK (ABSENT / REJECTED)</strong>.</td>
+            <td><strong>Dikenakan Potongan Alpha</strong> resmi pada kalkulasi slip gaji bulanan.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="mini-warn"><strong>Peringatan Integritas:</strong> Pengajuan pengecualian tanpa alasan valid atau fiktif akan ditolak tegas oleh pimpinan dan berakibat pemotongan upah kerja resmi.</div>
     </div>
   </div>
 
@@ -206,11 +220,11 @@
       <div class="screenshot-box">
         <img src="assets/employee/02_shifts_karyawan.png" alt="Shift Karyawan">
       </div>
-      <div class="action-steps-title">Cara Cek Jadwal Tugas:</div>
+      <div class="action-steps-title">Cara Cek Jadwal Penugasan:</div>
       <ol class="action-steps">
-        <li>Buka tab <strong>Jadwal</strong> di aplikasi mobile atau menu <strong>Shift</strong> di portal web.</li>
+        <li>Buka menu <strong>Shift</strong> di portal web atau tab <strong>Jadwal</strong> di aplikasi mobile.</li>
         <li>Periksa tanggal kerja, jam mulai, jam selesai, dan cabang penugasan Anda.</li>
-        <li>Pastikan status jadwal telah bertuliskan <span class="badge badge-success">Approved</span>.</li>
+        <li>Pastikan status jadwal telah bertuliskan <span class="badge badge-success">Approved</span>. Jika masih berstatus draft/menunggu, hubungi Manager Cabang Anda.</li>
       </ol>
     </div>
   </div>
@@ -221,7 +235,7 @@
         <span class="module-tag">MODUL 06</span>
         <span>Pengajuan Cuti Tahunan & Izin Sakit (Upload Surat Dokter)</span>
       </div>
-      <span class="module-url">Rute: /leave</span>
+      <span class="module-url">Rute: /leave &rarr; /leave/create</span>
     </div>
     <div class="module-content">
       <div class="screenshot-box">
@@ -230,11 +244,11 @@
       <div class="action-steps-title">Langkah Pengajuan Izin / Cuti:</div>
       <ol class="action-steps">
         <li>Buka menu <strong>Cuti / Izin</strong> &rarr; Klik tombol <strong>+ Ajukan Cuti</strong>.</li>
-        <li>Pilih kategori: <strong>Cuti Tahunan</strong> atau <strong>Izin Sakit</strong>.</li>
-        <li>Pilih tanggal mulai dan tanggal selesai izin.</li>
-        <li>Tuliskan alasan permohonan secara jelas.</li>
-        <li><strong>Wajib untuk Izin Sakit:</strong> Unggah foto Surat Keterangan Dokter dari klinik/rumah sakit resmi.</li>
-        <li>Klik tombol <strong>Kirim Permohonan</strong> dan pantau status persetujuan pada riwayat cuti.</li>
+        <li>Pilih kategori permohonan: <strong>Cuti Tahunan</strong> atau <strong>Izin Sakit</strong>.</li>
+        <li>Pilih rentang tanggal mulai dan tanggal selesai izin.</li>
+        <li>Tuliskan alasan permohonan secara jelas dan lengkap.</li>
+        <li><strong>Wajib untuk Izin Sakit:</strong> Unggah foto/dokumen Surat Keterangan Dokter dari fasilitas kesehatan resmi.</li>
+        <li>Klik tombol <strong>Kirim Permohonan</strong> dan pantau status persetujuan pada tabel riwayat cuti.</li>
       </ol>
       <div class="screenshot-box">
         <img src="assets/employee/03_leave_karyawan.png" alt="Riwayat Cuti">
@@ -264,8 +278,8 @@
         <tbody>
           <tr><td><strong>Gaji Pokok</strong></td><td><span class="badge badge-success">Pendapatan</span></td><td>Upah pokok bulanan sesuai kontrak kerja resmi Anda.</td></tr>
           <tr><td><strong>Upah Lembur</strong></td><td><span class="badge badge-success">Pendapatan</span></td><td>Kompensasi penugasan lembur yang telah disetujui Manager Cabang.</td></tr>
-          <tr><td><strong>Potongan Terlambat</strong></td><td><span class="badge badge-danger">Potongan</span></td><td>Denda kalkulasi menit keterlambatan melebihi toleransi 15 menit.</td></tr>
-          <tr><td><strong>Potongan Alpha</strong></td><td><span class="badge badge-danger">Potongan</span></td><td>Pemotongan atas shift kerja yang tidak dihadiri tanpa surat izin resmi.</td></tr>
+          <tr><td><strong>Potongan Terlambat</strong></td><td><span class="badge badge-danger">Potongan</span></td><td>Denda kalkulasi akumulasi menit keterlambatan melebihi batas 15 menit.</td></tr>
+          <tr><td><strong>Potongan Alpha</strong></td><td><span class="badge badge-danger">Potongan</span></td><td>Pemotongan atas shift kerja yang mangkir atau kendala presensi yang ditolak atasan.</td></tr>
           <tr><td><strong>Take Home Pay</strong></td><td><span class="badge badge-primary">Total Bersih</span></td><td>Jumlah bersih yang ditransfer langsung ke rekening bank terdaftar Anda.</td></tr>
         </tbody>
       </table>
@@ -283,13 +297,13 @@
     <div class="module-content">
       <div class="action-steps-title">Langkah Mengubah Kata Sandi Mandiri:</div>
       <ol class="action-steps">
-        <li>Buka tab <strong>Profil</strong> di aplikasi mobile atau klik nama Anda di web portal pojok kanan atas.</li>
-        <li>Klik tombol <strong>Ubah Kata Sandi</strong>.</li>
-        <li>Ketikkan kata sandi lama Anda (atau kata sandi default <code>12345678</code> jika baru direset).</li>
-        <li>Masukkan kata sandi baru (minimal 8 karakter kombinasi huruf & angka) dan konfirmasi ulang.</li>
+        <li>Buka tab <strong>Profil</strong> di aplikasi mobile atau klik nama profil Anda di pojok kanan atas portal web &rarr; Pilih <strong>Ubah Kata Sandi</strong>.</li>
+        <li>Ketikkan <strong>Kata Sandi Lama</strong> (atau kata sandi sementara yang diberikan perusahaan).</li>
+        <li>Masukkan <strong>Kata Sandi Baru</strong> (minimal 8 karakter kombinasi huruf besar, huruf kecil, dan angka).</li>
+        <li>Masukkan ulang kata sandi baru pada kolom <strong>Konfirmasi Kata Sandi Baru</strong>.</li>
         <li>Klik tombol <strong>Simpan Perubahan</strong>.</li>
       </ol>
-      <div class="mini-warn"><strong>Privasi Akun:</strong> Jangan pernah membagikan kata sandi Anda atau meminjamkan smartphone terdaftar kepada siapa pun. Seluruh transaksi presensi tercatat otomatis dalam audit log.</div>
+      <div class="mini-warn"><strong>Privasi Akun:</strong> Jangan pernah membagikan kata sandi Anda atau meminjamkan smartphone terdaftar kepada siapa pun. Seluruh transaksi presensi tercatat otomatis dalam audit log sistem.</div>
     </div>
   </div>
 

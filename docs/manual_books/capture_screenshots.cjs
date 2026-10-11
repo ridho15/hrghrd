@@ -5,11 +5,16 @@ const fs = require('fs');
 const BASE_URL = 'http://127.0.0.1:8003';
 const ASSETS_DIR = path.join(__dirname, 'assets');
 
+// Pastikan direktori tujuan tersedia
+['admin', 'manager', 'employee', 'mobile'].forEach(dir => {
+  const p = path.join(ASSETS_DIR, dir);
+  if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
+});
+
 async function login(page, email, password) {
   console.log(`Logging in as ${email}...`);
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'networkidle' });
   
-  // Fill credentials
   await page.fill('input[name="login"]', email);
   await page.fill('input[name="password"]', password);
   
@@ -25,7 +30,6 @@ async function capture(page, urlPath, savePath, title = '') {
     const fullUrl = urlPath.startsWith('http') ? urlPath : `${BASE_URL}${urlPath}`;
     console.log(`Navigating to ${fullUrl} [${title}]...`);
     await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 15000 });
-    // Wait a brief moment for dynamic elements/animations
     await page.waitForTimeout(1000);
     
     await page.screenshot({ path: savePath, fullPage: false });
@@ -86,7 +90,23 @@ async function run() {
     await capture(page, p.url, path.join(ASSETS_DIR, 'admin', p.file), p.title);
   }
 
-  // Try capturing detail leave & shift if exists
+  // Capture Audit Modal Detail with delta comparison table
+  try {
+    console.log('Capturing Audit Modal Detail with comparison table...');
+    await page.goto(`${BASE_URL}/audit`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1000);
+    const detailBtn = await page.$('button[data-open-modal*="detail-audit"]');
+    if (detailBtn) {
+      await detailBtn.click();
+      await page.waitForTimeout(800);
+      await page.screenshot({ path: path.join(ASSETS_DIR, 'admin', '22b_audit_modal_detail.png') });
+      console.log('Saved 22b_audit_modal_detail.png successfully!');
+    }
+  } catch (e) {
+    console.warn('Failed capturing audit modal detail:', e.message);
+  }
+
+  // Try capturing detail leave & payroll slip
   try {
     await capture(page, '/leave/1', path.join(ASSETS_DIR, 'admin', '19b_leave_detail.png'), 'Detail & Otorisasi Cuti');
   } catch(e) {}
@@ -96,14 +116,7 @@ async function run() {
 
   // Logout admin
   console.log('Logging out Admin...');
-  await page.goto(`${BASE_URL}/`, { waitUntil: 'networkidle' });
-  const logoutForm = await page.$('form[action*="logout"]');
-  if (logoutForm) {
-    await logoutForm.evaluate(f => f.submit());
-    await page.waitForNavigation({ waitUntil: 'networkidle' });
-  } else {
-    await page.context().clearCookies();
-  }
+  await page.context().clearCookies();
 
   // 2. MANAGER
   console.log('=== CAPTURING MANAGER PAGES ===');
@@ -133,9 +146,10 @@ async function run() {
 
   const employeePages = [
     { url: '/', file: '01_dashboard_karyawan.png', title: 'Dashboard Beranda Karyawan' },
-    { url: '/shifts', file: '02_shifts_karyawan.png', title: 'Jadwal Shift Kerja Pribadi' },
-    { url: '/leave', file: '03_leave_karyawan.png', title: 'Riwayat & Status Cuti Pribadi' },
-    { url: '/leave/create', file: '04_leave_create_karyawan.png', title: 'Form Permohonan Cuti/Izin' }
+    { url: '/attendance/today', file: '02_attendance_today.png', title: 'Presensi Kerja Hari Ini' },
+    { url: '/shifts', file: '03_shifts_karyawan.png', title: 'Jadwal Shift Kerja Pribadi' },
+    { url: '/leave', file: '04_leave_karyawan.png', title: 'Riwayat & Status Cuti Pribadi' },
+    { url: '/leave/create', file: '05_leave_create_karyawan.png', title: 'Form Permohonan Cuti/Izin' }
   ];
 
   for (const p of employeePages) {
@@ -144,7 +158,7 @@ async function run() {
 
   // Capture slip if accessible
   try {
-    await capture(page, '/payroll/slip/3', path.join(ASSETS_DIR, 'employee', '05_slip_gaji_karyawan.png'), 'Slip Gaji Elektronik');
+    await capture(page, '/payroll/slip/3', path.join(ASSETS_DIR, 'employee', '06_slip_gaji_karyawan.png'), 'Slip Gaji Elektronik');
   } catch(e) {}
 
   await browser.close();
