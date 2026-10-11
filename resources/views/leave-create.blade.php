@@ -230,7 +230,7 @@
                 </div>
             </div>
 
-            <div class="p-4 bg-slate-50/80 rounded-2xl border border-dashed border-slate-300 space-y-2">
+            <div class="p-4 bg-slate-50/80 rounded-2xl border border-dashed border-slate-300 space-y-3" id="certificate-dropzone">
                 <label for="leave-certificate" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Pilih Berkas Surat Sakit <span id="cert-required-star" class="text-rose-500 hidden">*</span>
                 </label>
@@ -244,9 +244,60 @@
                 <div class="text-[11px] text-slate-400">
                     Format file yang didukung: <strong>PDF, JPG, JPEG, PNG</strong> (Maksimal ukuran 5 MB).
                 </div>
+
+                {{-- Notifikasi Error Ukuran Berkas --}}
+                <div id="cert-error-msg" class="hidden text-[11px] text-rose-600 font-semibold p-2.5 rounded-xl bg-rose-50 border border-rose-200"></div>
+
                 @error('certificate')
                     <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
                 @enderror
+
+                {{-- Live Preview Box Interaktif --}}
+                <div id="cert-preview-card" class="hidden p-4 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="text-xs font-bold text-slate-800">Pratinjau Berkas Terpilih</span>
+                        </div>
+                        <button type="button" id="btn-remove-cert" class="text-xs text-rose-600 hover:text-rose-700 font-bold hover:underline cursor-pointer">
+                            Hapus / Ganti Berkas
+                        </button>
+                    </div>
+
+                    {{-- Image Preview Frame --}}
+                    <div id="cert-image-preview-wrapper" class="hidden text-center space-y-2">
+                        <div class="max-h-60 overflow-hidden rounded-xl border border-slate-100 bg-slate-900/5 flex items-center justify-center p-2">
+                            <img id="cert-img-preview" src="" alt="Pratinjau Dokumen" class="max-h-56 max-w-full rounded-lg object-contain shadow-2xs">
+                        </div>
+                    </div>
+
+                    {{-- PDF Preview Card --}}
+                    <div id="cert-pdf-preview-wrapper" class="hidden p-3.5 rounded-xl bg-purple-50/70 border border-purple-200/80 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div class="min-w-0">
+                                <span id="cert-file-name" class="text-xs font-bold text-slate-900 block truncate">dokumen.pdf</span>
+                                <span id="cert-file-size" class="text-[11px] text-purple-700 font-semibold block">0 KB</span>
+                            </div>
+                        </div>
+                        <a id="cert-pdf-open-btn" href="#" target="_blank" class="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-bold shrink-0 transition-colors">
+                            Buka di Tab Baru
+                        </a>
+                    </div>
+
+                    {{-- Status Informasi File --}}
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                        <span id="cert-file-meta-info"></span>
+                        <span class="text-emerald-700 font-bold inline-flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            <span>Ukuran Memenuhi Syarat (&lt; 5 MB)</span>
+                        </span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -292,6 +343,89 @@
         const select = document.getElementById('leave-type-select');
         if (select) {
             toggleCertificateRequirement(select.value);
+        }
+
+        // Live Preview Berkas
+        const certInput = document.getElementById('leave-certificate');
+        const previewCard = document.getElementById('cert-preview-card');
+        const imgWrapper = document.getElementById('cert-image-preview-wrapper');
+        const imgPreview = document.getElementById('cert-img-preview');
+        const pdfWrapper = document.getElementById('cert-pdf-preview-wrapper');
+        const pdfName = document.getElementById('cert-file-name');
+        const pdfSize = document.getElementById('cert-file-size');
+        const pdfOpenBtn = document.getElementById('cert-pdf-open-btn');
+        const certMeta = document.getElementById('cert-file-meta-info');
+        const errorMsg = document.getElementById('cert-error-msg');
+        const removeBtn = document.getElementById('btn-remove-cert');
+
+        let currentObjectUrl = null;
+
+        if (certInput) {
+            certInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (currentObjectUrl) {
+                    URL.revokeObjectURL(currentObjectUrl);
+                    currentObjectUrl = null;
+                }
+
+                if (!file) {
+                    if (previewCard) previewCard.classList.add('hidden');
+                    if (errorMsg) errorMsg.classList.add('hidden');
+                    return;
+                }
+
+                // Validasi Ukuran (Maksimal 5 MB = 5 * 1024 * 1024 bytes)
+                const maxSize = 5 * 1024 * 1024;
+                const fileSizeMb = (file.size / (1024 * 1024)).toFixed(2);
+
+                if (file.size > maxSize) {
+                    certInput.value = '';
+                    if (previewCard) previewCard.classList.add('hidden');
+                    if (errorMsg) {
+                        errorMsg.textContent = `Ukuran berkas (${fileSizeMb} MB) melebihi batas maksimal 5 MB. Harap pilih foto/dokumen yang lebih kecil atau lakukan kompresi terlebih dahulu.`;
+                        errorMsg.classList.remove('hidden');
+                    }
+                    return;
+                }
+
+                if (errorMsg) errorMsg.classList.add('hidden');
+                if (previewCard) previewCard.classList.remove('hidden');
+
+                const isImage = file.type.startsWith('image/');
+                const isPdf = file.type === 'application/pdf';
+
+                currentObjectUrl = URL.createObjectURL(file);
+
+                if (isImage) {
+                    if (imgWrapper) imgWrapper.classList.remove('hidden');
+                    if (pdfWrapper) pdfWrapper.classList.add('hidden');
+                    if (imgPreview) imgPreview.src = currentObjectUrl;
+                    if (certMeta) certMeta.textContent = `${file.name} (${fileSizeMb} MB)`;
+                } else if (isPdf) {
+                    if (imgWrapper) imgWrapper.classList.add('hidden');
+                    if (pdfWrapper) pdfWrapper.classList.remove('hidden');
+                    if (pdfName) pdfName.textContent = file.name;
+                    if (pdfSize) pdfSize.textContent = `${fileSizeMb} MB`;
+                    if (pdfOpenBtn) pdfOpenBtn.href = currentObjectUrl;
+                    if (certMeta) certMeta.textContent = `Dokumen PDF (${fileSizeMb} MB)`;
+                } else {
+                    if (imgWrapper) imgWrapper.classList.add('hidden');
+                    if (pdfWrapper) pdfWrapper.classList.add('hidden');
+                    if (certMeta) certMeta.textContent = `${file.name} (${fileSizeMb} MB)`;
+                }
+            });
+        }
+
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                if (certInput) certInput.value = '';
+                if (currentObjectUrl) {
+                    URL.revokeObjectURL(currentObjectUrl);
+                    currentObjectUrl = null;
+                }
+                if (previewCard) previewCard.classList.add('hidden');
+                if (errorMsg) errorMsg.classList.add('hidden');
+            });
         }
     });
 </script>

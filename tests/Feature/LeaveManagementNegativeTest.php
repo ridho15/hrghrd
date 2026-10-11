@@ -211,4 +211,30 @@ class LeaveManagementNegativeTest extends TestCase
                 'message' => 'Berkas fisik surat keterangan tidak ditemukan di server penyimpanan.',
             ]);
     }
+
+    public function test_certificate_endpoint_supports_inline_preview_response(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        $branch = $this->createBranch();
+        $employee = $this->actingAsEmployee($branch);
+
+        $fakeContent = '%PDF-1.4 Fake PDF Content';
+        \Illuminate\Support\Facades\Storage::disk('local')->put('certificates/test_cert.pdf', $fakeContent);
+
+        $leave = LeaveRequest::create([
+            'user_id' => $employee->id,
+            'type' => 'sick',
+            'start_date' => now('Asia/Jakarta')->toDateString(),
+            'end_date' => now('Asia/Jakarta')->toDateString(),
+            'reason' => 'Demam tinggi',
+            'status' => 'pending',
+            'certificate_path' => 'certificates/test_cert.pdf',
+            'certificate_name' => 'surat_dokter.pdf',
+            'created_by' => $employee->id,
+        ]);
+
+        $response = $this->get("/leave/{$leave->id}/certificate?inline=1");
+        $response->assertStatus(200);
+        $this->assertStringContainsString('inline', (string) $response->headers->get('content-disposition'));
+    }
 }

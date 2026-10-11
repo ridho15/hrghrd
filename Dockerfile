@@ -53,6 +53,9 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
     && a2enmod rewrite headers
 
+# Salin konfigurasi kustom PHP untuk batas upload & memory
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 WORKDIR /var/www/html
 
 # Salin composer dependencies terlebih dahulu untuk caching layer Docker

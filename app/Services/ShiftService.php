@@ -39,7 +39,13 @@ class ShiftService
     public function update(Shift $shift, array $data): Shift
     {
         Period::writable($shift->branch_id, $shift->start_at->toDateString());
-        abort_if($shift->status === 'approved', 409, 'Shift sudah disetujui, tidak bisa diedit langsung.');
+
+        if ($shift->status === 'approved') {
+            abort_unless(Access::admin(), 409, 'Shift sudah disetujui, hanya Super Admin yang dapat merevisi jadwal ini.');
+        }
+
+        abort_if($shift->attendance()->exists(), 409, 'Shift yang sudah memiliki rekaman absensi tidak dapat diubah langsung.');
+
         if (isset($data['expected_version'])) {
             abort_if((int) $data['expected_version'] !== (int) $shift->version, 409, 'Jadwal telah diubah oleh pengguna lain.');
         }
@@ -51,13 +57,20 @@ class ShiftService
             $end->addDay();
         }
 
-        $shift->update([
+        $updateData = [
             'start_at' => $start,
             'end_at' => $end,
             'version' => $shift->version + 1,
-        ]);
+        ];
 
-        Audit::record('shift', $shift->id, 'update');
+        if ($shift->status === 'approved' && Access::admin()) {
+            $updateData['approved_by'] = auth()->id() ?: $shift->approved_by;
+            $updateData['approved_at'] = now('Asia/Jakarta');
+        }
+
+        $shift->update($updateData);
+
+        Audit::record('shift', $shift->id, $shift->status === 'approved' ? 'admin_override_update' : 'update');
 
         return $shift;
     }

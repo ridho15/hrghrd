@@ -188,6 +188,10 @@ class LeaveApiController extends Controller
             ], 404);
         }
 
+        if ($request->query('inline') || $request->query('preview')) {
+            return Storage::disk('local')->response($leave->certificate_path, $leave->certificate_name ?: 'surat-sakit');
+        }
+
         return Storage::disk('local')->download($leave->certificate_path, $leave->certificate_name ?: 'surat-sakit');
     }
 

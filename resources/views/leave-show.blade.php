@@ -165,6 +165,11 @@
                 @if($leave->certificate_path)
                     @php
                         $hasPhysicalCert = \Illuminate\Support\Facades\Storage::disk('local')->exists($leave->certificate_path);
+                        $extension = strtolower(pathinfo($leave->certificate_path, PATHINFO_EXTENSION));
+                        $isImage = in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true);
+                        $isPdf = $extension === 'pdf';
+                        $previewUrl = route('leave.certificate', [$leave->id, 'inline' => 1]);
+                        $downloadUrl = route('leave.certificate', $leave->id);
                     @endphp
                     @if($hasPhysicalCert)
                         <div class="p-4 rounded-2xl bg-purple-50/50 border border-purple-200/70 space-y-3">
@@ -179,22 +184,44 @@
                                         {{ $leave->certificate_name ?: 'surat-keterangan-dokter' }}
                                     </strong>
                                     <span class="text-[11px] text-purple-700 font-semibold block mt-0.5">
-                                        Dokumen Resmi Terverifikasi
+                                        {{ $isImage ? 'Dokumen Gambar Terverifikasi' : ($isPdf ? 'Dokumen PDF Terverifikasi' : 'Dokumen Medis Terlampir') }}
                                     </span>
                                 </div>
                             </div>
 
-                            <div class="pt-2">
+                            {{-- Inline Image Thumbnail Preview --}}
+                            @if($isImage)
+                                <div class="rounded-xl overflow-hidden border border-purple-200/60 bg-white p-2 text-center">
+                                    <img
+                                        src="{{ $previewUrl }}"
+                                        alt="Surat Dokter"
+                                        class="max-h-60 mx-auto rounded-lg object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                        onclick="openCertModal('{{ $previewUrl }}', true)"
+                                    >
+                                </div>
+                            @endif
+
+                            <div class="pt-2 flex flex-col sm:flex-row gap-2">
+                                <button
+                                    type="button"
+                                    onclick="openCertModal('{{ $previewUrl }}', {{ $isImage ? 'true' : 'false' }})"
+                                    class="flex-1 py-2.5 px-3 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                >
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <span>Pratinjau Dokumen</span>
+                                </button>
                                 <a
-                                    href="{{ route('leave.certificate', $leave->id) }}"
-                                    target="_blank"
-                                    class="w-full py-2.5 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2"
+                                    href="{{ $downloadUrl }}"
+                                    class="py-2.5 px-3 rounded-xl bg-white border border-purple-200 hover:bg-purple-50 text-purple-700 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                                    title="Unduh Berkas Asli"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                     </svg>
-                                    <span>Unduh / Buka Dokumen Penuh</span>
-                                    <svg class="w-3.5 h-3.5 text-white/90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                    <span>Unduh</span>
                                 </a>
                             </div>
                         </div>
@@ -389,4 +416,108 @@
         </div>
     </div>
 </div>
+
+{{-- Modal Pratinjau Dokumen Medis --}}
+<div id="cert-preview-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs transition-opacity duration-200">
+    <div class="relative w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+        {{-- Header Modal --}}
+        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center">
+                    <svg class="w-4 h-4 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-slate-900">Pratinjau Surat Dokter</h3>
+                    <p class="text-[11px] text-slate-500 m-0">{{ $leave->certificate_name ?: 'Dokumen Medis' }} &middot; {{ $leave->employee_name }}</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <a
+                    id="modal-cert-download-btn"
+                    href="{{ route('leave.certificate', $leave->id) }}"
+                    class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold inline-flex items-center gap-1.5 transition-colors"
+                    title="Unduh Berkas Asli"
+                >
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    <span>Unduh</span>
+                </a>
+                <button
+                    type="button"
+                    onclick="closeCertModal()"
+                    class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+                    title="Tutup (Esc)"
+                >
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+        </div>
+
+        {{-- Content Viewer --}}
+        <div class="flex-1 overflow-auto p-4 bg-slate-900/5 flex items-center justify-center min-h-[400px]">
+            <img id="modal-cert-img" src="" alt="Pratinjau Surat Dokter" class="hidden max-h-[78vh] max-w-full rounded-xl object-contain shadow-md mx-auto">
+            <iframe id="modal-cert-iframe" src="" class="hidden w-full h-[75vh] rounded-xl border border-slate-200 shadow-xs bg-white"></iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openCertModal(url, isImage) {
+        const modal = document.getElementById('cert-preview-modal');
+        const img = document.getElementById('modal-cert-img');
+        const iframe = document.getElementById('modal-cert-iframe');
+
+        if (!modal) return;
+
+        if (isImage) {
+            if (img) {
+                img.src = url;
+                img.classList.remove('hidden');
+            }
+            if (iframe) {
+                iframe.src = '';
+                iframe.classList.add('hidden');
+            }
+        } else {
+            if (iframe) {
+                iframe.src = url;
+                iframe.classList.remove('hidden');
+            }
+            if (img) {
+                img.src = '';
+                img.classList.add('hidden');
+            }
+        }
+
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeCertModal() {
+        const modal = document.getElementById('cert-preview-modal');
+        const img = document.getElementById('modal-cert-img');
+        const iframe = document.getElementById('modal-cert-iframe');
+
+        if (modal) {
+            modal.classList.add('hidden');
+            if (img) img.src = '';
+            if (iframe) iframe.src = '';
+            document.body.style.overflow = '';
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeCertModal();
+        }
+    });
+
+    document.getElementById('cert-preview-modal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeCertModal();
+        }
+    });
+</script>
 @endsection

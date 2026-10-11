@@ -12,10 +12,13 @@ if [ -n "$DB_HOST" ] && [ "$DB_CONNECTION" = "mysql" ]; then
 fi
 
 # Pastikan folder runtime storage Laravel tersedia dengan perizinan yang tepat
-mkdir -p /var/www/html/storage/framework/sessions \
+mkdir -p /var/www/html/storage/app/private/certificates \
+         /var/www/html/storage/app/public \
+         /var/www/html/storage/framework/sessions \
          /var/www/html/storage/framework/views \
          /var/www/html/storage/framework/cache \
          /var/www/html/storage/logs
+php artisan storage:link || true
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 

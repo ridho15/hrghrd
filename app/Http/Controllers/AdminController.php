@@ -540,8 +540,9 @@ class AdminController extends Controller
         $shift = Shift::with(['user.position', 'branch'])->findOrFail($id);
         if (! Access::admin()) {
             abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
+            abort_if($shift->status === 'approved', 409, 'Shift sudah disetujui, tidak bisa diedit langsung. Silakan batalkan shift dan buat shift baru bila ingin mengubah jadwal.');
         }
-        abort_if($shift->status === 'approved', 409, 'Shift sudah disetujui, tidak bisa diedit langsung. Silakan batalkan shift dan buat shift baru bila ingin mengubah jadwal.');
+        abort_if($shift->attendance()->exists(), 409, 'Shift sudah memiliki rekaman absensi dan tidak dapat diedit langsung.');
 
         return view('shifts-edit', compact('shift'));
     }
@@ -578,11 +579,16 @@ class AdminController extends Controller
         $this->noOverlap($shift->user_id, $start, $end, $id);
         abort_if($shift->attendance()->exists(), 409, 'Shift dengan absensi harus dikoreksi melalui alur koreksi.');
 
+        $isApprovedBefore = $shift->status === 'approved';
         $before = ['start_at' => $shift->start_at->toDateTimeString(), 'end_at' => $shift->end_at->toDateTimeString()];
         $service->update($shift, $data);
         Audit::record('shift', $shift->id, 'revision', $data['reason'], $before, ['start_at' => $start, 'end_at' => $end]);
 
-        return redirect()->route('shifts.show', $shift->id)->with('ok', 'Perubahan shift tercatat dan menunggu persetujuan ulang.');
+        $msg = $isApprovedBefore
+            ? 'Perubahan jadwal shift berhasil disesuaikan dan langsung berlaku.'
+            : 'Perubahan shift tercatat dan menunggu persetujuan ulang.';
+
+        return redirect()->route('shifts.show', $shift->id)->with('ok', $msg);
     }
 
     public function shiftApprove(int $id, ShiftService $service)

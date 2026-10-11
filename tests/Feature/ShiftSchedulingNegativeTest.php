@@ -34,7 +34,33 @@ class ShiftSchedulingNegativeTest extends TestCase
         $response->assertStatus(409);
     }
 
-    public function test_cannot_update_shift_that_is_already_approved(): void
+    public function test_manager_cannot_update_shift_that_is_already_approved(): void
+    {
+        $branch = $this->createBranch();
+        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
+        $this->actingAs($manager);
+        $employee = $this->createUser(['branch_id' => $branch->id]);
+
+        $shift = $this->createShift($employee, $branch, [
+            'start_at' => '2026-09-15 09:00:00',
+            'end_at' => '2026-09-15 17:00:00',
+            'status' => 'approved',
+            'version' => 1,
+        ]);
+
+        $response = $this->post("/shifts/{$shift->id}/update", [
+            'date' => '2026-09-15',
+            'start_time' => '10:00',
+            'end_time' => '18:00',
+            'reason' => 'Perubahan jam dinas oleh manager',
+            'expected_version' => 1,
+        ]);
+
+        $response->assertStatus(409);
+        $this->assertSame('2026-09-15 09:00:00', $shift->fresh()->start_at->toDateTimeString());
+    }
+
+    public function test_admin_can_update_approved_shift_when_no_attendance_exists(): void
     {
         $this->actingAsAdmin();
         $branch = $this->createBranch();
@@ -51,7 +77,42 @@ class ShiftSchedulingNegativeTest extends TestCase
             'date' => '2026-09-15',
             'start_time' => '10:00',
             'end_time' => '18:00',
-            'reason' => 'Perubahan jam dinas',
+            'reason' => 'Koreksi jam kerja oleh super admin',
+            'expected_version' => 1,
+        ]);
+
+        $response->assertRedirect("/shifts/{$shift->id}");
+        $this->assertSame('2026-09-15 10:00:00', $shift->fresh()->start_at->toDateTimeString());
+        $this->assertSame('2026-09-15 18:00:00', $shift->fresh()->end_at->toDateTimeString());
+        $this->assertSame('approved', $shift->fresh()->status);
+        $this->assertSame(2, $shift->fresh()->version);
+    }
+
+    public function test_admin_cannot_update_shift_that_already_has_attendance(): void
+    {
+        $this->actingAsAdmin();
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['branch_id' => $branch->id]);
+
+        $shift = $this->createShift($employee, $branch, [
+            'start_at' => '2026-09-15 09:00:00',
+            'end_at' => '2026-09-15 17:00:00',
+            'status' => 'approved',
+            'version' => 1,
+        ]);
+
+        \App\Models\Attendance::create([
+            'user_id' => $employee->id,
+            'shift_id' => $shift->id,
+            'checkin_at' => '2026-09-15 08:55:00',
+            'status' => 'present',
+        ]);
+
+        $response = $this->post("/shifts/{$shift->id}/update", [
+            'date' => '2026-09-15',
+            'start_time' => '10:00',
+            'end_time' => '18:00',
+            'reason' => 'Perubahan jadwal yang sudah ada absensi',
             'expected_version' => 1,
         ]);
 
