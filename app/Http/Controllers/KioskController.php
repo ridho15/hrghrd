@@ -54,6 +54,7 @@ class KioskController extends Controller
         return response()->json([
             'success' => true,
             'code' => $qrCode,
+            'qr_payload' => $branch->code . ':' . $qrCode,
             'expires_at' => $expiresAt,
             'expires_in' => $expiresIn,
             'branch' => [

@@ -8,14 +8,14 @@
         <div>
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 uppercase tracking-wider mb-4">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                <span>Portal Karyawan & HR</span>
+                <span>Portal Terpadu HRIS & Administrasi Sistem</span>
             </div>
             
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
                 Selamat Datang Kembali
             </h1>
             <p class="text-sm text-slate-500 mb-8 leading-relaxed">
-                Masuk ke portal HR Group untuk melihat jadwal shift, melakukan presensi lokasi, mengajukan izin kerja, dan mengelola penggajian.
+                Masuk ke portal HR Group Enterprise untuk mengakses administrasi sistem, manajemen shift kerja, presensi lokasi, dan operasional SDM.
             </p>
 
             <form method="post" action="{{ route('login') }}" class="space-y-5">

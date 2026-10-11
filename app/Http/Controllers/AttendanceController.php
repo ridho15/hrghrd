@@ -46,7 +46,14 @@ class AttendanceController extends Controller
         abort_unless(Access::branch($branchId), 403);
         $branch = Branch::findOrFail($branchId);
 
-        return response()->json(['code' => AttendanceService::qr($branch), 'expires_at' => (intdiv(now()->timestamp, 30) + 1) * 30]);
+        $slot = intdiv(now()->timestamp, 30);
+        $code = AttendanceService::qr($branch, $slot);
+
+        return response()->json([
+            'code' => $code,
+            'qr_payload' => $branch->code . ':' . $code,
+            'expires_at' => ($slot + 1) * 30,
+        ]);
     }
 
     public function exception(AttendanceExceptionRequest $request, int $shiftId)

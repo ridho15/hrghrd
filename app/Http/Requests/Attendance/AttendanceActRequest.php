@@ -14,8 +14,10 @@ class AttendanceActRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         if ($this->has('qr_code')) {
+            $raw = strtoupper(trim((string) $this->input('qr_code')));
+            $token = str_contains($raw, ':') ? (explode(':', $raw)[1] ?? $raw) : $raw;
             $this->merge([
-                'qr_code' => strtoupper(trim((string) $this->input('qr_code'))),
+                'qr_code' => $token,
             ]);
         }
     }

@@ -420,4 +420,50 @@ class AttendanceAntiFraudNegativeTest extends TestCase
         ]);
         $resValid->assertStatus(200)->assertJsonPath('success', true);
     }
+
+    public function test_checkin_and_checkout_accepts_prefixed_qr_payload(): void
+    {
+        $branch = $this->createBranch(['code' => 'PRE01', 'latitude' => -6.175392, 'longitude' => 106.827153, 'radius_m' => 100]);
+        $employee = $this->createUser(['branch_id' => $branch->id, 'device_hash' => hash('sha256', 'dev_token_prefixed')]);
+        $shift = $this->createShift($employee, $branch, [
+            'status' => 'approved',
+            'start_at' => now('Asia/Jakarta')->format('Y-m-d H:i:s'),
+            'end_at' => now('Asia/Jakarta')->addHours(8)->format('Y-m-d H:i:s'),
+        ]);
+
+        $this->actingAs($employee);
+        $challenge = 'chal_' . uniqid();
+        session(['attendance_challenge' => $challenge]);
+
+        // Prefixed QR payload from Kiosk: PRE01:A1B2C3D4
+        $prefixedQr = $branch->code . ':' . AttendanceService::qr($branch);
+
+        $response = $this->withCookie('hrd_device', 'dev_token_prefixed')->post("/attendance/{$shift->id}", [
+            'action' => 'in',
+            'qr_code' => $prefixedQr,
+            'latitude' => -6.175392,
+            'longitude' => 106.827153,
+            'accuracy' => 10,
+            'challenge' => $challenge,
+        ]);
+
+        $response->assertSessionHas('ok', 'Check-in tercatat.');
+        $this->assertDatabaseHas('attendances', [
+            'shift_id' => $shift->id,
+            'user_id' => $employee->id,
+            'status' => 'present',
+        ]);
+
+        // Also test API check-out with prefixed QR
+        Sanctum::actingAs($employee, ['employee']);
+        $resApi = $this->postJson('/api/v1/attendance/checkout', [
+            'shift_id' => $shift->id,
+            'qr_code' => $prefixedQr,
+            'latitude' => -6.175392,
+            'longitude' => 106.827153,
+            'accuracy' => 10,
+            'device_token' => 'dev_token_prefixed',
+        ]);
+        $resApi->assertStatus(200)->assertJsonPath('success', true);
+    }
 }

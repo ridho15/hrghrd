@@ -537,7 +537,9 @@
                             </p>
 
                             {{-- Formulir Presensi (Dikelola app.js) --}}
-                            <form method="post" action="{{ route('attendance.act', $shift->id) }}" class="space-y-4 attendance-form">
+                            <form method="post" action="{{ route('attendance.act', $shift->id) }}" class="space-y-4 attendance-form"
+                                data-shift-branch-code="{{ $shift->branch?->code }}"
+                                data-shift-branch-name="{{ $shift->branch?->name ?: $shift->branch_name }}">
                                 @csrf
                                 <input type="hidden" name="action" value="{{ $shift->checkin_at ? 'out' : 'in' }}">
                                 <input type="hidden" name="latitude">
@@ -560,14 +562,23 @@
 
                                     <video class="qr-scanner w-full max-h-56 rounded-xl border border-slate-300 bg-black object-cover" playsinline hidden></video>
 
-                                    {{-- Indikator Kode QR Terdeteksi --}}
-                                    <div class="qr-detected-badge hidden p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2 text-xs">
+                                    {{-- Indikator Kode QR Terverifikasi Sesuai Cabang --}}
+                                    <div class="qr-detected-badge hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2 text-xs">
                                         <span class="text-emerald-800 font-bold flex items-center gap-1.5">
-                                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                                            <span>QR Berhasil Terbaca:</span>
+                                            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                            <span>QR Cabang Terverifikasi:</span>
                                             <code class="qr-detected-code font-mono font-black text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300"></code>
                                         </span>
-                                        <span class="text-[10px] text-emerald-600 font-semibold">Siap Kirim</span>
+                                        <span class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider bg-emerald-100/80 px-2 py-0.5 rounded-full shrink-0">Siap Kirim</span>
+                                    </div>
+
+                                    {{-- Indikator Peringatan QR Tidak Sesuai Cabang Shift --}}
+                                    <div class="qr-mismatch-badge hidden p-3 bg-rose-50 border border-rose-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-rose-900">
+                                        <span class="font-bold flex items-center gap-1.5">
+                                            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                            <span class="qr-mismatch-message">QR yang dipindai tidak sesuai dengan cabang jadwal shift Anda.</span>
+                                        </span>
+                                        <span class="text-[10px] text-rose-700 font-bold uppercase tracking-wider bg-rose-100/80 px-2 py-0.5 rounded-full self-start sm:self-auto shrink-0">Cabang Berbeda</span>
                                     </div>
 
                                     {{-- Fallback Manual: Disembunyikan rapi dalam menu bantuan --}}

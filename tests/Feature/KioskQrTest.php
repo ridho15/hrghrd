@@ -60,6 +60,7 @@ class KioskQrTest extends TestCase
         $response->assertJson([
             'success' => true,
             'code' => $expectedCode,
+            'qr_payload' => 'DEMO01:' . $expectedCode,
             'branch' => [
                 'id' => $branch->id,
                 'code' => 'DEMO01',
@@ -69,6 +70,7 @@ class KioskQrTest extends TestCase
         $response->assertJsonStructure([
             'success',
             'code',
+            'qr_payload',
             'expires_at',
             'expires_in',
             'branch',

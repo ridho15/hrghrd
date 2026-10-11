@@ -52,8 +52,11 @@ class AttendanceApiController extends Controller
             ?? ($user->device_hash ? '' : 'mobile_app_' . $user->id)
         );
 
+        $qrRaw = strtoupper(trim($data['qr_code']));
+        $qrToken = str_contains($qrRaw, ':') ? (explode(':', $qrRaw)[1] ?? $qrRaw) : $qrRaw;
+
         $actInput = [
-            'qr_code'   => strtoupper(trim($data['qr_code'])),
+            'qr_code'   => $qrToken,
             'latitude'  => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
             'accuracy'  => $data['accuracy'] ?? null,
@@ -123,8 +126,11 @@ class AttendanceApiController extends Controller
             ?? ($user->device_hash ? '' : 'mobile_app_' . $user->id)
         );
 
+        $qrRaw = strtoupper(trim($data['qr_code']));
+        $qrToken = str_contains($qrRaw, ':') ? (explode(':', $qrRaw)[1] ?? $qrRaw) : $qrRaw;
+
         $actInput = [
-            'qr_code'   => strtoupper(trim($data['qr_code'])),
+            'qr_code'   => $qrToken,
             'latitude'  => $data['latitude'] ?? null,
             'longitude' => $data['longitude'] ?? null,
             'accuracy'  => $data['accuracy'] ?? null,
@@ -220,10 +226,13 @@ class AttendanceApiController extends Controller
         $branch = Branch::findOrFail($branchId);
         $slot = intdiv(now()->timestamp, 30);
 
+        $code = AttendanceService::qr($branch, $slot);
+
         return response()->json([
             'success' => true,
             'data'    => [
-                'code'       => AttendanceService::qr($branch, $slot),
+                'code'       => $code,
+                'qr_payload' => $branch->code . ':' . $code,
                 'expires_at' => ($slot + 1) * 30,
                 'expires_in' => ($slot + 1) * 30 - now()->timestamp,
                 'branch'     => [

@@ -24,6 +24,14 @@ document.querySelectorAll('.attendance-form').forEach(form => {
   const scan = form.querySelector('[data-scan-qr]');
   if (scan) scan.addEventListener('click', async () => {
     const fallbackDetails = form.querySelector('details');
+    const badgeSuccess = form.querySelector('.qr-detected-badge');
+    const badgeMismatch = form.querySelector('.qr-mismatch-badge');
+    const codeEl = form.querySelector('.qr-detected-code');
+    const mismatchMsg = form.querySelector('.qr-mismatch-message');
+    const submitBtn = form.querySelector('button[type="submit"], button:not([type])');
+    const targetBranchCode = (form.dataset.shiftBranchCode || '').toUpperCase().trim();
+    const targetBranchName = form.dataset.shiftBranchName || targetBranchCode;
+
     if (!('BarcodeDetector' in window) || !navigator.mediaDevices?.getUserMedia) {
       status.textContent = 'Pemindai tidak didukung di browser ini. Silakan masukkan kode manual.';
       if (fallbackDetails) fallbackDetails.open = true;
@@ -39,22 +47,50 @@ document.querySelectorAll('.attendance-form').forEach(form => {
       while (Date.now() < until) {
         const codes = await detector.detect(video);
         if (codes.length) {
-          const code = codes[0].rawValue.trim().toUpperCase();
-          if (/^[A-F0-9]{8}$/.test(code)) {
-            form.elements.qr_code.value = code;
-            status.textContent = 'Kode QR berhasil terbaca: ' + code;
-            const badge = form.querySelector('.qr-detected-badge');
-            const codeEl = form.querySelector('.qr-detected-code');
-            if (badge && codeEl) {
-              codeEl.textContent = code;
-              badge.classList.remove('hidden');
+          const raw = codes[0].rawValue.trim().toUpperCase();
+          let scannedBranch = null;
+          let token = null;
+
+          if (raw.includes(':')) {
+            const parts = raw.split(':');
+            scannedBranch = parts[0].trim();
+            token = parts[1].trim();
+          } else {
+            token = raw;
+          }
+
+          if (/^[A-F0-9]{8}$/.test(token)) {
+            // Jika payload QR memiliki identitas cabang, periksa kecocokannya dengan cabang shift
+            if (scannedBranch && targetBranchCode && scannedBranch !== targetBranchCode) {
+              // Mismatch!
+              form.elements.qr_code.value = '';
+              if (submitBtn) submitBtn.disabled = true;
+              if (badgeSuccess) badgeSuccess.classList.add('hidden');
+              if (badgeMismatch) {
+                if (mismatchMsg) {
+                  mismatchMsg.textContent = `QR Cabang "${scannedBranch}" tidak sesuai dengan shift Anda di "${targetBranchName}". Pindai QR Kiosk cabang yang benar.`;
+                }
+                badgeMismatch.classList.remove('hidden');
+              }
+              status.textContent = `Peringatan: QR cabang "${scannedBranch}" tidak sesuai dengan shift "${targetBranchName}".`;
+              break;
             }
+
+            // Match atau legacy token!
+            form.elements.qr_code.value = token;
+            if (submitBtn) submitBtn.disabled = false;
+            if (badgeMismatch) badgeMismatch.classList.add('hidden');
+            if (badgeSuccess) {
+              if (codeEl) codeEl.textContent = (scannedBranch ? `${scannedBranch}:` : '') + token;
+              badgeSuccess.classList.remove('hidden');
+            }
+            status.textContent = 'Kode QR cabang terverifikasi: ' + token;
             break;
           }
         }
         await new Promise(resolve => setTimeout(resolve, 250));
       }
-      if (!form.elements.qr_code.value) {
+      if (!form.elements.qr_code.value && (!badgeMismatch || badgeMismatch.classList.contains('hidden'))) {
         status.textContent = 'QR belum terbaca. Silakan coba lagi atau gunakan kode manual.';
         if (fallbackDetails) fallbackDetails.open = true;
       }
@@ -79,7 +115,7 @@ if (qrDisplay) {
       const value = await response.json();
       if (codeNode.textContent !== value.code) {
         const {default: QRCode} = await import('qrcode');
-        await QRCode.toCanvas(qrDisplay.querySelector('canvas'), value.code, {width: 256, margin: 2, color: {dark: '#102434', light: '#ffffff'}});
+        await QRCode.toCanvas(qrDisplay.querySelector('canvas'), value.qr_payload || value.code, {width: 256, margin: 2, color: {dark: '#102434', light: '#ffffff'}});
         codeNode.textContent = value.code;
       }
       expiry = value.expires_at;
