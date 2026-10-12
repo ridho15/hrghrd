@@ -23,7 +23,7 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.bunny.net https://unpkg.com",
             "font-src 'self' https://fonts.gstatic.com https://fonts.bunny.net data:",
             "img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://unpkg.com",
-            "connect-src 'self' https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://cloudflareinsights.com",
+            "connect-src 'self' https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://cloudflareinsights.com https://unpkg.com",
             "frame-src 'self'",
         ]) . ';');
 
