@@ -26,6 +26,9 @@ class SecurityHeadersTest extends TestCase
         $csp = $response->headers->get('Content-Security-Policy');
         $this->assertNotNull($csp);
         $this->assertStringContainsString("default-src 'self'", $csp);
+        $this->assertStringContainsString('https://unpkg.com', $csp);
+        $this->assertStringContainsString('https://tile.openstreetmap.org', $csp);
+        $this->assertStringContainsString('https://fonts.googleapis.com', $csp);
 
         // Header versi PHP disembunyikan
         $this->assertFalse($response->headers->has('X-Powered-By'));

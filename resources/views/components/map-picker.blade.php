@@ -163,10 +163,14 @@
             initLeafletMapPickers();
         });
 
-        function initLeafletMapPickers() {
+        function initLeafletMapPickers(attempts = 0) {
             if (typeof L === 'undefined') {
-                console.warn('Leaflet JS belum siap, mencoba memuat ulang dalam 300ms...');
-                setTimeout(initLeafletMapPickers, 300);
+                if (attempts < 20) {
+                    console.warn(`Leaflet JS belum siap (percobaan ${attempts + 1}/20), mencoba memuat ulang dalam 300ms...`);
+                    setTimeout(() => initLeafletMapPickers(attempts + 1), 300);
+                } else {
+                    console.error('Gagal memuat Leaflet JS setelah 20 percobaan. Periksa koneksi CDN atau Content Security Policy.');
+                }
                 return;
             }
 
