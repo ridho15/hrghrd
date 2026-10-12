@@ -92,7 +92,7 @@
                     </div>
                     <div>
                         <h3 class="text-xs font-bold text-white mb-0.5">Presensi Multi-Faktor</h3>
-                        <p class="text-[11px] text-slate-400 leading-relaxed m-0">Geofencing GPS, Dynamic QR 30 detik, dan validasi device fingerprint.</p>
+                        <p class="text-[11px] text-slate-400 leading-relaxed m-0">Geofencing GPS, Dynamic QR 3 menit, dan validasi device fingerprint.</p>
                     </div>
                 </div>
 

@@ -124,8 +124,20 @@ if (qrDisplay) {
       setTimeout(refresh, 3000);
     }
   }
+
   refresh();
-  setInterval(() => { timerNode.textContent = expiry ? `Berganti dalam ${Math.max(0, expiry - Math.floor(Date.now()/1000))} detik` : ''; if (expiry && Date.now()/1000 >= expiry) refresh(); }, 1000);
+  setInterval(() => {
+    if (!expiry) {
+      timerNode.textContent = '';
+      return;
+    }
+    const remaining = Math.max(0, expiry - Math.floor(Date.now() / 1000));
+    const countdownText = remaining >= 60
+      ? `${Math.floor(remaining / 60)} menit ${remaining % 60} detik`
+      : `${remaining} detik`;
+    timerNode.textContent = `Berganti dalam ${countdownText}`;
+    if (Date.now() / 1000 >= expiry) refresh();
+  }, 1000);
 }
 
 const leaveType = document.getElementById('leave-type');

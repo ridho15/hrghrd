@@ -68,7 +68,7 @@ class AttendanceApiController extends Controller
             // cookie sesi antar-request, sehingga tantangan berbasis sesi (dipakai
             // alur web/kiosk) tidak bisa diverifikasi secara sah di sini. Proteksi
             // anti-duplikasi untuk jalur ini sudah dijamin oleh pengecekan presensi
-            // yang sudah ada + rotasi QR 30 detik + pengikatan device_hash di atas.
+            // yang sudah ada + rotasi QR 3 menit + pengikatan device_hash di atas.
             $service->act($user, $data['shift_id'], 'in', $actInput, $deviceToken, requireChallenge: false);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -206,7 +206,7 @@ class AttendanceApiController extends Controller
     /**
      * Generate QR Code Cabang
      *
-     * Menghasilkan kode QR cabang yang berlaku selama 30 detik.
+     * Menghasilkan kode QR cabang yang berlaku selama 3 menit (180 detik).
      * Hanya dapat diakses oleh Manager dan Admin.
      *
      * Query: `branch_id` (opsional untuk manager, default cabangnya)
@@ -224,7 +224,8 @@ class AttendanceApiController extends Controller
         }
 
         $branch = Branch::findOrFail($branchId);
-        $slot = intdiv(now()->timestamp, 30);
+        $interval = AttendanceService::QR_INTERVAL_SECONDS;
+        $slot = intdiv(now()->timestamp, $interval);
 
         $code = AttendanceService::qr($branch, $slot);
 
@@ -233,8 +234,8 @@ class AttendanceApiController extends Controller
             'data'    => [
                 'code'       => $code,
                 'qr_payload' => $code,
-                'expires_at' => ($slot + 1) * 30,
-                'expires_in' => ($slot + 1) * 30 - now()->timestamp,
+                'expires_at' => ($slot + 1) * $interval,
+                'expires_in' => max(0, ($slot + 1) * $interval - now()->timestamp),
                 'branch'     => [
                     'id'   => $branch->id,
                     'name' => $branch->name,

@@ -18,9 +18,14 @@ use Illuminate\Validation\ValidationException;
 
 final class AttendanceService
 {
+    /**
+     * Interval rotasi kode QR presensi dalam satuan detik (3 menit = 180 detik).
+     */
+    public const QR_INTERVAL_SECONDS = 180;
+
     public static function qr(object $branch, ?int $slot = null): string
     {
-        $slot ??= intdiv(now()->timestamp, 30);
+        $slot ??= intdiv(now()->timestamp, self::QR_INTERVAL_SECONDS);
         $hash = hash_hmac('sha256', $branch->id . '|' . $slot, $branch->qr_secret);
         $digits = preg_replace('/\D/', '', $hash);
 
@@ -76,7 +81,7 @@ final class AttendanceService
                     session()->forget('attendance_challenge');
                 }
 
-                $slot = intdiv(now()->timestamp, 30);
+                $slot = intdiv(now()->timestamp, self::QR_INTERVAL_SECONDS);
                 $qrValid = hash_equals(self::qr($branch, $slot), (string) ($input['qr_code'] ?? ''))
                     || hash_equals(self::qr($branch, $slot - 1), (string) ($input['qr_code'] ?? ''));
 

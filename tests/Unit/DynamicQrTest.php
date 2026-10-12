@@ -14,13 +14,16 @@ class DynamicQrTest extends TestCase
         $branchB = (object) ['id' => 2, 'qr_secret' => 'secret-branch-a'];
         $branchDiffSecret = (object) ['id' => 1, 'qr_secret' => 'secret-branch-diff'];
 
-        $slotCurrent = intdiv(time(), 30);
-        $slotExpired = $slotCurrent - 2; // 60 seconds ago
+        $slotCurrent = intdiv(time(), AttendanceService::QR_INTERVAL_SECONDS);
+        $slotExpired = $slotCurrent - 2; // > 3 minutes ago (expired beyond 1 grace slot)
 
         $qrCurrentA = AttendanceService::qr($branchA, $slotCurrent);
         $qrExpiredA = AttendanceService::qr($branchA, $slotExpired);
         $qrCurrentB = AttendanceService::qr($branchB, $slotCurrent);
         $qrDiffSecret = AttendanceService::qr($branchDiffSecret, $slotCurrent);
+
+        // Pastikan pemanggilan qr() tanpa argumen slot menggunakan slot saat ini secara default
+        $this->assertSame($qrCurrentA, AttendanceService::qr($branchA));
 
         // QR format check: 8 numeric digits (angka saja)
         $this->assertSame(8, strlen($qrCurrentA));

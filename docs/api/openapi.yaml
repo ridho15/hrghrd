@@ -539,7 +539,7 @@ paths:
   /attendance/qr:
     get:
       summary: Generate Dynamic QR Code Cabang
-      description: Menghasilkan kode QR dinamis cabang yang berganti otomatis setiap 30 detik (Manager+).
+      description: Menghasilkan kode QR dinamis cabang yang berganti otomatis setiap 3 menit (180 detik) (Manager+).
       tags: [Presensi]
       security:
         - SanctumAuth: []

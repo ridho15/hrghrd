@@ -108,8 +108,8 @@ class AuditPatchesVerificationTest extends TestCase
             'status' => 'approved',
         ]);
 
-        // Generate QR code for the previous 30s slot (simulating network latency)
-        $previousSlot = intdiv(now()->timestamp, 30) - 1;
+        // Generate QR code for the previous slot (simulating network latency within 1 slot window)
+        $previousSlot = intdiv(now()->timestamp, AttendanceService::QR_INTERVAL_SECONDS) - 1;
         $prevQr = AttendanceService::qr($branch, $previousSlot);
 
         session(['attendance_challenge' => 'test-challenge']);

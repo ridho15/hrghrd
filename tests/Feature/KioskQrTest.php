@@ -75,6 +75,26 @@ class KioskQrTest extends TestCase
             'expires_in',
             'branch',
         ]);
+
+        $data = $response->json();
+        $this->assertLessThanOrEqual(AttendanceService::QR_INTERVAL_SECONDS, $data['expires_in']);
+        $this->assertEquals(0, $data['expires_at'] % AttendanceService::QR_INTERVAL_SECONDS);
+    }
+
+    /**
+     * Memastikan kode QR berotasi sesuai interval 3 menit (180 detik).
+     */
+    public function test_kiosk_qr_respects_three_minute_rotation_interval(): void
+    {
+        $branch = $this->createBranch(['code' => 'ROT01', 'name' => 'Cabang Rotasi']);
+
+        $slotA = 1000;
+        $slotB = 1001; // slot berikutnya (+180 detik)
+        $codeA = AttendanceService::qr($branch, $slotA);
+        $codeB = AttendanceService::qr($branch, $slotB);
+
+        $this->assertNotEquals($codeA, $codeB);
+        $this->assertSame(AttendanceService::QR_INTERVAL_SECONDS, 180);
     }
 
     /**

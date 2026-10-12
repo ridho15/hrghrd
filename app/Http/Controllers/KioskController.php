@@ -33,7 +33,7 @@ class KioskController extends Controller
     }
 
     /**
-     * Menyediakan data kode QR cabang yang berotasi otomatis setiap 30 detik.
+     * Menyediakan data kode QR cabang yang berotasi otomatis setiap 3 menit (180 detik).
      *
      * @param string $code Kode atau ID cabang
      * @return JsonResponse
@@ -46,9 +46,10 @@ class KioskController extends Controller
             })
             ->firstOrFail();
 
-        $slot = intdiv(now()->timestamp, 30);
+        $interval = AttendanceService::QR_INTERVAL_SECONDS;
+        $slot = intdiv(now()->timestamp, $interval);
         $qrCode = AttendanceService::qr($branch, $slot);
-        $expiresAt = ($slot + 1) * 30;
+        $expiresAt = ($slot + 1) * $interval;
         $expiresIn = max(0, $expiresAt - now()->timestamp);
 
         return response()->json([

@@ -14,7 +14,7 @@
                 QR Presensi Cabang
             </h1>
             <p class="text-sm text-slate-500 mt-1">
-                Tampilkan layar ini pada tablet atau monitor di area cabang. Kode berotasi otomatis setiap 30 detik untuk anti-fraud.
+                Tampilkan layar ini pada tablet atau monitor di area cabang. Kode berotasi otomatis setiap 3 menit untuk anti-fraud.
             </p>
         </div>
 

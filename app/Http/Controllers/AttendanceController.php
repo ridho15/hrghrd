@@ -46,13 +46,14 @@ class AttendanceController extends Controller
         abort_unless(Access::branch($branchId), 403);
         $branch = Branch::findOrFail($branchId);
 
-        $slot = intdiv(now()->timestamp, 30);
+        $interval = AttendanceService::QR_INTERVAL_SECONDS;
+        $slot = intdiv(now()->timestamp, $interval);
         $code = AttendanceService::qr($branch, $slot);
 
         return response()->json([
             'code' => $code,
             'qr_payload' => $code,
-            'expires_at' => ($slot + 1) * 30,
+            'expires_at' => ($slot + 1) * $interval,
         ]);
     }
 

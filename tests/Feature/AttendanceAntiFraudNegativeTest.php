@@ -218,8 +218,8 @@ class AttendanceAntiFraudNegativeTest extends TestCase
         $challenge = 'chal_' . uniqid();
         session(['attendance_challenge' => $challenge]);
 
-        // Stale QR from 5 slots ago (150 seconds ago)
-        $staleSlot = intdiv(time(), 30) - 5;
+        // Stale QR from 5 slots ago (15 minutes ago)
+        $staleSlot = intdiv(time(), AttendanceService::QR_INTERVAL_SECONDS) - 5;
         $staleQr = AttendanceService::qr($branch, $staleSlot);
 
         $response = $this->withCookie('device_token', 'dev_token_123')->post("/attendance/{$shift->id}", [
