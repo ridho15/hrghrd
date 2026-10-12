@@ -22,9 +22,10 @@ class DynamicQrTest extends TestCase
         $qrCurrentB = AttendanceService::qr($branchB, $slotCurrent);
         $qrDiffSecret = AttendanceService::qr($branchDiffSecret, $slotCurrent);
 
-        // QR format check: 8 uppercase hex characters
+        // QR format check: 8 numeric digits (angka saja)
         $this->assertSame(8, strlen($qrCurrentA));
-        $this->assertMatchesRegularExpression('/^[A-F0-9]{8}$/', $qrCurrentA);
+        $this->assertMatchesRegularExpression('/^[0-9]{8}$/', $qrCurrentA);
+        $this->assertTrue(ctype_digit($qrCurrentA));
 
         // Negative check: Expired slot must NOT match current QR
         $this->assertFalse(hash_equals($qrCurrentA, $qrExpiredA));

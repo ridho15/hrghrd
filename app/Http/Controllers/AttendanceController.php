@@ -51,7 +51,7 @@ class AttendanceController extends Controller
 
         return response()->json([
             'code' => $code,
-            'qr_payload' => $branch->code . ':' . $code,
+            'qr_payload' => $code,
             'expires_at' => ($slot + 1) * 30,
         ]);
     }

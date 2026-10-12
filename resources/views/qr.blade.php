@@ -72,9 +72,9 @@
                     <canvas width="256" height="256" class="w-56 h-56 sm:w-64 sm:h-64 rounded-xl" aria-label="QR kode cabang"></canvas>
                 </div>
 
-                {{-- Kode 8 Karakter Monospace --}}
+                {{-- Kode 8 Digit Angka Monospace --}}
                 <div class="space-y-1">
-                    <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">Kode Backup Alternatif</span>
+                    <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">Kode Backup Alternatif (8 Digit Angka)</span>
                     <strong class="qr-code text-3xl sm:text-4xl font-mono font-extrabold tracking-widest text-slate-900 block select-all">
                         Memuat...
                     </strong>
@@ -89,7 +89,7 @@
 
             {{-- Ketentuan Penggunaan --}}
             <div class="pt-6 border-t border-slate-100 text-xs text-slate-500 space-y-1">
-                <p class="m-0 font-medium">Karyawan dapat memindai QR menggunakan kamera atau memasukkan kode 8 karakter di atas.</p>
+                <p class="m-0 font-medium">Karyawan dapat memindai QR menggunakan kamera atau memasukkan 8 digit angka di atas.</p>
                 <p class="m-0 text-slate-400">Titik lokasi koordinat GPS dan perangkat terdaftar tetap diverifikasi oleh sistem secara ketat.</p>
             </div>
         </div>

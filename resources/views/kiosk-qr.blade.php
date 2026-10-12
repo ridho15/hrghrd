@@ -102,10 +102,10 @@
                         ></canvas>
                     </div>
 
-                    {{-- Kode 8 Karakter Monospace --}}
+                    {{-- Kode 8 Digit Angka Monospace --}}
                     <div class="space-y-1">
                         <span class="text-xs font-bold uppercase tracking-widest text-slate-400 block">
-                            Kode Backup Alternatif
+                            Kode Backup Alternatif (8 Digit Angka)
                         </span>
                         <strong class="qr-code text-3xl sm:text-4xl font-mono font-extrabold tracking-widest text-slate-900 block select-all">
                             Memuat...
@@ -123,7 +123,7 @@
 
                 {{-- Guidance Footer --}}
                 <div class="pt-4 border-t border-slate-100 text-xs text-slate-500 space-y-1">
-                    <p class="m-0 font-medium text-slate-600">Pindai QR menggunakan kamera aplikasi HR Group atau ketik kode manual di atas.</p>
+                    <p class="m-0 font-medium text-slate-600">Pindai QR menggunakan kamera aplikasi HR Group atau ketik 8 digit angka manual di atas.</p>
                     <p class="m-0 text-slate-400 text-[11px]">Radius toleransi GPS dan verifikasi perangkat terdaftar tetap diproses oleh sistem.</p>
                 </div>
             </div>

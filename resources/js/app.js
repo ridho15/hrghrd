@@ -59,7 +59,7 @@ document.querySelectorAll('.attendance-form').forEach(form => {
             token = raw;
           }
 
-          if (/^[A-F0-9]{8}$/.test(token)) {
+          if (/^[0-9]{8}$/.test(token) || /^[A-F0-9]{8}$/.test(token)) {
             // Jika payload QR memiliki identitas cabang, periksa kecocokannya dengan cabang shift
             if (scannedBranch && targetBranchCode && scannedBranch !== targetBranchCode) {
               // Mismatch!

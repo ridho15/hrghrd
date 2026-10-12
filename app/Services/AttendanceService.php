@@ -21,8 +21,10 @@ final class AttendanceService
     public static function qr(object $branch, ?int $slot = null): string
     {
         $slot ??= intdiv(now()->timestamp, 30);
+        $hash = hash_hmac('sha256', $branch->id . '|' . $slot, $branch->qr_secret);
+        $digits = preg_replace('/\D/', '', $hash);
 
-        return strtoupper(substr(hash_hmac('sha256', $branch->id . '|' . $slot, $branch->qr_secret), 0, 8));
+        return substr(str_pad($digits, 8, '0'), 0, 8);
     }
 
     // $requireChallenge hanya valid untuk pemanggil berbasis sesi browser (AttendanceController

@@ -232,7 +232,7 @@ class AttendanceApiController extends Controller
             'success' => true,
             'data'    => [
                 'code'       => $code,
-                'qr_payload' => $branch->code . ':' . $code,
+                'qr_payload' => $code,
                 'expires_at' => ($slot + 1) * 30,
                 'expires_in' => ($slot + 1) * 30 - now()->timestamp,
                 'branch'     => [

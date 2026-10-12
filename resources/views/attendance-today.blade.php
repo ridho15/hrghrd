@@ -196,21 +196,22 @@
                                         <details class="text-xs text-slate-500 pt-1 border-t border-slate-200/60">
                                             <summary class="cursor-pointer hover:text-slate-700 font-medium list-none flex items-center gap-1.5">
                                                 <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                                                <span>Kamera tidak bisa memindai? Masukkan Kode Cabang 8 Karakter manual</span>
+                                                <span>Kamera tidak bisa memindai? Masukkan 8 Digit Angka Kode Cabang manual</span>
                                             </summary>
                                             <div class="mt-2.5 pt-2 flex flex-col sm:flex-row sm:items-center gap-2">
                                                 <div>
-                                                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Kode Cabang 8 Karakter</label>
+                                                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Kode Cabang 8 Karakter (Angka Saja)</label>
                                                     <input 
                                                         name="qr_code" 
                                                         maxlength="8" 
                                                         minlength="8" 
-                                                        autocapitalize="characters" 
-                                                        placeholder="Contoh: A1B2C3D4" 
-                                                        class="w-full sm:w-60 px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono font-bold tracking-widest uppercase focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs"
+                                                        inputmode="numeric"
+                                                        pattern="[0-9]*"
+                                                        placeholder="Contoh: 84920173" 
+                                                        class="w-full sm:w-60 px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono font-bold tracking-widest focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs"
                                                     >
                                                 </div>
-                                                <span class="text-[11px] text-slate-400 sm:mt-5">Ketik kode dari layar kiosk cabang</span>
+                                                <span class="text-[11px] text-slate-400 sm:mt-5">Ketik 8 angka dari layar kiosk cabang</span>
                                             </div>
                                         </details>
                                     </div>
