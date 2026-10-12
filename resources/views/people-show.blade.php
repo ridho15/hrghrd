@@ -211,13 +211,17 @@
                 </span>
                 <h3 class="text-base font-bold text-slate-900 tracking-tight m-0">Rekening Bank untuk Penggajian & Akun</h3>
             </div>
-            <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-md">Payroll Ready</span>
+            @if(!empty($person->bank_account_number) && !empty($person->bank_name))
+                <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-1 rounded-md">Payroll Ready</span>
+            @else
+                <span class="text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-md">Rekening Belum Lengkap</span>
+            @endif
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
             <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">
                 <span class="text-[10px] uppercase font-bold text-slate-400 block mb-1">Nama Bank</span>
-                <strong class="text-slate-900 font-bold text-sm block uppercase">{{ $person->bank_name ?: 'BCA' }}</strong>
+                <strong class="text-slate-900 font-bold text-sm block uppercase">{{ $person->bank_name ?: '—' }}</strong>
                 <span class="text-[11px] text-slate-500">Penyaluran transfer gaji</span>
             </div>
             <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/70">

@@ -6,19 +6,27 @@ use App\Http\Requests\Admin\BranchStoreRequest;
 use App\Http\Requests\Admin\BranchUpdateRequest;
 use App\Http\Requests\Admin\ImportCommitRequest;
 use App\Http\Requests\Admin\ImportPreviewRequest;
+use App\Http\Requests\Admin\ManualAttendanceStoreRequest;
 use App\Http\Requests\Admin\PersonStoreRequest;
 use App\Http\Requests\Admin\PersonUpdateRequest;
 use App\Http\Requests\Admin\PositionStoreRequest;
 use App\Http\Requests\Admin\PositionUpdateRequest;
 use App\Http\Requests\Admin\SettingsSaveRequest;
+use App\Http\Requests\Admin\ShiftDirectReassignRequest;
+use App\Http\Requests\Admin\ShiftExchangePeerRequest;
+use App\Http\Requests\Admin\ShiftExchangeReviewRequest;
+use App\Http\Requests\Admin\ShiftExchangeStoreRequest;
 use App\Http\Requests\Admin\ShiftStoreRequest;
 use App\Http\Requests\Admin\ShiftUpdateRequest;
 use App\Models\Branch;
 use App\Models\Position;
 use App\Models\Setting;
 use App\Models\Shift;
+use App\Models\ShiftExchange;
 use App\Models\User;
+use App\Services\AttendanceService;
 use App\Services\EmployeeImport;
+use App\Services\ShiftExchangeService;
 use App\Services\ShiftService;
 use App\Support\Access;
 use App\Support\Audit;
@@ -295,8 +303,17 @@ class AdminController extends Controller
         }
         unset($data['reset_device']);
 
+        $trackedFields = ['name', 'email', 'branch_id', 'position_id', 'role', 'base_salary', 'bank_name', 'bank_account_number', 'bank_account_name', 'active'];
+        $before = $person->only($trackedFields);
         $person->update($data);
-        Audit::record('user', $person->id, 'update', 'Data HR diperbarui; nilai gaji tidak disimpan dalam log');
+        $after = $person->fresh()->only($trackedFields);
+
+        $hasSalaryChange = (int) ($before['base_salary'] ?? 0) !== (int) ($after['base_salary'] ?? 0);
+        $reason = $hasSalaryChange
+            ? 'Data HR dan gaji pokok diperbarui dari Rp ' . number_format((float) ($before['base_salary'] ?? 0), 0, ',', '.') . ' ke Rp ' . number_format((float) ($after['base_salary'] ?? 0), 0, ',', '.')
+            : "Data HR karyawan {$person->name} diperbarui oleh Super Admin.";
+
+        Audit::record('user', $person->id, 'update', $reason, $before, $after);
 
         return redirect()->route('people.show', $person->id)->with('ok', "Data karyawan {$person->name} berhasil diperbarui.");
     }
@@ -461,19 +478,18 @@ class AdminController extends Controller
             return back()->withErrors(['person' => 'Anda tidak dapat menghapus akun Anda sendiri.']);
         }
 
-        // Jika memiliki transaksi absensi atau payroll historis, lakukan deaktifasi aman demi integritas audit
-        if ($person->attendances_count > 0 || $person->payroll_lines_count > 0) {
+        // Jika memiliki transaksi absensi, payroll, atau shift historis, lakukan deaktifasi aman demi integritas audit
+        if ($person->attendances_count > 0 || $person->payroll_lines_count > 0 || $person->shifts_count > 0) {
             $person->update([
                 'active' => false,
                 'ended_at' => $person->ended_at ?: now('Asia/Jakarta')->toDateString(),
             ]);
-            Audit::record('user', $person->id, 'deactivate', "Akun {$person->name} dinonaktifkan secara aman karena memiliki riwayat audit absensi/payroll.");
+            Audit::record('user', $person->id, 'deactivate', "Akun {$person->name} dinonaktifkan secara aman karena memiliki riwayat audit absensi/shift/payroll.");
 
-            return back()->with('ok', "Karyawan {$person->name} memiliki riwayat data absensi/payroll historis. Akun telah dinonaktifkan secara aman demi integritas audit.");
+            return back()->with('ok', "Karyawan {$person->name} memiliki riwayat data absensi/shift/payroll historis. Akun telah dinonaktifkan secara aman demi integritas audit.");
         }
 
         $name = $person->name;
-        $person->shifts()->delete();
         $person->delete();
         Audit::record('user', $id, 'delete', "Akun karyawan {$name} dihapus secara permanen oleh Super Admin.");
 
@@ -494,7 +510,7 @@ class AdminController extends Controller
 
         $query = Shift::with(['user.position', 'user.branch', 'branch', 'attendance'])
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
-            ->when($request->query('branch_id') && Access::admin(), fn ($q, $b) => $q->where('branch_id', $b))
+            ->when(Access::admin() && $request->filled('branch_id'), fn ($q) => $q->where('branch_id', (int) $request->query('branch_id')))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($search !== '', function ($q) use ($search, $searchUsername) {
                 $q->whereHas('user', function ($u) use ($search, $searchUsername) {
@@ -512,6 +528,156 @@ class AdminController extends Controller
         return view('shifts', compact('branches', 'people', 'shifts'));
     }
 
+    public function shiftsCalendar(Request $request)
+    {
+        abort_unless(auth()->check(), 403);
+
+        $monthParam = trim((string) $request->query('month', ''));
+        try {
+            $currentMonth = $monthParam !== '' ? Carbon::createFromFormat('!Y-m', $monthParam, 'Asia/Jakarta') : now('Asia/Jakarta');
+        } catch (\Throwable) {
+            $currentMonth = now('Asia/Jakarta');
+        }
+
+        $monthStr = $currentMonth->format('Y-m');
+        $startOfMonth = $currentMonth->copy()->startOfMonth();
+        $endOfMonth = $currentMonth->copy()->endOfMonth();
+
+        // Rentang grid kalender (Senin s/d Minggu)
+        $gridStart = $startOfMonth->copy()->startOfWeek(Carbon::MONDAY);
+        $gridEnd = $endOfMonth->copy()->endOfWeek(Carbon::SUNDAY);
+
+        $branches = Branch::orderBy('name')->get();
+        $selectedBranchId = Access::admin()
+            ? ($request->filled('branch_id') ? (int) $request->query('branch_id') : null)
+            : (int) auth()->user()->branch_id;
+
+        $people = User::active()->whereIn('role', ['employee', 'manager'])
+            ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
+            ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
+            ->orderBy('name')->get();
+
+        $query = Shift::with(['user.position', 'user.branch', 'branch', 'attendance', 'exceptions'])
+            ->whereBetween('start_at', [$gridStart->toDateTimeString(), $gridEnd->toDateTimeString()])
+            ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
+            ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
+            ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', (int) $request->query('user_id')))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+            ->orderBy('start_at');
+
+        $shifts = $query->get();
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'month'   => $monthStr,
+                'data'    => $shifts,
+            ]);
+        }
+
+        $prevMonth = $currentMonth->copy()->subMonth()->format('Y-m');
+        $nextMonth = $currentMonth->copy()->addMonth()->format('Y-m');
+
+        // Kelompokkan per Y-m-d
+        $groupedShifts = $shifts->groupBy(fn ($s) => $s->start_at->toDateString());
+
+        return view('shifts-calendar', compact(
+            'branches', 'people', 'shifts', 'groupedShifts',
+            'currentMonth', 'monthStr', 'prevMonth', 'nextMonth',
+            'gridStart', 'gridEnd', 'selectedBranchId'
+        ));
+    }
+
+    public function shiftExchanges(Request $request)
+    {
+        abort_unless(auth()->check(), 403);
+        $user = auth()->user();
+
+        $query = ShiftExchange::with([
+            'requester.position', 'requester.branch',
+            'replacement.position', 'replacement.branch',
+            'requesterShift.branch', 'targetShift.branch',
+            'branch', 'reviewer'
+        ])
+        ->when(! Access::manager(), fn ($q) => $q->forUser($user->id))
+        ->when(Access::manager() && ! Access::admin(), fn ($q) => $q->where('branch_id', $user->branch_id))
+        ->when(Access::admin() && $request->filled('branch_id'), fn ($q) => $q->where('branch_id', (int) $request->query('branch_id')))
+        ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+        ->when($request->filled('search'), function ($q) use ($request) {
+            $s = trim((string) $request->query('search'));
+            $q->where(function ($sub) use ($s) {
+                $sub->whereHas('requester', fn ($u) => $u->where('name', 'like', "%{$s}%"))
+                    ->orWhereHas('replacement', fn ($u) => $u->where('name', 'like', "%{$s}%"))
+                    ->orWhere('reason', 'like', "%{$s}%");
+            });
+        })
+        ->latest('id');
+
+        $exchanges = $query->paginate(10)->withQueryString();
+        $branches = Branch::orderBy('name')->get();
+
+        return view('shifts-exchange', compact('exchanges', 'branches'));
+    }
+
+    public function shiftExchangeStore(ShiftExchangeStoreRequest $request, int $id, ShiftExchangeService $service)
+    {
+        $shift = Shift::with('branch')->findOrFail($id);
+        $data = $request->validated();
+
+        if ($data['type'] === 'replacement') {
+            $replacement = User::findOrFail((int) $data['replacement_id']);
+            $service->requestReplacement(auth()->user(), $shift, $replacement, $data['reason']);
+            $msg = 'Permohonan penggantian shift berhasil diajukan dan menunggu persetujuan rekan.';
+        } else {
+            $targetShift = Shift::with('user')->findOrFail((int) $data['target_shift_id']);
+            $service->requestSwap(auth()->user(), $shift, $targetShift, $data['reason']);
+            $msg = 'Permohonan pertukaran jadwal berhasil diajukan dan menunggu persetujuan rekan.';
+        }
+
+        return redirect()->route('shifts.exchanges')->with('ok', $msg);
+    }
+
+    public function shiftExchangePeerRespond(ShiftExchangePeerRequest $request, int $id, ShiftExchangeService $service)
+    {
+        $exchange = ShiftExchange::findOrFail($id);
+        $data = $request->validated();
+        $isAccept = $data['action'] === 'accept';
+
+        $service->peerRespond($exchange, auth()->user(), $isAccept, $data['note'] ?? null);
+
+        $msg = $isAccept
+            ? 'Anda telah menyetujui pergantian shift. Menunggu persetujuan manajerial.'
+            : 'Anda telah menolak permohonan pergantian shift.';
+
+        return back()->with('ok', $msg);
+    }
+
+    public function shiftExchangeReview(ShiftExchangeReviewRequest $request, int $id, ShiftExchangeService $service)
+    {
+        $exchange = ShiftExchange::findOrFail($id);
+        $data = $request->validated();
+        $isApprove = $data['decision'] === 'approve';
+
+        $service->managerReview($exchange, auth()->user(), $isApprove, $data['note'] ?? null);
+
+        $msg = $isApprove
+            ? 'Permohonan pergantian shift berhasil disetujui dan jadwal telah diperbarui.'
+            : 'Permohonan pergantian shift telah ditolak.';
+
+        return back()->with('ok', $msg);
+    }
+
+    public function shiftDirectReassign(ShiftDirectReassignRequest $request, int $id, ShiftExchangeService $service)
+    {
+        $shift = Shift::findOrFail($id);
+        $data = $request->validated();
+        $replacement = User::findOrFail((int) $data['replacement_id']);
+
+        $service->directReassign($shift, $replacement, auth()->user(), $data['reason']);
+
+        return back()->with('ok', "Shift berhasil dialihkan langsung ke {$replacement->name}.");
+    }
+
     public function shiftCreate()
     {
         abort_unless(Access::manager(), 403);
@@ -526,12 +692,27 @@ class AdminController extends Controller
     public function shiftShow(int $id)
     {
         abort_unless(Access::manager(), 403);
-        $shift = Shift::with(['user.position', 'user.branch', 'branch', 'attendance'])->findOrFail($id);
+        $shift = Shift::with(['user.position', 'user.branch', 'branch', 'attendance', 'exchanges.requester', 'exchanges.replacement'])->findOrFail($id);
         if (! Access::admin()) {
             abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
         }
 
-        return view('shifts-show', compact('shift'));
+        $people = User::active()->whereIn('role', ['employee', 'manager'])
+            ->where('branch_id', $shift->branch_id)
+            ->where('id', '!=', $shift->user_id)
+            ->orderBy('name')->get();
+
+        $candidateShifts = Shift::with('user')
+            ->where('branch_id', $shift->branch_id)
+            ->where('id', '!=', $shift->id)
+            ->where('user_id', '!=', $shift->user_id)
+            ->whereDate('start_at', '>=', now('Asia/Jakarta')->toDateString())
+            ->whereDoesntHave('attendance')
+            ->orderBy('start_at')
+            ->take(30)
+            ->get();
+
+        return view('shifts-show', compact('shift', 'people', 'candidateShifts'));
     }
 
     public function shiftEdit(int $id)
@@ -566,9 +747,11 @@ class AdminController extends Controller
 
         [$start, $end] = $this->times($data);
         $this->noOverlap($data['user_id'], $start, $end);
-        $shift = $service->create($data);
+        $shift = $service->create($data, auth()->user());
 
-        return redirect()->route('shifts.show', $shift->id)->with('ok', 'Shift draf berhasil dibuat.');
+        $msg = $shift->status === 'approved' ? 'Jadwal shift berhasil dibuat dan langsung disetujui.' : 'Shift draf berhasil dibuat.';
+
+        return redirect()->route('shifts.show', $shift->id)->with('ok', $msg);
     }
 
     public function shiftUpdate(ShiftUpdateRequest $request, int $id, ShiftService $service)
@@ -604,21 +787,46 @@ class AdminController extends Controller
     public function shiftDestroy(int $id)
     {
         abort_unless(Access::manager(), 403);
-        $shift = Shift::with(['attendance', 'user'])->findOrFail($id);
+        $shift = Shift::with(['attendance', 'exceptions', 'user'])->findOrFail($id);
         if (! Access::admin()) {
             abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
-        }
 
-        if ($shift->attendance()->exists()) {
-            return back()->withErrors(['shift' => 'Shift yang sudah memiliki rekaman absensi tidak dapat dihapus. Silakan gunakan alur koreksi absensi.']);
+            if ($shift->attendance()->exists() || $shift->exceptions()->exists()) {
+                return back()->withErrors(['shift' => 'Shift yang sudah memiliki rekaman absensi atau tiket kendala presensi tidak dapat dihapus. Silakan gunakan alur koreksi absensi.']);
+            }
         }
 
         $date = $shift->start_at->translatedFormat('d M Y');
         $userName = $shift->user?->name ?? 'Karyawan';
-        $shift->delete();
-        Audit::record('shift', $id, 'delete', "Jadwal shift {$userName} pada {$date} dibatalkan dan dihapus.");
+
+        DB::transaction(function () use ($shift, $id, $userName, $date) {
+            if (Access::admin()) {
+                if (\Illuminate\Support\Facades\Schema::hasTable('shift_exchanges')) {
+                    ShiftExchange::where('requester_shift_id', $id)->orWhere('target_shift_id', $id)->delete();
+                }
+                $shift->exceptions()->delete();
+                $shift->attendance()?->delete();
+            }
+
+            $shift->delete();
+            $action = Access::admin() ? 'force_delete' : 'delete';
+            $auditMsg = Access::admin()
+                ? "Super Admin " . auth()->user()->name . " menghapus paksa shift ID {$id} milik {$userName} pada {$date} beserta seluruh data relasi absensi."
+                : "Jadwal shift {$userName} pada {$date} dibatalkan dan dihapus.";
+            Audit::record('shift', $id, $action, $auditMsg);
+        });
 
         return redirect()->route('shifts')->with('ok', "Jadwal shift untuk {$userName} berhasil dibatalkan.");
+    }
+
+    public function manualAttendance(ManualAttendanceStoreRequest $request, int $shiftId, AttendanceService $service)
+    {
+        $this->admin();
+        $shift = Shift::findOrFail($shiftId);
+        $data = $request->validated();
+        $service->createManual($shift, $data, auth()->user());
+
+        return back()->with('ok', 'Presensi manual berhasil dicatat oleh Super Admin.');
     }
 
 
@@ -658,10 +866,15 @@ class AdminController extends Controller
     public function settingsSave(SettingsSaveRequest $request)
     {
         $data = $request->validated();
+        $before = [];
+        foreach ($data as $key => $value) {
+            $before[$key] = Rules::get($key);
+        }
+
         foreach ($data as $key => $value) {
             Setting::updateOrCreate(['key' => $key], ['value' => (string) $value]);
         }
-        Audit::record('settings', 1, 'update', null, null, $data);
+        Audit::record('settings', 1, 'update', 'Pembaruan aturan dan kebijakan sistem oleh Super Admin.', $before, $data);
 
         return back()->with('ok', 'Aturan diperbarui.');
     }

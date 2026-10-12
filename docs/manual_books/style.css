@@ -407,3 +407,24 @@ body {
   display: block;
   margin: 0 auto;
 }
+
+.mobile-single-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px;
+  text-align: center;
+  background: #f8fafc;
+  margin: 6px auto 8px auto;
+  display: inline-block;
+}
+
+.mobile-single-img {
+  max-height: 225px;
+  width: auto;
+  max-width: 100%;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  display: block;
+  margin: 0 auto;
+}
+

@@ -166,10 +166,24 @@ class AttendanceController extends Controller
         $challenge = (string) random_int(100, 999);
         session(['attendance_challenge' => $challenge]);
 
-        $shifts = Shift::with(['branch', 'attendance'])
+        $shifts = Shift::with(['branch', 'attendance', 'exceptions.reviewer'])
             ->where('user_id', $user->id)
             ->whereDate('start_at', $todayDate)
             ->orderBy('start_at')
+            ->get();
+
+        $recentShifts = Shift::with(['branch', 'attendance', 'exceptions.reviewer'])
+            ->where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->where('start_at', '>=', $today->copy()->subDays(7)->startOfDay())
+            ->where('start_at', '<', $today->copy()->startOfDay())
+            ->orderByDesc('start_at')
+            ->get();
+
+        $myExceptions = AttendanceException::with(['shift.branch', 'reviewer'])
+            ->where('user_id', $user->id)
+            ->latest('id')
+            ->limit(5)
             ->get();
 
         $attempts = AttendanceAttempt::where('user_id', $user->id)
@@ -178,7 +192,7 @@ class AttendanceController extends Controller
             ->limit(5)
             ->get();
 
-        return view('attendance-today', compact('user', 'shifts', 'attempts', 'today'));
+        return view('attendance-today', compact('user', 'shifts', 'recentShifts', 'myExceptions', 'attempts', 'today'));
     }
 }
 

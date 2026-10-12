@@ -15,8 +15,14 @@ class AuditController extends Controller
             ->when($request->query('search'), function ($q, $search) {
                 $q->where(function ($sub) use ($search) {
                     $sub->where('reason', 'like', "%{$search}%")
-                        ->orWhere('actor_name', 'like', "%{$search}%")
-                        ->orWhere('subject_id', 'like', "%{$search}%");
+                        ->orWhereHas('actor', function ($u) use ($search) {
+                            $u->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%")
+                                ->orWhere('username', 'like', "%{$search}%");
+                        })
+                        ->orWhere('subject_id', 'like', "%{$search}%")
+                        ->orWhere('subject_type', 'like', "%{$search}%")
+                        ->orWhere('action', 'like', "%{$search}%");
                 });
             })
             ->when($request->query('subject_type'), fn ($q, $t) => $q->where('subject_type', $t))

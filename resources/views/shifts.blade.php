@@ -33,6 +33,32 @@
         @endif
     </div>
 
+    {{-- Tab Switcher: Kalender vs Tabel vs Permohonan Pergantian --}}
+    <div class="flex items-center gap-2 border-b border-slate-200">
+        <a
+            href="{{ route('shifts.calendar') }}"
+            class="inline-flex items-center gap-2 px-4 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors"
+        >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>Kalender Shift</span>
+        </a>
+        <a
+            href="{{ route('shifts') }}"
+            class="inline-flex items-center gap-2 px-4 py-3 border-b-2 border-emerald-600 text-emerald-800 font-bold text-sm -mb-px"
+        >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+            <span>Tabel Daftar</span>
+            <span class="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-800">{{ $shifts->total() }}</span>
+        </a>
+        <a
+            href="{{ route('shifts.exchanges') }}"
+            class="inline-flex items-center gap-2 px-4 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors"
+        >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+            <span>Permohonan Pergantian Shift</span>
+        </a>
+    </div>
+
     {{-- Tabel Jadwal Shift Bersih (Full-Width) --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {{-- Toolbar Filter & Pencarian --}}
@@ -170,21 +196,19 @@
                                             <span>Revisi</span>
                                         </a>
 
-                                        {{-- Tombol Batalkan / Hapus Shift --}}
-                                        @if(!$s->attendance)
-                                            <button
-                                                type="button"
-                                                data-confirm="Batalkan dan hapus jadwal shift untuk {{ $s->user?->name ?? 'Karyawan' }} pada tanggal {{ \Carbon\Carbon::parse($s->start_at)->translatedFormat('d M Y') }} ({{ \Carbon\Carbon::parse($s->start_at)->format('H:i') }} – {{ \Carbon\Carbon::parse($s->end_at)->format('H:i') }})?"
-                                                data-confirm-title="Batalkan Jadwal Shift"
-                                                data-confirm-variant="danger"
-                                                data-confirm-btn="Ya, Batalkan Shift"
-                                                data-confirm-action="{{ route('shifts.destroy', $s->id) }}"
-                                                class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200/80 transition-colors cursor-pointer inline-flex items-center"
-                                                title="Batalkan & Hapus Shift"
-                                            >
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                            </button>
-                                        @endif
+                                        {{-- Tombol Batalkan / Hapus Shift (Super Admin Override) --}}
+                                        <button
+                                            type="button"
+                                            data-confirm="{{ $s->attendance ? 'PERINGATAN SUPER ADMIN: Shift ini sudah memiliki rekaman absensi. Menghapus shift ini akan menghapus jadwal dan rekaman kehadiran secara permanen. Lanjutkan tindakan Super Admin?' : 'Batalkan dan hapus jadwal shift untuk ' . ($s->user?->name ?? 'Karyawan') . ' pada tanggal ' . \Carbon\Carbon::parse($s->start_at)->translatedFormat('d M Y') . ' (' . \Carbon\Carbon::parse($s->start_at)->format('H:i') . ' – ' . \Carbon\Carbon::parse($s->end_at)->format('H:i') . ')?' }}"
+                                            data-confirm-title="{{ $s->attendance ? 'Hapus Paksa Shift (Super Admin)' : 'Batalkan Jadwal Shift' }}"
+                                            data-confirm-variant="danger"
+                                            data-confirm-btn="{{ $s->attendance ? 'Ya, Hapus Paksa & Absensi' : 'Ya, Batalkan Shift' }}"
+                                            data-confirm-action="{{ route('shifts.destroy', $s->id) }}"
+                                            class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200/80 transition-colors cursor-pointer inline-flex items-center"
+                                            title="{{ $s->attendance ? 'Super Admin: Hapus Paksa Shift Beserta Absensi' : 'Batalkan & Hapus Shift' }}"
+                                        >
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
                                     @endif
                                 </div>
                             </td>

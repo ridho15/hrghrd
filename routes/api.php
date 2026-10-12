@@ -53,6 +53,12 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     // Jadwal Shift
     Route::prefix('shifts')->group(function () {
         Route::get('/', [ShiftApiController::class, 'index']);
+        Route::get('/calendar', [ShiftApiController::class, 'calendar']);
+        Route::get('/exchanges', [ShiftApiController::class, 'exchanges']);
+        Route::post('/exchanges/{id}/peer-respond', [ShiftApiController::class, 'exchangePeerRespond']);
+        Route::post('/exchanges/{id}/review', [ShiftApiController::class, 'exchangeReview']);
+        Route::post('/{id}/exchange', [ShiftApiController::class, 'exchangeStore']);
+        Route::post('/{id}/reassign', [ShiftApiController::class, 'directReassign']);
         Route::get('/{id}', [ShiftApiController::class, 'show']);
         Route::post('/', [ShiftApiController::class, 'store']);
         Route::match(['put', 'patch'], '/{id}', [ShiftApiController::class, 'update']);

@@ -55,7 +55,7 @@
                         {{ $leave->employee_name }}
                     </h1>
                     <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                        <span>Jabatan: <strong class="text-slate-700">{{ $leave->user?->position?->name ?? 'Staf' }}</strong></span>
+                        <span>Jabatan: <strong class="text-slate-700">{{ $leave->user?->position?->name ?? 'Belum Ditentukan' }}</strong></span>
                         <span>&middot;</span>
                         <span>Cabang: <strong class="text-slate-700">{{ $leave->user?->branch?->name ?? 'Cabang —' }}</strong></span>
                         @if($leave->user)

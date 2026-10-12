@@ -44,7 +44,7 @@
                         {{ $shift->employee_name }}
                     </h1>
                     <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                        <span>Jabatan: <strong class="text-slate-700">{{ $shift->user?->position?->name ?? 'Staf' }}</strong></span>
+                        <span>Jabatan: <strong class="text-slate-700">{{ $shift->user?->position?->name ?? 'Belum Ditentukan' }}</strong></span>
                         <span>&middot;</span>
                         <span>Cabang: <strong class="text-slate-700">{{ $shift->branch_name }}</strong></span>
                         @if($shift->user)
@@ -88,8 +88,31 @@
                     </button>
                 @endif
 
-                {{-- Tombol Edit & Batalkan jika belum ada absensi --}}
-                @if(!$shift->attendance)
+                {{-- Tombol Edit, Ganti/Tukar & Batalkan jika belum ada absensi atau Super Admin --}}
+                @if(!$shift->attendance || \App\Support\Access::admin())
+                    @if(!$shift->attendance)
+                        <button
+                            type="button"
+                            data-open-modal="modal-exchange-shift"
+                            class="px-4 py-2.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                            title="Ajukan pergantian atau pertukaran shift"
+                        >
+                            <svg class="w-4 h-4 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            <span>Ganti / Tukar Shift</span>
+                        </button>
+
+                        @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                            <button
+                                type="button"
+                                data-open-modal="modal-reassign-shift"
+                                class="px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                                title="Tugaskan pengganti secara langsung"
+                            >
+                                <span>Tugaskan Pengganti</span>
+                            </button>
+                        @endif
+                    @endif
+
                     @if($shift->status === 'draft' || \App\Support\Access::admin())
                         <a
                             href="{{ route('shifts.edit', $shift->id) }}"
@@ -105,13 +128,13 @@
 
                     <button
                         type="button"
-                        data-confirm="Apakah Anda yakin ingin membatalkan dan menghapus jadwal shift untuk {{ $shift->employee_name }} pada {{ \Carbon\Carbon::parse($shift->start_at)->translatedFormat('d M Y') }}?"
-                        data-confirm-title="Batalkan Jadwal Shift"
+                        data-confirm="{{ $shift->attendance ? 'PERINGATAN SUPER ADMIN: Shift ini sudah memiliki rekaman absensi dan berstatus disetujui. Menghapus shift ini akan menghapus jadwal dan data kehadiran terkait secara permanen. Lanjutkan tindakan Super Admin?' : 'Apakah Anda yakin ingin membatalkan dan menghapus jadwal shift untuk ' . $shift->employee_name . ' pada ' . \Carbon\Carbon::parse($shift->start_at)->translatedFormat('d M Y') . '?' }}"
+                        data-confirm-title="{{ $shift->attendance ? 'Hapus Paksa Shift (Super Admin)' : 'Batalkan Jadwal Shift' }}"
                         data-confirm-variant="danger"
-                        data-confirm-btn="Ya, Batalkan Jadwal"
+                        data-confirm-btn="{{ $shift->attendance ? 'Ya, Hapus Paksa & Absensi' : 'Ya, Batalkan Jadwal' }}"
                         data-confirm-action="{{ route('shifts.destroy', $shift->id) }}"
                         class="p-2.5 rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
-                        title="Batalkan & Hapus Shift"
+                        title="{{ $shift->attendance ? 'Super Admin: Hapus Paksa Shift Beserta Absensi' : 'Batalkan & Hapus Shift' }}"
                     >
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -264,6 +287,90 @@
         </div>
     </div>
 
+    {{-- KARTU KHUSUS SUPER ADMIN: ENTRI PRESENSI MANUAL --}}
+    @if(\App\Support\Access::admin())
+        <div class="bg-white rounded-2xl border border-amber-300/80 shadow-xs p-6 sm:p-7 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-800 flex items-center justify-center font-bold">
+                        <svg class="w-5 h-5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-900">Entri Presensi Manual (Super Admin Override)</h2>
+                        <p class="text-xs text-slate-500">Kewenangan penuh Super Admin untuk membuat baru atau menimpa rekaman kehadiran shift ini.</p>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 self-start sm:self-auto">
+                    {{ $shift->attendance ? 'Timpa Rekaman Ada' : 'Buat Presensi Baru' }}
+                </span>
+            </div>
+
+            <form method="post" action="{{ route('shifts.attendance.manual', $shift->id) }}" class="space-y-4">
+                @csrf
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Status Kehadiran</label>
+                        <select name="status" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                            <option value="present" {{ ($shift->attendance?->status === 'present') ? 'selected' : '' }}>Hadir Tepat Waktu (Present)</option>
+                            <option value="late" {{ ($shift->attendance?->status === 'late') ? 'selected' : '' }}>Terlambat (Late)</option>
+                            <option value="absent" {{ ($shift->attendance?->status === 'absent') ? 'selected' : '' }}>Tidak Masuk / Alfa (Absent)</option>
+                            <option value="early_checkout" {{ ($shift->attendance?->status === 'early_checkout') ? 'selected' : '' }}>Pulang Cepat (Early Checkout)</option>
+                            <option value="corrected" {{ ($shift->attendance?->status === 'corrected') ? 'selected' : '' }}>Koreksi Admin (Corrected)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Waktu Masuk (Check-in)</label>
+                        <input
+                            type="datetime-local"
+                            name="checkin_at"
+                            value="{{ $shift->attendance?->checkin_at ? $shift->attendance->checkin_at->format('Y-m-d\TH:i') : \Carbon\Carbon::parse($shift->start_at)->format('Y-m-d\TH:i') }}"
+                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                        >
+                        <span class="text-[10px] text-slate-400">Kosongkan jika status Alfa</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Waktu Pulang (Check-out)</label>
+                        <input
+                            type="datetime-local"
+                            name="checkout_at"
+                            value="{{ $shift->attendance?->checkout_at ? $shift->attendance->checkout_at->format('Y-m-d\TH:i') : \Carbon\Carbon::parse($shift->end_at)->format('Y-m-d\TH:i') }}"
+                            class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                        >
+                        <span class="text-[10px] text-slate-400">Kosongkan jika masih bertugas</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Alasan / Catatan Entri Manual</label>
+                    <textarea
+                        name="reason"
+                        required
+                        minlength="5"
+                        placeholder="Contoh: Karyawan bertugas di lapangan dan lupa presensi GPS, diverifikasi langsung oleh manajemen."
+                        class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 min-h-[60px]"
+                    ></textarea>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                    <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+                        <input type="checkbox" name="force_override_period" value="1" checked class="rounded border-slate-300 text-emerald-700 focus:ring-emerald-500">
+                        <span>Bypass batas kunci periode penggajian (Payroll Writable Lock)</span>
+                    </label>
+
+                    <button
+                        type="submit"
+                        class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-xs transition-colors cursor-pointer inline-flex items-center gap-2"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <span>Simpan Presensi Manual (Super Admin)</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    @endif
+
     {{-- KARTU 3: Riwayat Audit & Revisi Jadwal --}}
     @php
         $auditLogs = \App\Models\AuditLog::with('actor')
@@ -316,5 +423,135 @@
             </p>
         @endif
     </div>
+
+    {{-- Modal Formulir Permohonan Pergantian / Pertukaran Shift --}}
+    @if(!$shift->attendance)
+        <div
+            id="modal-exchange-shift"
+            data-modal-container
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
+        >
+            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4">
+                <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900">Ajukan Pergantian / Tukar Shift</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Shift: {{ \Carbon\Carbon::parse($shift->start_at)->translatedFormat('d M Y') }} ({{ \Carbon\Carbon::parse($shift->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($shift->end_at)->format('H:i') }})</p>
+                    </div>
+                    <button type="button" data-close-modal class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+
+                <form method="post" action="{{ route('shifts.exchange.store', $shift->id) }}" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tipe Pergantian</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
+                                <input type="radio" name="type" value="replacement" checked class="text-emerald-600 focus:ring-emerald-500" onchange="document.getElementById('show-swap-box').classList.add('hidden'); document.getElementById('show-rep-box').classList.remove('hidden');">
+                                <span>Penggantian Searah</span>
+                            </label>
+                            <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
+                                <input type="radio" name="type" value="swap" class="text-emerald-600 focus:ring-emerald-500" onchange="document.getElementById('show-swap-box').classList.remove('hidden'); document.getElementById('show-rep-box').classList.add('hidden');">
+                                <span>Tukar Shift Dua Arah</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="show-rep-box">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Karyawan Pengganti</label>
+                        <select name="replacement_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                            <option value="">-- Pilih Rekan Pengganti --</option>
+                            @foreach($people as $p)
+                                <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->position?->name ?? 'Staf' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div id="show-swap-box" class="hidden">
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Jadwal Shift Rekan yang Ingin Ditukar</label>
+                        <select name="target_shift_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                            <option value="">-- Pilih Jadwal Shift Rekan --</option>
+                            @foreach($candidateShifts as $cs)
+                                <option value="{{ $cs->id }}">
+                                    {{ $cs->user?->name }} · {{ \Carbon\Carbon::parse($cs->start_at)->format('d M') }} ({{ \Carbon\Carbon::parse($cs->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($cs->end_at)->format('H:i') }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Alasan Permohonan</label>
+                        <textarea
+                            name="reason"
+                            rows="3"
+                            required
+                            minlength="5"
+                            maxlength="500"
+                            placeholder="Jelaskan alasan pengalihan atau pertukaran shift..."
+                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                        ></textarea>
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                        <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">Batal</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider">Kirim Permohonan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- Modal Formulir Penugasan Langsung oleh Manajer --}}
+        @if(in_array(auth()->user()->role, ['admin', 'manager']))
+            <div
+                id="modal-reassign-shift"
+                data-modal-container
+                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
+            >
+                <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4">
+                    <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 class="text-lg font-black text-slate-900">Tugaskan Pengganti Langsung</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Penugasan manajerial langsung tanpa alur pengajuan staf.</p>
+                        </div>
+                        <button type="button" data-close-modal class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+
+                    <form method="post" action="{{ route('shifts.reassign', $shift->id) }}" class="space-y-4">
+                        @csrf
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Karyawan Pengganti</label>
+                            <select name="replacement_id" required class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                                <option value="">-- Pilih Staf Pengganti --</option>
+                                @foreach($people as $p)
+                                    <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->position?->name ?? 'Staf' }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Alasan Penugasan</label>
+                            <textarea
+                                name="reason"
+                                rows="3"
+                                required
+                                minlength="5"
+                                maxlength="500"
+                                placeholder="Misal: Karyawan berhalangan hadir mendadak, digantikan oleh staf pengganti..."
+                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                            ></textarea>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                            <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">Batal</button>
+                            <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider">Tugaskan Sekarang</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endif
+    @endif
 </div>
 @endsection

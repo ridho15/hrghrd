@@ -130,10 +130,12 @@ class LeaveService
                 'reviewed_at' => now('Asia/Jakarta'),
             ]);
 
+            $actualPaidDates = $all->where('paid', true)->pluck('date')->map(fn ($d) => (string) $d)->values()->all();
+
             Audit::record('leave_request', $leave->id, 'review', $note, null, [
                 'status' => $status,
                 'approved_dates' => $approvedDates,
-                'paid_dates' => $paidDates,
+                'paid_dates' => $actualPaidDates,
             ]);
         });
     }

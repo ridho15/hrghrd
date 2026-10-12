@@ -235,7 +235,7 @@
                             id="adjustment-user"
                             label="Pilih Karyawan"
                             required
-                            :options="collect($allBranchEmployees ?? [])->map(fn($emp) => ['value' => $emp->id, 'label' => $emp->name, 'sublabel' => ($emp->username ? '@'.$emp->username.' • ' : '') . ($emp->position?->name ?? 'Staf')])"
+                            :options="collect($allBranchEmployees ?? [])->map(fn($emp) => ['value' => $emp->id, 'label' => $emp->name, 'sublabel' => ($emp->username ? '@'.$emp->username.' • ' : '') . ($emp->position?->name ?? 'Belum Ditentukan')])"
                             placeholder="Pilih Karyawan..."
                             searchPlaceholder="Cari nama karyawan..."
                         />
@@ -301,7 +301,7 @@
                                             {{ $emp->name }}
                                         </a>
                                         <span class="text-[11px] text-slate-400">
-                                            {{ $emp->position?->name ?? 'Staf' }} &middot; {{ $d['employed_days'] }}/{{ $d['calendar_days'] }} Hari
+                                            {{ $emp->position?->name ?? 'Belum Ditentukan' }} &middot; {{ $d['employed_days'] }}/{{ $d['calendar_days'] }} Hari
                                         </span>
                                     </div>
                                 </div>

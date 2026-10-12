@@ -3,13 +3,21 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ShiftDirectReassignRequest;
+use App\Http\Requests\Admin\ShiftExchangePeerRequest;
+use App\Http\Requests\Admin\ShiftExchangeReviewRequest;
+use App\Http\Requests\Admin\ShiftExchangeStoreRequest;
 use App\Http\Resources\ShiftResource;
 use App\Models\Shift;
+use App\Models\ShiftExchange;
+use App\Models\User;
+use App\Services\ShiftExchangeService;
 use App\Services\ShiftService;
 use App\Support\Access;
 use App\Support\Audit;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @group Shift
@@ -310,24 +318,186 @@ class ShiftApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Diperlukan role Manager.'], 403);
         }
 
-        $shift = Shift::with(['attendance', 'user'])->findOrFail($id);
+        $shift = Shift::with(['attendance', 'exceptions', 'user'])->findOrFail($id);
 
         if (! Access::admin() && $shift->branch_id !== $request->user()->branch_id) {
             return response()->json(['success' => false, 'message' => 'Akses ditolak untuk cabang ini.'], 403);
         }
 
-        if ($shift->attendance()->exists()) {
-            return response()->json(['success' => false, 'message' => 'Shift yang sudah memiliki absensi tidak dapat dihapus.'], 409);
+        if (! Access::admin()) {
+            if ($shift->attendance()->exists() || $shift->exceptions()->exists()) {
+                return response()->json(['success' => false, 'message' => 'Shift yang sudah memiliki rekaman absensi atau tiket kendala presensi tidak dapat dihapus.'], 409);
+            }
         }
 
         $date = $shift->start_at->toDateString();
         $userName = $shift->user?->name ?? 'Karyawan';
-        $shift->delete();
-        Audit::record('shift', $id, 'delete', "Jadwal shift {$userName} pada {$date} dibatalkan dan dihapus.");
+
+        DB::transaction(function () use ($shift, $id, $userName, $date) {
+            if (Access::admin()) {
+                if (\Illuminate\Support\Facades\Schema::hasTable('shift_exchanges')) {
+                    ShiftExchange::where('requester_shift_id', $id)->orWhere('target_shift_id', $id)->delete();
+                }
+                $shift->exceptions()->delete();
+                $shift->attendance()?->delete();
+            }
+
+            $shift->delete();
+            $action = Access::admin() ? 'force_delete' : 'delete';
+            $auditMsg = Access::admin()
+                ? "Super Admin " . auth()->user()->name . " menghapus paksa shift ID {$id} milik {$userName} pada {$date} beserta seluruh data relasi absensi."
+                : "Jadwal shift {$userName} pada {$date} dibatalkan dan dihapus.";
+            Audit::record('shift', $id, $action, $auditMsg);
+        });
 
         return response()->json([
             'success' => true,
             'message' => "Jadwal shift untuk {$userName} berhasil dibatalkan.",
+        ]);
+    }
+
+    /**
+     * Kalender Jadwal Shift
+     */
+    public function calendar(Request $request)
+    {
+        $user = $request->user();
+        $monthParam = trim((string) $request->query('month', ''));
+        try {
+            $currentMonth = $monthParam !== '' ? Carbon::createFromFormat('!Y-m', $monthParam, 'Asia/Jakarta') : now('Asia/Jakarta');
+        } catch (\Throwable) {
+            $currentMonth = now('Asia/Jakarta');
+        }
+
+        $gridStart = $currentMonth->copy()->startOfMonth()->startOfWeek(Carbon::MONDAY);
+        $gridEnd = $currentMonth->copy()->endOfMonth()->endOfWeek(Carbon::SUNDAY);
+
+        $selectedBranchId = Access::admin()
+            ? ($request->filled('branch_id') ? (int) $request->query('branch_id') : null)
+            : (int) $user->branch_id;
+
+        $shifts = Shift::with(['user', 'branch', 'attendance'])
+            ->whereBetween('start_at', [$gridStart->toDateTimeString(), $gridEnd->toDateTimeString()])
+            ->when(! Access::admin(), fn ($q) => $q->where('branch_id', $user->branch_id))
+            ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
+            ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', (int) $request->query('user_id')))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+            ->orderBy('start_at')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'month'   => $currentMonth->format('Y-m'),
+            'data'    => ShiftResource::collection($shifts),
+        ]);
+    }
+
+    /**
+     * Daftar Permohonan Pergantian Shift
+     */
+    public function exchanges(Request $request)
+    {
+        $user = $request->user();
+        $query = ShiftExchange::with([
+            'requester', 'replacement', 'requesterShift', 'targetShift', 'branch', 'reviewer'
+        ])
+        ->when(! Access::manager(), fn ($q) => $q->forUser($user->id))
+        ->when(Access::manager() && ! Access::admin(), fn ($q) => $q->where('branch_id', $user->branch_id))
+        ->when(Access::admin() && $request->filled('branch_id'), fn ($q) => $q->where('branch_id', (int) $request->query('branch_id')))
+        ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+        ->latest('id');
+
+        $perPage = min((int) ($request->query('per_page', 15)), 50);
+        $paginator = $query->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $paginator->items(),
+            'meta'    => [
+                'current_page' => $paginator->currentPage(),
+                'per_page'     => $paginator->perPage(),
+                'total'        => $paginator->total(),
+                'last_page'    => $paginator->lastPage(),
+            ],
+        ]);
+    }
+
+    /**
+     * Buat Permohonan Pergantian / Pertukaran Shift
+     */
+    public function exchangeStore(ShiftExchangeStoreRequest $request, int $id, ShiftExchangeService $service)
+    {
+        $shift = Shift::findOrFail($id);
+        $data = $request->validated();
+
+        if ($data['type'] === 'replacement') {
+            $replacement = User::findOrFail((int) $data['replacement_id']);
+            $exchange = $service->requestReplacement($request->user(), $shift, $replacement, $data['reason']);
+            $msg = 'Permohonan penggantian shift berhasil diajukan.';
+        } else {
+            $targetShift = Shift::with('user')->findOrFail((int) $data['target_shift_id']);
+            $exchange = $service->requestSwap($request->user(), $shift, $targetShift, $data['reason']);
+            $msg = 'Permohonan pertukaran jadwal berhasil diajukan.';
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $msg,
+            'data'    => $exchange->load(['requester', 'replacement', 'requesterShift', 'targetShift']),
+        ], 201);
+    }
+
+    /**
+     * Respon Rekan Pengganti (Terima/Tolak)
+     */
+    public function exchangePeerRespond(ShiftExchangePeerRequest $request, int $id, ShiftExchangeService $service)
+    {
+        $exchange = ShiftExchange::findOrFail($id);
+        $data = $request->validated();
+        $isAccept = $data['action'] === 'accept';
+
+        $exchange = $service->peerRespond($exchange, $request->user(), $isAccept, $data['note'] ?? null);
+
+        return response()->json([
+            'success' => true,
+            'message' => $isAccept ? 'Permohonan pergantian shift disetujui.' : 'Permohonan pergantian shift ditolak.',
+            'data'    => $exchange->fresh()->load(['requester', 'replacement', 'requesterShift', 'targetShift']),
+        ]);
+    }
+
+    /**
+     * Tinjau Manajerial / Admin (Setujui/Tolak)
+     */
+    public function exchangeReview(ShiftExchangeReviewRequest $request, int $id, ShiftExchangeService $service)
+    {
+        $exchange = ShiftExchange::findOrFail($id);
+        $data = $request->validated();
+        $isApprove = $data['decision'] === 'approve';
+
+        $exchange = $service->managerReview($exchange, $request->user(), $isApprove, $data['note'] ?? null);
+
+        return response()->json([
+            'success' => true,
+            'message' => $isApprove ? 'Permohonan pergantian shift berhasil disetujui manajerial.' : 'Permohonan pergantian shift ditolak.',
+            'data'    => $exchange->fresh()->load(['requester', 'replacement', 'requesterShift', 'targetShift']),
+        ]);
+    }
+
+    /**
+     * Penugasan Staf Pengganti Langsung oleh Manajer
+     */
+    public function directReassign(ShiftDirectReassignRequest $request, int $id, ShiftExchangeService $service)
+    {
+        $shift = Shift::findOrFail($id);
+        $data = $request->validated();
+        $replacement = User::findOrFail((int) $data['replacement_id']);
+
+        $exchange = $service->directReassign($shift, $replacement, $request->user(), $data['reason']);
+
+        return response()->json([
+            'success' => true,
+            'message' => "Shift berhasil dialihkan langsung ke {$replacement->name}.",
+            'data'    => $exchange->fresh()->load(['requester', 'replacement', 'requesterShift']),
         ]);
     }
 }

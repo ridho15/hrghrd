@@ -174,7 +174,7 @@
                             name="radius_m"
                             id="radius_m"
                             required
-                            min="20"
+                            min="50"
                             max="1000"
                             value="{{ old('radius_m', $branch->radius_m) }}"
                             class="w-full h-11 px-3.5 pr-14 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all @error('radius_m') border-rose-300 bg-rose-50/50 @enderror"

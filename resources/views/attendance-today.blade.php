@@ -225,28 +225,65 @@
                                     </div>
                                 </form>
 
-                                {{-- Ajukan Pengecualian / Bantuan Kendala --}}
-                                <div class="mt-4 pt-3 border-t border-slate-100">
-                                    <details class="group">
-                                        <summary class="text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer list-none flex items-center gap-1.5">
-                                            <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                            <span>Mengalami kendala GPS atau kamera? Ajukan permohonan pengecualian</span>
-                                        </summary>
-                                        <form method="post" action="{{ route('attendance.exception', $shift->id) }}" class="mt-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
-                                            @csrf
-                                            <input type="hidden" name="action" value="{{ $hasCheckin ? 'out' : 'in' }}">
-                                            <div>
-                                                <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">
-                                                    Alasan Kendala
-                                                </label>
-                                                <textarea name="reason" rows="2" required placeholder="Contoh: GPS handphone tidak stabil di dalam ruangan, sinyal lambat..." class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"></textarea>
+                                {{-- Status Pengecualian Shift Ini (Jika Pernah Diajukan) --}}
+                                @if($shift->exceptions && $shift->exceptions->isNotEmpty())
+                                    <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                                        @foreach($shift->exceptions as $ex)
+                                            <div class="p-3 rounded-xl border text-xs {{ $ex->status === 'approved' ? 'bg-emerald-50/70 border-emerald-200 text-emerald-950' : ($ex->status === 'rejected' ? 'bg-rose-50/70 border-rose-200 text-rose-950' : 'bg-amber-50/70 border-amber-200 text-amber-950') }}">
+                                                <div class="flex items-center justify-between gap-2 font-bold mb-1">
+                                                    <span class="uppercase tracking-wider text-[10px]">
+                                                        Pengecualian {{ $ex->action === 'in' ? 'Check-in' : 'Check-out' }}
+                                                        @if($ex->claimed_time) (Klaim: {{ $ex->claimed_time }}) @endif
+                                                    </span>
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase {{ $ex->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($ex->status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">
+                                                        {{ $ex->status === 'approved' ? 'Disetujui' : ($ex->status === 'rejected' ? 'Ditolak' : 'Menunggu Review') }}
+                                                    </span>
+                                                </div>
+                                                <p class="m-0 text-slate-700"><strong>Alasan:</strong> {{ $ex->reason }}</p>
+                                                @if($ex->review_note)
+                                                    <p class="m-0 mt-1 text-[11px] text-slate-600"><strong>Catatan Atasan ({{ $ex->reviewer?->name ?? 'Manager' }}):</strong> {{ $ex->review_note }}</p>
+                                                @endif
                                             </div>
-                                            <button class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer">
-                                                Kirim Permohonan Pengecualian
-                                            </button>
-                                        </form>
-                                    </details>
-                                </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+
+                                @php
+                                    $currentShiftAction = $hasCheckin ? 'out' : 'in';
+                                    $hasPendingThisAction = $shift->exceptions ? $shift->exceptions->where('action', $currentShiftAction)->where('status', 'pending')->first() : null;
+                                @endphp
+
+                                @if(!$hasPendingThisAction)
+                                    {{-- Ajukan Pengecualian / Bantuan Kendala --}}
+                                    <div class="mt-4 pt-3 border-t border-slate-100">
+                                        <details class="group">
+                                            <summary class="text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer list-none flex items-center gap-1.5">
+                                                <svg class="w-4 h-4 transition-transform group-open:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                                <span>Mengalami kendala GPS atau kamera? Ajukan permohonan pengecualian</span>
+                                            </summary>
+                                            <form method="post" action="{{ route('attendance.exception', $shift->id) }}" class="mt-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                                                @csrf
+                                                <input type="hidden" name="action" value="{{ $currentShiftAction }}">
+                                                <div>
+                                                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                                        Jam Riil Kedatangan / Kepulangan (Opsional)
+                                                    </label>
+                                                    <input type="time" name="claimed_time" class="w-full sm:w-44 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 mb-1">
+                                                    <p class="text-[10px] text-slate-400 m-0">Kosongkan jika mengikuti jam shift rencana.</p>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                                        Alasan Kendala
+                                                    </label>
+                                                    <textarea name="reason" rows="2" required minlength="10" placeholder="Contoh: GPS handphone tidak stabil di dalam ruangan, sinyal lambat..." class="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"></textarea>
+                                                </div>
+                                                <button class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer">
+                                                    Kirim Permohonan Pengecualian
+                                                </button>
+                                            </form>
+                                        </details>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     @endif
@@ -254,6 +291,174 @@
             @endforeach
         @endif
     </div>
+
+    {{-- Widget: Status Permohonan Pengecualian Saya --}}
+    @if(isset($myExceptions) && $myExceptions->isNotEmpty())
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider m-0">
+                        Status Permohonan Pengecualian Saya
+                    </h3>
+                </div>
+                <span class="text-[11px] text-slate-400 font-medium">5 Terakhir</span>
+            </div>
+            <div class="space-y-2.5">
+                @foreach($myExceptions as $ex)
+                    <div class="p-3 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 {{ $ex->status === 'approved' ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950' : ($ex->status === 'rejected' ? 'bg-rose-50/60 border-rose-200 text-rose-950' : 'bg-amber-50/60 border-amber-200 text-amber-950') }}">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-slate-900">Shift {{ $ex->shift?->start_at?->format('d M Y') ?? '-' }}</span>
+                                <span class="text-slate-400">&middot;</span>
+                                <span class="uppercase font-bold text-[10px] text-slate-600">{{ $ex->action === 'in' ? 'Check-in' : 'Check-out' }}</span>
+                                @if($ex->claimed_time)
+                                    <span class="px-1.5 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-mono text-slate-700 font-semibold">Klaim: {{ $ex->claimed_time }}</span>
+                                @endif
+                                <span class="text-[11px] text-slate-400 font-mono">({{ $ex->shift?->branch?->name ?? 'Cabang' }})</span>
+                            </div>
+                            <p class="m-0 text-slate-600"><strong>Alasan:</strong> {{ $ex->reason }}</p>
+                            @if($ex->review_note)
+                                <p class="m-0 text-[11px] text-slate-500"><strong>Catatan Atasan ({{ $ex->reviewer?->name ?? 'Manager' }}):</strong> {{ $ex->review_note }}</p>
+                            @endif
+                        </div>
+                        <div class="shrink-0">
+                            @if($ex->status === 'approved')
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    <svg class="w-3.5 h-3.5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                    Disetujui
+                                </span>
+                            @elseif($ex->status === 'rejected')
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                    <svg class="w-3.5 h-3.5 text-rose-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    Ditolak
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                                    Menunggu Review
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- Riwayat Shift & Pengajuan Susulan (7 Hari Terakhir) --}}
+    @if(isset($recentShifts) && $recentShifts->isNotEmpty())
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div>
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider m-0">
+                        Riwayat Jadwal Shift & Presensi (7 Hari Terakhir)
+                    </h3>
+                    <p class="text-[11px] text-slate-500 m-0 mt-0.5">
+                        Ajukan permohonan pengecualian untuk shift sebelumnya jika presensi Anda terkendala di lokasi.
+                    </p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                @foreach($recentShifts as $rs)
+                    @php
+                        $rsAtt = $rs->attendance;
+                        $rsHasIn = $rsAtt && $rsAtt->checkin_at;
+                        $rsHasOut = $rsAtt && $rsAtt->checkout_at;
+                        $rsActionNeeded = !$rsHasIn ? 'in' : (!$rsHasOut ? 'out' : null);
+                        $rsPendingEx = $rs->exceptions ? $rs->exceptions->where('status', 'pending')->first() : null;
+                    @endphp
+                    <div class="p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-slate-50 transition-colors space-y-2.5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <strong class="text-xs text-slate-900">{{ $rs->start_at?->format('l, d M Y') }}</strong>
+                                    <span class="text-slate-400">&middot;</span>
+                                    <span class="text-xs text-slate-600 font-mono">{{ $rs->start_at?->format('H:i') }} - {{ $rs->end_at?->format('H:i') }} WIB</span>
+                                    <span class="text-slate-400">&middot;</span>
+                                    <span class="text-[11px] text-slate-500">{{ $rs->branch?->name }}</span>
+                                </div>
+                                <div class="mt-1 flex items-center gap-2 flex-wrap text-xs">
+                                    @if($rsHasIn && $rsHasOut)
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                            Hadir (Masuk: {{ \Carbon\Carbon::parse($rsAtt->checkin_at)->format('H:i') }}, Pulang: {{ \Carbon\Carbon::parse($rsAtt->checkout_at)->format('H:i') }})
+                                        </span>
+                                    @elseif($rsHasIn && !$rsHasOut)
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            Belum Check-out (Masuk: {{ \Carbon\Carbon::parse($rsAtt->checkin_at)->format('H:i') }})
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                            Belum Ada Presensi (Alfa / Terkendala)
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="sm:shrink-0 flex items-center gap-2">
+                                @if($rsPendingEx)
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                        Pengecualian {{ strtoupper($rsPendingEx->action) }} Menunggu Review
+                                    </span>
+                                @elseif($rsActionNeeded)
+                                    <details class="group relative">
+                                        <summary class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold cursor-pointer list-none inline-flex items-center gap-1 shadow-2xs transition-colors">
+                                            <span>Ajukan Pengecualian</span>
+                                            <svg class="w-3 h-3 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                        </summary>
+                                        <div class="mt-2 p-3 bg-white border border-slate-200 rounded-xl shadow-lg w-full sm:w-80 space-y-2.5 z-20 relative">
+                                            <form method="post" action="{{ route('attendance.exception', $rs->id) }}" class="space-y-2.5 m-0">
+                                                @csrf
+                                                <input type="hidden" name="action" value="{{ $rsActionNeeded }}">
+                                                <div class="text-[11px] font-bold text-slate-700">
+                                                    Pengecualian: <span class="uppercase text-emerald-700">{{ $rsActionNeeded === 'in' ? 'Check-in' : 'Check-out' }}</span>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Jam Riil (Opsional)</label>
+                                                    <input type="time" name="claimed_time" value="{{ $rsActionNeeded === 'in' ? $rs->start_at?->format('H:i') : $rs->end_at?->format('H:i') }}" class="w-full px-2.5 py-1 border border-slate-200 rounded text-xs">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Alasan Kendala</label>
+                                                    <textarea name="reason" rows="2" required minlength="10" placeholder="Alasan kendala pada tanggal ini..." class="w-full p-2 border border-slate-200 rounded text-xs"></textarea>
+                                                </div>
+                                                <button class="w-full py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded cursor-pointer transition-colors">
+                                                    Kirim Permohonan
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </details>
+                                @endif
+                            </div>
+                        </div>
+
+                        {{-- Riwayat Keputusan Pengecualian Shift Ini Jika Ada --}}
+                        @if($rs->exceptions && $rs->exceptions->isNotEmpty())
+                            <div class="pt-2 border-t border-slate-200/60 space-y-1.5">
+                                @foreach($rs->exceptions as $ex)
+                                    <div class="text-[11px] flex items-center justify-between text-slate-600">
+                                        <span>
+                                            Pengecualian <strong>{{ strtoupper($ex->action) }}</strong>:
+                                            <span class="font-semibold">{{ $ex->reason }}</span>
+                                            @if($ex->review_note)
+                                                (Catatan: {{ $ex->review_note }})
+                                            @endif
+                                        </span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase shrink-0 {{ $ex->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($ex->status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">
+                                            {{ $ex->status === 'approved' ? 'Disetujui' : ($ex->status === 'rejected' ? 'Ditolak' : 'Pending') }}
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     {{-- Riwayat Percobaan Presensi Hari Ini (Logs) --}}
     @if(isset($attempts) && $attempts->isNotEmpty())

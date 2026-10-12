@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class ShiftService
 {
-    public function create(array $data): Shift
+    public function create(array $data, ?User $actor = null): Shift
     {
         Period::writable($data['branch_id'], $data['date']);
 
@@ -22,16 +22,20 @@ class ShiftService
             $end->addDay();
         }
 
+        $isAutoApprove = ! empty($data['auto_approve']) && (($actor?->role === 'admin') || Access::admin());
+
         $shift = Shift::create([
             'user_id' => $data['user_id'],
             'branch_id' => $data['branch_id'],
             'start_at' => $start,
             'end_at' => $end,
-            'status' => 'draft',
+            'status' => $isAutoApprove ? 'approved' : 'draft',
             'version' => 1,
+            'approved_by' => $isAutoApprove ? ($actor?->id ?: auth()->id()) : null,
+            'approved_at' => $isAutoApprove ? now('Asia/Jakarta') : null,
         ]);
 
-        Audit::record('shift', $shift->id, 'create');
+        Audit::record('shift', $shift->id, $isAutoApprove ? 'create_approved' : 'create');
 
         return $shift;
     }

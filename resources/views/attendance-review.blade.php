@@ -236,7 +236,7 @@
                                                             </div>
                                                             <div class="flex items-center gap-1.5 flex-wrap">
                                                                 @if(isset($inEv['accuracy_m']) || isset($inEv['accuracy']))
-                                                                    <span>Akurasi: &plusmn;{{ $inEv['accuracy_m'] ?? $inEv['accuracy'] }}m</span>
+                                                                    <span>Akurasi: &plusmn;{{ number_format((float) ($inEv['accuracy_m'] ?? $inEv['accuracy']), 1) }}m</span>
                                                                 @endif
                                                                 @if(!empty($inEv['is_mocked']))
                                                                     <span class="text-rose-700 bg-rose-50 px-1 py-0.5 rounded font-bold border border-rose-200">Fake GPS</span>
@@ -268,7 +268,7 @@
                                                         </div>
                                                         <div class="flex items-center gap-1.5 flex-wrap">
                                                             @if(isset($outEv['accuracy_m']) || isset($outEv['accuracy']))
-                                                                <span>Akurasi: &plusmn;{{ $outEv['accuracy_m'] ?? $outEv['accuracy'] }}m</span>
+                                                                <span>Akurasi: &plusmn;{{ number_format((float) ($outEv['accuracy_m'] ?? $outEv['accuracy']), 1) }}m</span>
                                                             @endif
                                                             @if(isset($outEv['ip']))
                                                                 <span class="text-slate-400 font-mono">IP: {{ $outEv['ip'] }}</span>
@@ -503,7 +503,7 @@
                                                             {{ isset($inEvidence['latitude']) ? number_format($inEvidence['latitude'], 6) : '—' }},
                                                             {{ isset($inEvidence['longitude']) ? number_format($inEvidence['longitude'], 6) : '—' }}
                                                         </span>
-                                                        <span class="text-[10px] text-slate-500">Akurasi GPS: &plusmn;{{ $inEvidence['accuracy_m'] ?? ($inEvidence['accuracy'] ?? '—') }}m</span>
+                                                        <span class="text-[10px] text-slate-500">Akurasi GPS: &plusmn;{{ isset($inEvidence['accuracy_m']) || isset($inEvidence['accuracy']) ? number_format((float) ($inEvidence['accuracy_m'] ?? $inEvidence['accuracy']), 1) . 'm' : '—' }}</span>
                                                     </div>
 
                                                     <div class="p-2.5 bg-slate-50 rounded-lg">
@@ -645,7 +645,7 @@
                                                         {{ isset($evData['latitude'], $evData['longitude']) ? number_format($evData['latitude'], 5) . ', ' . number_format($evData['longitude'], 5) : '—' }}
                                                     </span>
                                                     @if(isset($evData['accuracy_m']) || isset($evData['accuracy']))
-                                                        <span class="text-slate-500 text-[10px]">(±{{ $evData['accuracy_m'] ?? $evData['accuracy'] }}m)</span>
+                                                        <span class="text-slate-500 text-[10px]">(±{{ number_format((float) ($evData['accuracy_m'] ?? $evData['accuracy']), 1) }}m)</span>
                                                     @endif
                                                 </div>
                                                 <div>

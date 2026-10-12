@@ -24,7 +24,7 @@ class DashboardController extends Controller
         session(['attendance_challenge' => $challenge]);
 
         // Shift pribadi pengguna (khusus jadwal per hari / tanggal sekarang saja)
-        $shifts = Shift::with(['branch', 'attendance'])
+        $shifts = Shift::with(['branch', 'attendance', 'exceptions.reviewer'])
             ->where('user_id', $user->id)
             ->whereDate('start_at', $todayDate)
             ->orderBy('start_at')
@@ -32,6 +32,17 @@ class DashboardController extends Controller
 
         // Pengajuan izin pribadi pengguna
         $leaves = LeaveRequest::where('user_id', $user->id)
+            ->latest('id')
+            ->limit(5)
+            ->get();
+
+        // Riwayat pengajuan pengecualian aktif pengguna (7 hari terakhir atau status pending)
+        $myExceptions = AttendanceException::with(['shift.branch', 'reviewer'])
+            ->where('user_id', $user->id)
+            ->where(function ($q) {
+                $q->where('status', 'pending')
+                    ->orWhere('updated_at', '>=', now('Asia/Jakarta')->subDays(7));
+            })
             ->latest('id')
             ->limit(5)
             ->get();
@@ -144,7 +155,8 @@ class DashboardController extends Controller
             'managerStats',
             'branch',
             'recentAttendances',
-            'branchTodayShifts'
+            'branchTodayShifts',
+            'myExceptions'
         ));
     }
 }

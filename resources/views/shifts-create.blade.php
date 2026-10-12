@@ -181,7 +181,7 @@
                         $peopleOpts = $people->map(fn($p) => [
                             'value' => (string)$p->id,
                             'label' => $p->name,
-                            'sublabel' => ($p->username ? '@' . $p->username . ' • ' : '') . ($p->position?->name ?? 'Staf') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
+                            'sublabel' => ($p->username ? '@' . $p->username . ' • ' : '') . ($p->position?->name ?? 'Belum Ditentukan') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
                             'branch_id' => (string)($p->branch_id ?? ''),
                         ]);
                     @endphp
@@ -525,9 +525,9 @@
                 </div>
             </div>
 
-            {{-- Opsi Khusus Super Admin: Langsung Setujui Semua (Auto-Approve) --}}
+            {{-- Opsi Khusus Super Admin: Langsung Setujui Jadwal (Auto-Approve) --}}
             @if($isAdmin)
-                <div id="section-auto-approve" class="{{ $currentMode === 'recurring' ? '' : 'hidden' }} p-4 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl flex items-start gap-3">
+                <div id="section-auto-approve" class="p-4 bg-emerald-50/80 border border-emerald-200/90 rounded-2xl flex items-start gap-3">
                     <input
                         type="checkbox"
                         name="auto_approve"
@@ -538,7 +538,7 @@
                     >
                     <div class="text-xs">
                         <label for="auto_approve" class="font-bold text-slate-900 cursor-pointer block">
-                            Langsung Setujui Semua Jadwal (Status: Approved)
+                            Langsung Setujui Jadwal (Status: Approved)
                         </label>
                         <p class="text-[11px] text-emerald-800 mt-0.5 leading-relaxed">
                             Sebagai Super Admin, Anda dapat mengaktifkan jadwal langsung tanpa status draf sehingga staf dapat langsung melakukan absensi pada jadwal tersebut.
@@ -616,7 +616,6 @@
             if (secEmpRecurring) secEmpRecurring.classList.add('hidden');
             if (secDateSingle) secDateSingle.classList.remove('hidden');
             if (secDateRecurring) secDateRecurring.classList.add('hidden');
-            if (secAutoApprove) secAutoApprove.classList.add('hidden');
 
             const badgeBranchSync = document.getElementById('badge-branch-sync-note');
             if (badgeBranchSync) badgeBranchSync.classList.remove('hidden');

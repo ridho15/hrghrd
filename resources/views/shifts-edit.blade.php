@@ -52,7 +52,7 @@
                 <span class="text-xs text-slate-400 block font-mono">Shift ID #SHF-{{ str_pad($shift->id, 5, '0', STR_PAD_LEFT) }} &middot; Versi {{ $shift->version }}</span>
                 <h3 class="text-base font-bold text-white">{{ $shift->employee_name }}</h3>
                 <span class="text-xs text-emerald-300 font-medium">
-                    {{ $shift->user?->position?->name ?? 'Staf' }} &middot; Cabang {{ $shift->branch_name }}
+                    {{ $shift->user?->position?->name ?? 'Belum Ditentukan' }} &middot; Cabang {{ $shift->branch_name }}
                 </span>
             </div>
         </div>

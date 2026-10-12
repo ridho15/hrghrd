@@ -357,6 +357,63 @@ final class AttendanceService
         Audit::record('attendance', $attendance->id, 'overtime_approve', $reason, null, ['minutes' => $attendance->overtime_minutes]);
     }
 
+    public function createManual(Shift $shift, array $data, User $admin): Attendance
+    {
+        abort_unless(Access::admin(), 403, 'Hanya Super Admin yang berwenang melakukan entri presensi manual.');
+
+        if (empty($data['force_override_period'])) {
+            Period::writable($shift->branch_id, $shift->start_at->toDateString());
+        }
+
+        $checkin = !empty($data['checkin_at']) ? Carbon::parse($data['checkin_at'], 'Asia/Jakarta')->toDateTimeString() : null;
+        $checkout = !empty($data['checkout_at']) ? Carbon::parse($data['checkout_at'], 'Asia/Jakarta')->toDateTimeString() : null;
+
+        if ($data['status'] === 'absent') {
+            $checkin = null;
+            $checkout = null;
+        }
+
+        $late = $checkin ? max(0, (int) Carbon::parse($shift->start_at, 'Asia/Jakarta')->diffInMinutes(Carbon::parse($checkin, 'Asia/Jakarta'), false)) : 0;
+        $extra = $checkout ? max(0, (int) Carbon::parse($shift->end_at, 'Asia/Jakarta')->diffInMinutes(Carbon::parse($checkout, 'Asia/Jakarta'), false)) : 0;
+
+        $auditFlag = [
+            'manual_admin_entry' => true,
+            'admin_id' => $admin->id,
+            'admin_name' => $admin->name,
+            'reason' => $data['reason'],
+            'recorded_at' => now('Asia/Jakarta')->toDateTimeString(),
+        ];
+
+        $attendance = Attendance::where('shift_id', $shift->id)->first();
+
+        $values = [
+            'shift_id' => $shift->id,
+            'user_id' => $shift->user_id,
+            'status' => $data['status'],
+            'checkin_at' => $checkin,
+            'checkout_at' => $checkout,
+            'late_minutes' => $late,
+            'late_units' => Rules::lateUnits($late),
+            'overtime_minutes' => min(Rules::int('overtime_max_daily_minutes'), max(0, $extra - Rules::int('overtime_threshold_minutes'))),
+            'overtime_approved_by' => $extra > 0 ? $admin->id : null,
+        ];
+
+        if ($attendance) {
+            $flags = $attendance->flags ?? [];
+            $flags[] = $auditFlag;
+            $values['flags'] = $flags;
+            $before = $attendance->toArray();
+            $attendance->update($values);
+            Audit::record('attendance', $attendance->id, 'manual_admin_update', $data['reason'], $before, $values);
+        } else {
+            $values['flags'] = [$auditFlag];
+            $attendance = Attendance::create($values);
+            Audit::record('attendance', $attendance->id, 'manual_admin_create', $data['reason'], null, $values);
+        }
+
+        return $attendance;
+    }
+
     private function reject(int $userId, ?int $shiftId, string $action, string $reason, array $evidence, Carbon $now): never
     {
         throw ValidationException::withMessages(['attendance' => $reason . '. Ajukan pengecualian jika perlu.']);

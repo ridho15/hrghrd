@@ -52,7 +52,7 @@ class PersonUpdateRequest extends FormRequest
             'ended_at' => 'nullable|date|after_or_equal:hired_at',
             'base_salary' => 'required|integer|min:0',
             'active' => 'required|boolean',
-            'password' => 'nullable|string|min:10',
+            'password' => 'nullable|string|min:8',
             'reset_device' => 'nullable|boolean',
         ];
     }
@@ -73,7 +73,7 @@ class PersonUpdateRequest extends FormRequest
             'name.required' => 'Nama lengkap wajib diisi.',
             'email.required' => 'Email wajib diisi.',
             'email.unique' => 'Email sudah digunakan oleh akun lain.',
-            'password.min' => 'Kata sandi minimal 10 karakter.',
+            'password.min' => 'Kata sandi minimal 8 karakter.',
             'branch_id.required_unless' => 'Cabang wajib dipilih untuk peran selain admin.',
             'ended_at.after_or_equal' => 'Tanggal akhir kerja harus sama atau setelah tanggal mulai.',
             'base_salary.min' => 'Gaji bulanan tidak boleh bernilai negatif.',

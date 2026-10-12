@@ -67,6 +67,16 @@ class User extends Authenticatable
         return $this->hasMany(Shift::class);
     }
 
+    public function shiftExchangeRequests(): HasMany
+    {
+        return $this->hasMany(ShiftExchange::class, 'requester_id');
+    }
+
+    public function shiftExchangeInvitations(): HasMany
+    {
+        return $this->hasMany(ShiftExchange::class, 'replacement_id');
+    }
+
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);

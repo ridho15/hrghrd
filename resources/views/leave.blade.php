@@ -181,10 +181,11 @@
                                     {{ $statusBadge['label'] }}
                                 </span>
                                 @if(isset($days[$r->id]) && $days[$r->id]->isNotEmpty())
-                                    <div class="flex items-center gap-1 mt-1.5 flex-wrap max-w-[200px]">
+                                    <div class="flex items-center gap-1.5 mt-1.5 flex-wrap max-w-[280px]">
                                         @foreach($days[$r->id]->take(3) as $d)
-                                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums {{ $d->status === 'approved' ? 'bg-emerald-50 text-emerald-700' : ($d->status === 'rejected' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600') }}">
-                                                {{ substr($d->date, 8, 2) }}:{{ substr($d->status, 0, 1) }}
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold tabular-nums inline-flex items-center gap-1 {{ $d->status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : ($d->status === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200/60' : 'bg-slate-100 text-slate-600 border border-slate-200') }}">
+                                                <span>Tgl {{ substr($d->date, 8, 2) }}</span>
+                                                <span class="text-[9px] font-semibold opacity-80">({{ $d->status === 'approved' ? 'Disetujui' : ($d->status === 'rejected' ? 'Ditolak' : 'Pending') }})</span>
                                             </span>
                                         @endforeach
                                         @if($days[$r->id]->count() > 3)

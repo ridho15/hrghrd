@@ -26,6 +26,8 @@ class PayrollController extends Controller
         $branches = Branch::orderBy('name')->get();
         $month = $request->query('month', now('Asia/Jakarta')->format('Y-m'));
         abort_unless(preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month), 422);
+        $currentMonth = now('Asia/Jakarta')->format('Y-m');
+        abort_if($month > $currentMonth, 422, "Periode payroll untuk masa depan ({$month}) belum dapat diproses.");
         $branchId = (int) $request->query('branch_id', $branches->first()?->id);
         $branch = $branches->firstWhere('id', $branchId);
         abort_unless($branch, 404);
@@ -113,6 +115,8 @@ class PayrollController extends Controller
         $employee = User::with(['branch', 'position'])->findOrFail($userId);
         $month = $request->query('month', now('Asia/Jakarta')->format('Y-m'));
         abort_unless(preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month), 422);
+        $currentMonth = now('Asia/Jakarta')->format('Y-m');
+        abort_if($month > $currentMonth, 422, "Periode payroll untuk masa depan ({$month}) belum dapat diproses.");
 
         $branchId = (int) $request->query('branch_id', $employee->branch_id);
         $branch = Branch::findOrFail($branchId);

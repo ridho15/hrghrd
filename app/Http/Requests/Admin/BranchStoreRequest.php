@@ -19,7 +19,7 @@ class BranchStoreRequest extends FormRequest
             'name' => 'required|string|max:100',
             'latitude' => 'required|numeric|between:-90,90',
             'longitude' => 'required|numeric|between:-180,180',
-            'radius_m' => 'required|integer|between:20,1000',
+            'radius_m' => 'required|integer|between:50,1000',
         ];
     }
 
@@ -34,7 +34,7 @@ class BranchStoreRequest extends FormRequest
             'longitude.required' => 'Titik bujur (longitude) wajib diisi.',
             'longitude.between' => 'Titik bujur harus berada di antara -180 dan 180.',
             'radius_m.required' => 'Radius area wajib diisi.',
-            'radius_m.between' => 'Radius area harus antara 20 hingga 1.000 meter.',
+            'radius_m.between' => 'Radius area harus antara 50 hingga 1.000 meter.',
         ];
     }
 }

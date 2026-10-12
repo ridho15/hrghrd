@@ -75,7 +75,7 @@
                         <tr class="hover:bg-slate-50/60 transition-colors">
                             {{-- Waktu --}}
                             <td class="py-4 px-4 sm:px-6 font-mono text-xs tabular-nums text-slate-600 whitespace-nowrap">
-                                {{ $e->created_at }}
+                                {{ \Carbon\Carbon::parse($e->created_at)->translatedFormat('d M Y H:i:s') }}
                             </td>
 
                             {{-- Pelaku --}}

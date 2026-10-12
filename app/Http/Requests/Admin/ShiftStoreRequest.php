@@ -69,8 +69,9 @@ class ShiftStoreRequest extends FormRequest
         }
 
         return array_merge($base, [
-            'user_id' => 'required|exists:users,id',
-            'date'    => 'required|date',
+            'user_id'      => 'required|exists:users,id',
+            'date'         => 'required|date',
+            'auto_approve' => 'nullable|boolean',
         ]);
     }
 

@@ -96,7 +96,7 @@ class LeaveApiController extends Controller
             'type'        => ['required', 'in:leave,sick'],
             'start_date'  => ['required', 'date', 'date_format:Y-m-d'],
             'end_date'    => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],
-            'reason'      => ['required', 'string', 'min:5', 'max:500'],
+            'reason'      => ['required', 'string', 'min:10', 'max:500'],
             'certificate' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
         ]);
 

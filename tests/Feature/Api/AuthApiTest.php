@@ -149,7 +149,7 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('success', false);
     }
 
-    public function test_self_service_device_reset_requires_correct_password(): void
+    public function test_self_service_device_reset_is_forbidden_for_regular_employees_and_requires_admin(): void
     {
         $user = $this->createUser(['device_hash' => hash('sha256', 'old_device_token'), 'password' => bcrypt('Demo12345!')]);
         Sanctum::actingAs($user, ['employee']);
@@ -158,8 +158,19 @@ class AuthApiTest extends TestCase
         $wrong->assertStatus(422);
         $this->assertNotNull($user->fresh()->device_hash);
 
-        $correct = $this->postJson('/api/v1/auth/device/reset', ['password' => 'Demo12345!']);
-        $correct->assertStatus(200)->assertJsonPath('success', true);
+        // Karyawan dilarang mereset sendiri perangkatnya (harus lewat admin)
+        $employeeAttempt = $this->postJson('/api/v1/auth/device/reset', ['password' => 'Demo12345!']);
+        $employeeAttempt->assertStatus(403)->assertJsonPath('success', false);
+        $this->assertNotNull($user->fresh()->device_hash);
+
+        // Administrator dapat mereset kunci perangkat karyawan
+        $admin = $this->createUser(['role' => 'admin', 'password' => bcrypt('AdminPass123!')]);
+        Sanctum::actingAs($admin, ['admin']);
+        $adminReset = $this->postJson('/api/v1/auth/device/reset', [
+            'password' => 'AdminPass123!',
+            'user_id' => $user->id,
+        ]);
+        $adminReset->assertStatus(200)->assertJsonPath('success', true);
         $this->assertNull($user->fresh()->device_hash);
     }
 

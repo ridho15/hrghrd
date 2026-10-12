@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Support\Access;
 use App\Support\Audit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -177,22 +178,32 @@ class AuthApiController extends Controller
     {
         $data = $request->validate([
             'password' => ['required', 'string'],
+            'user_id'  => ['nullable', 'integer', 'exists:users,id'],
         ]);
 
-        $user = $request->user();
+        $actor = $request->user();
 
-        if (! Hash::check($data['password'], $user->password)) {
+        if (! Hash::check($data['password'], $actor->password)) {
             throw ValidationException::withMessages([
                 'password' => ['Password salah.'],
             ]);
         }
 
-        $user->update(['device_hash' => null]);
-        Audit::record('user', $user->id, 'device_reset_self', 'Karyawan mereset sendiri perangkat presensi miliknya.');
+        // Kontrol Anti-Fraud: Karyawan tidak boleh mereset sendiri perangkat presensi tanpa persetujuan Admin
+        if (! Access::admin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reset perangkat mandiri dinonaktifkan demi keamanan. Silakan hubungi Administrator atau HRD untuk mereset kunci perangkat presensi Anda.',
+            ], 403);
+        }
+
+        $targetUser = ! empty($data['user_id']) ? User::findOrFail($data['user_id']) : $actor;
+        $targetUser->update(['device_hash' => null]);
+        Audit::record('user', $targetUser->id, 'device_reset_admin', "Kunci perangkat presensi {$targetUser->name} direset oleh Super Admin.");
 
         return response()->json([
             'success' => true,
-            'message' => 'Perangkat presensi berhasil direset. Login ulang di perangkat yang ingin dipakai presensi.',
+            'message' => "Perangkat presensi untuk {$targetUser->name} berhasil direset oleh Administrator.",
         ]);
     }
 

@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('attendance_exceptions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('shift_id')->constrained('shifts')->cascadeOnDelete();
+            $table->foreignId('shift_id')->constrained('shifts')->restrictOnDelete();
             $table->string('action');
             $table->text('reason');
             $table->string('status')->default('pending');

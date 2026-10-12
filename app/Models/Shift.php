@@ -63,6 +63,18 @@ class Shift extends Model
         return $this->hasOne(AttendanceException::class)->latestOfMany();
     }
 
+    public function exchanges(): HasMany
+    {
+        return $this->hasMany(ShiftExchange::class, 'requester_shift_id');
+    }
+
+    public function activeExchange(): HasOne
+    {
+        return $this->hasOne(ShiftExchange::class, 'requester_shift_id')
+            ->whereIn('status', ['pending_peer', 'pending_manager'])
+            ->latestOfMany();
+    }
+
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
