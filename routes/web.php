@@ -86,6 +86,7 @@ Route::middleware(['auth','active','must.change.password'])->group(function () {
     Route::post('/attendance-exceptions/{id}', [AttendanceController::class, 'reviewException'])->name('attendance.exceptions.review');
     Route::post('/attendance-records/{id}/correct', [AttendanceController::class, 'correction'])->name('attendance.correct');
     Route::post('/attendance-records/{id}/overtime', [AttendanceController::class, 'overtime'])->name('attendance.overtime');
+    Route::delete('/attendance-records/{id}', [AdminController::class, 'attendanceDestroy'])->name('attendance.destroy');
     Route::get('/leave', [LeaveController::class, 'index'])->name('leave');
     Route::get('/leave/create', [LeaveController::class, 'create'])->name('leave.create');
     Route::post('/leave', [LeaveController::class, 'store'])->name('leave.store');

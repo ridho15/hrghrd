@@ -105,7 +105,7 @@
                             <span class="font-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded text-xs border border-emerald-200">&#64;{{ $person->username }}</span>
                         @endif
                         <span>&middot;</span>
-                        <span class="font-bold text-slate-700">{{ $person->position?->name ?? 'Belum Ditentukan' }}</span>
+                        <span class="font-bold text-slate-700">{{ $person->position?->name ?? 'Staf' }}</span>
                         <span>&middot;</span>
                         <span class="text-emerald-700 font-semibold">{{ $person->branch?->name ?? 'Kantor Pusat / Semua Cabang' }}</span>
                     </p>

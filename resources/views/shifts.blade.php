@@ -196,19 +196,34 @@
                                             <span>Revisi</span>
                                         </a>
 
-                                        {{-- Tombol Batalkan / Hapus Shift (Super Admin Override) --}}
-                                        <button
-                                            type="button"
-                                            data-confirm="{{ $s->attendance ? 'PERINGATAN SUPER ADMIN: Shift ini sudah memiliki rekaman absensi. Menghapus shift ini akan menghapus jadwal dan rekaman kehadiran secara permanen. Lanjutkan tindakan Super Admin?' : 'Batalkan dan hapus jadwal shift untuk ' . ($s->user?->name ?? 'Karyawan') . ' pada tanggal ' . \Carbon\Carbon::parse($s->start_at)->translatedFormat('d M Y') . ' (' . \Carbon\Carbon::parse($s->start_at)->format('H:i') . ' – ' . \Carbon\Carbon::parse($s->end_at)->format('H:i') . ')?' }}"
-                                            data-confirm-title="{{ $s->attendance ? 'Hapus Paksa Shift (Super Admin)' : 'Batalkan Jadwal Shift' }}"
-                                            data-confirm-variant="danger"
-                                            data-confirm-btn="{{ $s->attendance ? 'Ya, Hapus Paksa & Absensi' : 'Ya, Batalkan Shift' }}"
-                                            data-confirm-action="{{ route('shifts.destroy', $s->id) }}"
-                                            class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200/80 transition-colors cursor-pointer inline-flex items-center"
-                                            title="{{ $s->attendance ? 'Super Admin: Hapus Paksa Shift Beserta Absensi' : 'Batalkan & Hapus Shift' }}"
-                                        >
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                        </button>
+                                        {{-- Tombol Batalkan / Hapus Shift --}}
+                                        @if(! $s->attendance)
+                                            <button
+                                                type="button"
+                                                data-confirm="Batalkan dan hapus jadwal shift untuk {{ $s->user?->name ?? 'Karyawan' }} pada tanggal {{ \Carbon\Carbon::parse($s->start_at)->translatedFormat('d M Y') }} ({{ \Carbon\Carbon::parse($s->start_at)->format('H:i') }} – {{ \Carbon\Carbon::parse($s->end_at)->format('H:i') }})?"
+                                                data-confirm-title="Batalkan Jadwal Shift"
+                                                data-confirm-variant="danger"
+                                                data-confirm-btn="Ya, Batalkan Shift"
+                                                data-confirm-action="{{ route('shifts.destroy', $s->id) }}"
+                                                class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200/80 transition-colors cursor-pointer inline-flex items-center"
+                                                title="Batalkan & Hapus Shift"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        @elseif(\App\Support\Access::admin())
+                                            <button
+                                                type="button"
+                                                data-confirm="PERINGATAN SUPER ADMIN: Shift ini sudah memiliki rekaman presensi. Menghapus shift ini akan menghapus paksa seluruh presensi terkait dan tercatat di Jejak Audit. Lanjutkan?"
+                                                data-confirm-title="Hapus Paksa Shift (Super Admin Override)"
+                                                data-confirm-variant="danger"
+                                                data-confirm-btn="Ya, Hapus Paksa Shift & Presensi"
+                                                data-confirm-action="{{ route('shifts.destroy', $s->id) }}"
+                                                class="p-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold border border-rose-700 transition-colors cursor-pointer inline-flex items-center shadow-xs"
+                                                title="Super Admin: Hapus Paksa Shift & Presensi Terkait"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
+                                        @endif
                                     @endif
                                 </div>
                             </td>

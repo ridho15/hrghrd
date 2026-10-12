@@ -13,12 +13,14 @@ class AuditController extends Controller
         abort_unless(Access::admin(), 403);
         $query = AuditLog::with('actor')
             ->when($request->query('search'), function ($q, $search) {
-                $q->where(function ($sub) use ($search) {
+                $search = trim((string) $search);
+                $searchUsername = ltrim($search, '@');
+                $q->where(function ($sub) use ($search, $searchUsername) {
                     $sub->where('reason', 'like', "%{$search}%")
-                        ->orWhereHas('actor', function ($u) use ($search) {
+                        ->orWhereHas('actor', function ($u) use ($search, $searchUsername) {
                             $u->where('name', 'like', "%{$search}%")
                                 ->orWhere('email', 'like', "%{$search}%")
-                                ->orWhere('username', 'like', "%{$search}%");
+                                ->orWhere('username', 'like', "%{$searchUsername}%");
                         })
                         ->orWhere('subject_id', 'like', "%{$search}%")
                         ->orWhere('subject_type', 'like', "%{$search}%")

@@ -14,8 +14,8 @@ class SuperAdminOverrideAndManualAttendanceTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Memastikan Super Admin dapat menghapus paksa jadwal shift meskipun sudah berstatus
-     * disetujui (approved) dan memiliki relasi rekaman absensi, tiket kendala, serta pertukaran shift.
+     * Memastikan Super Admin memiliki wewenang penuh menghapus paksa (force delete) jadwal shift
+     * yang sudah memiliki absensi/kendala, membersihkan relasi terkait, dan mencatat snapshot audit.
      */
     public function test_super_admin_can_force_delete_approved_shift_with_attendance_and_exceptions(): void
     {
@@ -43,7 +43,7 @@ class SuperAdminOverrideAndManualAttendanceTest extends TestCase
             'shift_id' => $shift->id,
             'user_id' => $employee->id,
             'action' => 'in',
-            'reason' => 'Tiket kendala presensi untuk pengujian penghapusan paksa.',
+            'reason' => 'Tiket kendala presensi untuk pengujian integritas proteksi shift.',
             'status' => 'approved',
         ]);
 
@@ -54,17 +54,77 @@ class SuperAdminOverrideAndManualAttendanceTest extends TestCase
         $response->assertRedirect(route('shifts'));
         $response->assertSessionHas('ok');
 
-        // Pastikan shift dan seluruh data anak terhapus bersih tanpa violation error
+        // Pastikan shift dan relasi presensi terhapus bersih
         $this->assertDatabaseMissing('shifts', ['id' => $shift->id]);
         $this->assertDatabaseMissing('attendances', ['id' => $attendance->id]);
         $this->assertDatabaseMissing('attendance_exceptions', ['id' => $exception->id]);
 
-        // Pastikan audit trail mencatat aksi force_delete oleh Super Admin
+        // Pastikan jejak audit mencatat snapshot force delete
         $this->assertDatabaseHas('audit_logs', [
             'subject_type' => 'shift',
             'subject_id' => $shift->id,
-            'action' => 'force_delete',
+            'action' => 'admin_force_delete',
         ]);
+    }
+
+    /**
+     * Memastikan Super Admin dapat menghapus rekaman presensi mandiri (direct delete) dengan audit log.
+     */
+    public function test_super_admin_can_delete_attendance_record_directly(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['role' => 'employee', 'branch_id' => $branch->id]);
+        $shift = $this->createShift($employee, $branch);
+
+        $attendance = Attendance::create([
+            'shift_id' => $shift->id,
+            'user_id' => $employee->id,
+            'status' => 'present',
+            'checkin_at' => '2026-10-12 08:00:00',
+            'late_minutes' => 0,
+            'late_units' => 0,
+            'overtime_minutes' => 0,
+        ]);
+
+        $this->actingAsAdmin();
+
+        $response = $this->delete(route('attendance.destroy', $attendance->id));
+
+        $response->assertRedirect();
+        $response->assertSessionHas('ok');
+
+        $this->assertDatabaseMissing('attendances', ['id' => $attendance->id]);
+        $this->assertDatabaseHas('audit_logs', [
+            'subject_type' => 'attendance',
+            'subject_id' => $attendance->id,
+            'action' => 'admin_delete',
+        ]);
+    }
+
+    /**
+     * Memastikan Manager cabang dilarang menghapus rekaman presensi.
+     */
+    public function test_branch_manager_forbidden_from_deleting_attendance_record(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+        $employee = $this->createUser(['role' => 'employee', 'branch_id' => $branch->id]);
+        $shift = $this->createShift($employee, $branch);
+
+        $attendance = Attendance::create([
+            'shift_id' => $shift->id,
+            'user_id' => $employee->id,
+            'status' => 'present',
+            'checkin_at' => '2026-10-12 08:00:00',
+            'late_minutes' => 0,
+            'late_units' => 0,
+            'overtime_minutes' => 0,
+        ]);
+
+        $response = $this->delete(route('attendance.destroy', $attendance->id));
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('attendances', ['id' => $attendance->id]);
     }
 
     /**

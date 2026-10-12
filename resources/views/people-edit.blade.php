@@ -88,8 +88,8 @@
                     <x-password-input 
                         name="password" 
                         label="Ganti Kata Sandi (Kosongkan jika tidak ingin mengubah)" 
-                        minlength="10" 
-                        placeholder="Masukkan sandi baru jika ingin diubah..." 
+                        minlength="8" 
+                        placeholder="Masukkan sandi baru jika ingin diubah (min. 8 karakter)..." 
                     />
                     <p class="text-xs text-slate-400 mt-1.5">
                         Biarkan isian sandi kosong jika karyawan tetap menggunakan kata sandi saat ini.

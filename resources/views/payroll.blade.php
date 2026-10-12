@@ -235,7 +235,7 @@
                             id="adjustment-user"
                             label="Pilih Karyawan"
                             required
-                            :options="collect($allBranchEmployees ?? [])->map(fn($emp) => ['value' => $emp->id, 'label' => $emp->name, 'sublabel' => ($emp->username ? '@'.$emp->username.' • ' : '') . ($emp->position?->name ?? 'Belum Ditentukan')])"
+                            :options="collect($allBranchEmployees ?? [])->map(fn($emp) => ['value' => $emp->id, 'label' => $emp->name, 'sublabel' => ($emp->username ? '@'.$emp->username.' • ' : '') . ($emp->position?->name ?? 'Staf')])"
                             placeholder="Pilih Karyawan..."
                             searchPlaceholder="Cari nama karyawan..."
                         />
@@ -300,9 +300,23 @@
                                         <a href="{{ route('payroll.slip', ['userId' => $emp->id, 'branch_id' => $branchId, 'month' => $month]) }}" class="font-bold text-slate-900 hover:text-emerald-700 hover:underline block">
                                             {{ $emp->name }}
                                         </a>
-                                        <span class="text-[11px] text-slate-400">
-                                            {{ $emp->position?->name ?? 'Belum Ditentukan' }} &middot; {{ $d['employed_days'] }}/{{ $d['calendar_days'] }} Hari
+                                        <span class="text-[11px] text-slate-400 block">
+                                            {{ $emp->position?->name ?? 'Staf' }} &middot; {{ $d['employed_days'] }}/{{ $d['calendar_days'] }} Hari
                                         </span>
+                                        @if(empty($emp->bank_account_number))
+                                            <div class="mt-0.5">
+                                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200" title="Nomor rekening bank belum diisi di profil karyawan">
+                                                    ⚠️ Rekening Belum Diisi
+                                                </span>
+                                            </div>
+                                        @endif
+                                        @if(($d['total_shifts'] ?? 0) === 0 && $emp->role === 'employee')
+                                            <div class="mt-1">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200" title="Karyawan tidak memiliki jadwal shift atau rekaman kehadiran di bulan ini">
+                                                    ⚠️ 0 Shift Terjadwal
+                                                </span>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </td>

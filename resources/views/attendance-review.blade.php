@@ -231,7 +231,7 @@
                                                                     {{ isset($inEv['latitude'], $inEv['longitude']) ? number_format($inEv['latitude'], 5) . ', ' . number_format($inEv['longitude'], 5) : '—' }}
                                                                 </span>
                                                                 @if(isset($inEv['distance_m']))
-                                                                    <span class="text-slate-500">({{ $inEv['distance_m'] }}m)</span>
+                                                                    <span class="text-slate-500">({{ number_format((float) $inEv['distance_m'], 1) }}m)</span>
                                                                 @endif
                                                             </div>
                                                             <div class="flex items-center gap-1.5 flex-wrap">
@@ -263,7 +263,7 @@
                                                                 {{ isset($outEv['latitude'], $outEv['longitude']) ? number_format($outEv['latitude'], 5) . ', ' . number_format($outEv['longitude'], 5) : '—' }}
                                                             </span>
                                                             @if(isset($outEv['distance_m']))
-                                                                <span class="text-slate-500">({{ $outEv['distance_m'] }}m)</span>
+                                                                <span class="text-slate-500">({{ number_format((float) $outEv['distance_m'], 1) }}m)</span>
                                                             @endif
                                                         </div>
                                                         <div class="flex items-center gap-1.5 flex-wrap">
@@ -319,6 +319,21 @@
                                         <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         <span>Detail</span>
                                     </button>
+
+                                    @if(\App\Support\Access::admin())
+                                        <form method="POST" action="{{ route('attendance.destroy', $a->id) }}" class="inline" onsubmit="return confirm('PERINGATAN SUPER ADMIN:\n\nApakah Anda yakin ingin MENGHAPUS rekaman presensi #{{ $a->id }} milik {{ addslashes($a->user?->name ?? 'Karyawan') }}?\n\nTindakan ini akan mencatat snapshot lengkap di Jejak Audit.');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button
+                                                type="submit"
+                                                class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-colors cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                                title="Hapus rekaman presensi ini (Otoritas Penuh Super Admin)"
+                                            >
+                                                <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                <span>Hapus</span>
+                                            </button>
+                                        </form>
+                                    @endif
 
                                     <details class="group relative">
                                         <summary class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer list-none inline-flex items-center gap-1">
@@ -490,7 +505,7 @@
                                                     <div class="p-2.5 bg-slate-50 rounded-lg">
                                                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Jarak ke Cabang</span>
                                                         <strong class="text-sm font-bold text-slate-900 block tabular-nums">
-                                                            {{ $inEvidence['distance_m'] ?? '0' }} meter
+                                                            {{ isset($inEvidence['distance_m']) ? (floor((float)$inEvidence['distance_m']) == (float)$inEvidence['distance_m'] ? (int)$inEvidence['distance_m'] : number_format((float)$inEvidence['distance_m'], 1)) . ' meter' : '0 meter' }}
                                                         </strong>
                                                         <span class="text-[10px] text-slate-500">
                                                             Batas Radius: {{ $a->shift?->branch?->radius_m ?? 100 }}m
@@ -553,7 +568,7 @@
                                             <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                                 <div>
                                                     <span class="text-slate-500 block">Jarak Check-out ke Cabang:</span>
-                                                    <strong class="font-bold text-slate-900">{{ $outEvidence['distance_m'] ?? '—' }} meter</strong>
+                                                    <strong class="font-bold text-slate-900">{{ isset($outEvidence['distance_m']) ? (floor((float)$outEvidence['distance_m']) == (float)$outEvidence['distance_m'] ? (int)$outEvidence['distance_m'] : number_format((float)$outEvidence['distance_m'], 1)) . ' meter' : '—' }}</strong>
                                                 </div>
                                                 <div>
                                                     <span class="text-slate-500 block">Koordinat Check-out:</span>
@@ -650,7 +665,7 @@
                                                 </div>
                                                 <div>
                                                     <span class="text-slate-400 text-[10px] block uppercase font-bold">Jarak ke Cabang:</span>
-                                                    <span class="font-bold text-slate-800 text-[10px]">{{ $evData['distance_m'] ?? '—' }} meter</span>
+                                                    <span class="font-bold text-slate-800 text-[10px]">{{ isset($evData['distance_m']) ? (floor((float)$evData['distance_m']) == (float)$evData['distance_m'] ? (int)$evData['distance_m'] : number_format((float)$evData['distance_m'], 1)) . ' meter' : '—' }}</span>
                                                     @if(!empty($evData['is_mocked']))
                                                         <span class="ml-1 text-[9px] font-bold text-rose-700 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">Mock GPS</span>
                                                     @endif

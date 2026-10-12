@@ -181,7 +181,7 @@
                         $peopleOpts = $people->map(fn($p) => [
                             'value' => (string)$p->id,
                             'label' => $p->name,
-                            'sublabel' => ($p->username ? '@' . $p->username . ' • ' : '') . ($p->position?->name ?? 'Belum Ditentukan') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
+                            'sublabel' => ($p->username ? '@' . $p->username . ' • ' : '') . ($p->position?->name ?? 'Staf') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
                             'branch_id' => (string)($p->branch_id ?? ''),
                         ]);
                     @endphp

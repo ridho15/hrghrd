@@ -757,6 +757,10 @@ class AdminController extends Controller
     public function shiftUpdate(ShiftUpdateRequest $request, int $id, ShiftService $service)
     {
         $shift = Shift::findOrFail($id);
+        if (! Access::admin()) {
+            abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
+            abort_if($shift->status === 'approved', 409, 'Shift sudah disetujui, tidak bisa diedit langsung. Silakan batalkan shift dan buat shift baru bila ingin mengubah jadwal.');
+        }
         $data = $request->validated();
         [$start, $end] = $this->times($data);
         $this->noOverlap($shift->user_id, $start, $end, $id);
@@ -790,30 +794,55 @@ class AdminController extends Controller
         $shift = Shift::with(['attendance', 'exceptions', 'user'])->findOrFail($id);
         if (! Access::admin()) {
             abort_unless($shift->branch_id === auth()->user()->branch_id, 403);
+        }
 
-            if ($shift->attendance()->exists() || $shift->exceptions()->exists()) {
-                return back()->withErrors(['shift' => 'Shift yang sudah memiliki rekaman absensi atau tiket kendala presensi tidak dapat dihapus. Silakan gunakan alur koreksi absensi.']);
+        $hasAttendances = $shift->attendance()->exists();
+        $hasExceptions = $shift->exceptions()->exists();
+
+        if ($hasAttendances || $hasExceptions) {
+            if (! Access::admin()) {
+                return back()->withErrors([
+                    'shift' => 'Shift yang sudah memiliki rekaman absensi atau tiket kendala presensi tidak dapat dihapus oleh manajer demi integritas data audit. Silakan gunakan alur koreksi absensi atau revisi jadwal.'
+                ]);
             }
+
+            // Otoritas Penuh Super Admin: Force Delete Shift & Rekaman Terkait
+            $date = $shift->start_at->translatedFormat('d M Y');
+            $userName = $shift->user?->name ?? 'Karyawan';
+
+            DB::transaction(function () use ($shift, $id, $userName, $date) {
+                $attSnapshot = $shift->attendance()->get()->toArray();
+                $exSnapshot = $shift->exceptions()->get()->toArray();
+
+                if (\Illuminate\Support\Facades\Schema::hasTable('shift_exchanges')) {
+                    ShiftExchange::where('requester_shift_id', $id)->orWhere('target_shift_id', $id)->delete();
+                }
+
+                $shift->attendance()->delete();
+                $shift->exceptions()->delete();
+                $shift->delete();
+
+                $auditMsg = "Jadwal shift {$userName} pada {$date} beserta presensi terkait dihapus paksa oleh Super Admin.";
+                Audit::record('shift', $id, 'admin_force_delete', $auditMsg, null, [
+                    'attendances' => $attSnapshot,
+                    'exceptions'  => $exSnapshot,
+                ]);
+            });
+
+            return redirect()->route('shifts')->with('ok', "Jadwal shift beserta rekaman presensi untuk {$userName} berhasil dihapus paksa oleh Super Admin.");
         }
 
         $date = $shift->start_at->translatedFormat('d M Y');
         $userName = $shift->user?->name ?? 'Karyawan';
 
         DB::transaction(function () use ($shift, $id, $userName, $date) {
-            if (Access::admin()) {
-                if (\Illuminate\Support\Facades\Schema::hasTable('shift_exchanges')) {
-                    ShiftExchange::where('requester_shift_id', $id)->orWhere('target_shift_id', $id)->delete();
-                }
-                $shift->exceptions()->delete();
-                $shift->attendance()?->delete();
+            if (\Illuminate\Support\Facades\Schema::hasTable('shift_exchanges')) {
+                ShiftExchange::where('requester_shift_id', $id)->orWhere('target_shift_id', $id)->delete();
             }
 
             $shift->delete();
-            $action = Access::admin() ? 'force_delete' : 'delete';
-            $auditMsg = Access::admin()
-                ? "Super Admin " . auth()->user()->name . " menghapus paksa shift ID {$id} milik {$userName} pada {$date} beserta seluruh data relasi absensi."
-                : "Jadwal shift {$userName} pada {$date} dibatalkan dan dihapus.";
-            Audit::record('shift', $id, $action, $auditMsg);
+            $auditMsg = "Jadwal shift {$userName} pada {$date} dibatalkan dan dihapus.";
+            Audit::record('shift', $id, 'delete', $auditMsg);
         });
 
         return redirect()->route('shifts')->with('ok', "Jadwal shift untuk {$userName} berhasil dibatalkan.");
@@ -827,6 +856,25 @@ class AdminController extends Controller
         $service->createManual($shift, $data, auth()->user());
 
         return back()->with('ok', 'Presensi manual berhasil dicatat oleh Super Admin.');
+    }
+
+    public function attendanceDestroy(int $id)
+    {
+        $this->admin();
+        $attendance = \App\Models\Attendance::with(['user', 'shift'])->findOrFail($id);
+
+        $shiftId = $attendance->shift_id;
+        $userName = $attendance->user?->name ?? 'Karyawan';
+        $snapshot = $attendance->toArray();
+
+        DB::transaction(function () use ($attendance, $id, $shiftId, $userName, $snapshot) {
+            $attendance->delete();
+
+            $auditMsg = "Rekaman presensi karyawan {$userName} pada shift #{$shiftId} dihapus oleh Super Admin.";
+            Audit::record('attendance', $id, 'admin_delete', $auditMsg, $snapshot);
+        });
+
+        return back()->with('ok', "Rekaman presensi untuk {$userName} pada shift #{$shiftId} berhasil dihapus oleh Super Admin.");
     }
 
 

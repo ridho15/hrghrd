@@ -94,7 +94,7 @@
                             ])->merge($people->where('id', '!=', auth()->id())->map(fn($p) => [
                                 'value' => (string)$p->id,
                                 'label' => $p->name,
-                                'sublabel' => ($p->username ? '@' . $p->username . ' • ' : '') . ($p->position?->name ?? 'Belum Ditentukan') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
+                                'sublabel' => ($p->username ? '@' . $p->username . ' • ' : '') . ($p->position?->name ?? 'Staf') . ' • ' . ($p->branch?->name ?? 'Semua Cabang'),
                             ]));
                         @endphp
                         <x-searchable-select
@@ -118,7 +118,7 @@
                         <input
                             type="text"
                             disabled
-                            value="{{ auth()->user()->name }} ({{ auth()->user()->position?->name ?? 'Belum Ditentukan' }})"
+                            value="{{ auth()->user()->name }} ({{ auth()->user()->position?->name ?? 'Staf' }})"
                             class="w-full h-11 px-3.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 cursor-not-allowed"
                         >
                     </div>

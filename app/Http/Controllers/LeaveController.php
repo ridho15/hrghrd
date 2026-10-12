@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Leave\LeaveReviewRequest;
 use App\Http\Requests\Leave\LeaveStoreRequest;
 use App\Models\LeaveRequest;
+use App\Models\Shift;
 use App\Models\User;
 use App\Services\LeaveService;
 use App\Support\Access;
@@ -80,7 +81,21 @@ class LeaveController extends Controller
             }
         }
 
-        return view('leave-show', compact('leave'));
+        $affectedShifts = Shift::with(['branch', 'attendance', 'exceptions'])
+            ->where('user_id', $leave->user_id)
+            ->whereDate('start_at', '>=', $leave->start_date)
+            ->whereDate('start_at', '<=', $leave->end_date)
+            ->orderBy('start_at')
+            ->get();
+
+        $branchPeers = User::active()
+            ->when($leave->user?->branch_id, fn ($q, $bid) => $q->where('branch_id', $bid))
+            ->where('id', '!=', $leave->user_id)
+            ->whereIn('role', ['employee', 'manager'])
+            ->orderBy('name')
+            ->get();
+
+        return view('leave-show', compact('leave', 'affectedShifts', 'branchPeers'));
     }
 
     public function store(LeaveStoreRequest $request, LeaveService $service)
@@ -94,7 +109,14 @@ class LeaveController extends Controller
     {
         $data = $request->validated();
         $leave = LeaveRequest::findOrFail($id);
-        $service->review($leave, auth()->user(), $data['approved_dates'] ?? [], $data['paid_dates'] ?? [], $data['review_note']);
+        $service->review(
+            $leave,
+            auth()->user(),
+            $data['approved_dates'] ?? [],
+            $data['paid_dates'] ?? [],
+            $data['review_note'],
+            $data['replacements'] ?? []
+        );
 
         return redirect()->route('leave.show', $leave->id)->with('ok', 'Keputusan pengajuan berhasil disimpan per tanggal.');
     }

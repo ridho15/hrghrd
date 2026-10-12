@@ -244,7 +244,7 @@
                                     {{ $p->branch?->name ?? 'Semua Cabang / Pusat' }}
                                 </span>
                                 <span class="text-[11px] text-slate-400 block">
-                                    {{ $p->position?->name ?? 'Belum Ditentukan' }}
+                                    {{ $p->position?->name ?? 'Staf' }}
                                 </span>
                             </td>
 

@@ -217,7 +217,7 @@
                                 </div>
                             </td>
                             <td class="py-3.5 px-4 whitespace-nowrap font-medium text-slate-800">
-                                {{ $u->position?->name ?? 'Belum Ditentukan' }}
+                                {{ $u->position?->name ?? 'Staf' }}
                             </td>
                             <td class="py-3.5 px-4 text-center whitespace-nowrap">
                                 <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase {{ $u->role === 'manager' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200' }}">

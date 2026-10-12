@@ -99,8 +99,26 @@ final class AttendanceService
                 $distance = self::distance((float) $branch->latitude, (float) $branch->longitude, (float) $input['latitude'], (float) $input['longitude']);
                 $evidence['distance_m'] = round($distance);
 
-                if ((float) $input['accuracy'] > 100 || $distance > $branch->radius_m) {
-                    $this->reject($user->id, $shiftId, $action, 'Lokasi di luar area atau akurasi GPS rendah', $evidence, $now);
+                if ((float) $input['accuracy'] > 100) {
+                    $this->reject(
+                        $user->id,
+                        $shiftId,
+                        $action,
+                        'Akurasi sinyal GPS perangkat rendah (±' . round((float) $input['accuracy']) . 'm). Harap aktifkan Wi-Fi atau dekati jendela untuk mengunci sinyal GPS.',
+                        $evidence,
+                        $now
+                    );
+                }
+
+                if ($distance > $branch->radius_m) {
+                    $this->reject(
+                        $user->id,
+                        $shiftId,
+                        $action,
+                        'Posisi terdeteksi berjarak ' . round($distance) . ' meter dari kantor (Batas radius cabang: ' . $branch->radius_m . ' meter).',
+                        $evidence,
+                        $now
+                    );
                 }
 
                 $start = Carbon::parse($shift->start_at, 'Asia/Jakarta');

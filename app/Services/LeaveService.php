@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\LeaveDay;
 use App\Models\LeaveRequest;
+use App\Models\Shift;
 use App\Models\User;
+use App\Services\ShiftExchangeService;
 use App\Support\Access;
 use App\Support\Audit;
 use App\Support\Period;
@@ -20,6 +22,8 @@ class LeaveService
         $userId = (int) ($data['user_id'] ?? $actor->id);
         $start = Carbon::parse($data['start_date'], 'Asia/Jakarta');
         $end = Carbon::parse($data['end_date'], 'Asia/Jakarta');
+
+        abort_if(strlen(trim((string) ($data['reason'] ?? ''))) < 10, 422, 'Alasan pengajuan izin/cuti minimal 10 karakter.');
 
         $employee = User::findOrFail($userId);
         foreach ($start->copy()->daysUntil($end) as $date) {
@@ -74,7 +78,7 @@ class LeaveService
         });
     }
 
-    public function review(LeaveRequest $leave, User $reviewer, array $approvedDates, array $paidDates, string $note): void
+    public function review(LeaveRequest $leave, User $reviewer, array $approvedDates, array $paidDates, string $note, array $replacements = []): void
     {
         abort_unless($leave->status === 'pending', 409);
         $employee = $leave->user;
@@ -100,7 +104,7 @@ class LeaveService
             abort_if(count($approvedDates) > $remaining, 422, "Persetujuan melebihi sisa kuota cuti tahunan karyawan (tersisa {$remaining} hari, disetujui " . count($approvedDates) . " hari).");
         }
 
-        DB::transaction(function () use ($leave, $reviewer, $all, $approvedDates, $paidDates, $note) {
+        DB::transaction(function () use ($leave, $reviewer, $all, $approvedDates, $paidDates, $note, $replacements) {
             $paidSick = 0;
             foreach ($all as $day) {
                 $dayDate = (string) $day->date;
@@ -130,12 +134,39 @@ class LeaveService
                 'reviewed_at' => now('Asia/Jakarta'),
             ]);
 
+            $reassignedShiftIds = [];
+            if (! empty($replacements) && count($approvedDates) > 0) {
+                $exchangeService = app(ShiftExchangeService::class);
+                foreach ($replacements as $shiftId => $replacementUserId) {
+                    if (! empty($replacementUserId)) {
+                        $shift = Shift::find($shiftId);
+                        $replacementUser = User::find($replacementUserId);
+                        if ($shift && $replacementUser && (int) $shift->user_id === (int) $leave->user_id) {
+                            $shiftDate = $shift->start_at->toDateString();
+                            if (in_array($shiftDate, $approvedDates, true)) {
+                                $exchangeService->directReassign(
+                                    $shift,
+                                    $replacementUser,
+                                    $reviewer,
+                                    "Penugasan lembur pengganti karena izin karyawan #{$leave->id}"
+                                );
+                                $reassignedShiftIds[] = [
+                                    'shift_id' => $shift->id,
+                                    'replacement_id' => $replacementUser->id,
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+
             $actualPaidDates = $all->where('paid', true)->pluck('date')->map(fn ($d) => (string) $d)->values()->all();
 
             Audit::record('leave_request', $leave->id, 'review', $note, null, [
                 'status' => $status,
                 'approved_dates' => $approvedDates,
                 'paid_dates' => $actualPaidDates,
+                'reassigned_shifts' => $reassignedShiftIds,
             ]);
         });
     }

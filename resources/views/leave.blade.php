@@ -185,7 +185,7 @@
                                         @foreach($days[$r->id]->take(3) as $d)
                                             <span class="px-2 py-0.5 rounded text-[10px] font-bold tabular-nums inline-flex items-center gap-1 {{ $d->status === 'approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : ($d->status === 'rejected' ? 'bg-rose-50 text-rose-700 border border-rose-200/60' : 'bg-slate-100 text-slate-600 border border-slate-200') }}">
                                                 <span>Tgl {{ substr($d->date, 8, 2) }}</span>
-                                                <span class="text-[9px] font-semibold opacity-80">({{ $d->status === 'approved' ? 'Disetujui' : ($d->status === 'rejected' ? 'Ditolak' : 'Pending') }})</span>
+                                                <span class="text-[9px] font-semibold opacity-80">({{ $d->status === 'approved' ? ($d->paid ? 'Paid' : 'Unpaid') : ($d->status === 'rejected' ? 'Ditolak' : 'Pending') }})</span>
                                             </span>
                                         @endforeach
                                         @if($days[$r->id]->count() > 3)

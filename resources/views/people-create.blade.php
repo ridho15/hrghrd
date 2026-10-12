@@ -89,10 +89,10 @@
                 <div class="sm:col-span-2">
                     <x-password-input 
                         name="password" 
-                        label="Kata Sandi Sementara (Minimal 10 Karakter)" 
-                        minlength="10" 
+                        label="Kata Sandi Sementara (Minimal 8 Karakter)" 
+                        minlength="8" 
                         required 
-                        placeholder="••••••••••" 
+                        placeholder="••••••••" 
                     />
                     <p class="text-xs text-slate-400 mt-1.5">
                         Gunakan kombinasi huruf, angka, atau simbol. Karyawan dapat memperbarui sandi ini secara mandiri nanti.

@@ -44,7 +44,7 @@
                         {{ $shift->employee_name }}
                     </h1>
                     <p class="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-2">
-                        <span>Jabatan: <strong class="text-slate-700">{{ $shift->user?->position?->name ?? 'Belum Ditentukan' }}</strong></span>
+                        <span>Jabatan: <strong class="text-slate-700">{{ $shift->user?->position?->name ?? 'Staf' }}</strong></span>
                         <span>&middot;</span>
                         <span>Cabang: <strong class="text-slate-700">{{ $shift->branch_name }}</strong></span>
                         @if($shift->user)
@@ -126,20 +126,44 @@
                         </a>
                     @endif
 
-                    <button
-                        type="button"
-                        data-confirm="{{ $shift->attendance ? 'PERINGATAN SUPER ADMIN: Shift ini sudah memiliki rekaman absensi dan berstatus disetujui. Menghapus shift ini akan menghapus jadwal dan data kehadiran terkait secara permanen. Lanjutkan tindakan Super Admin?' : 'Apakah Anda yakin ingin membatalkan dan menghapus jadwal shift untuk ' . $shift->employee_name . ' pada ' . \Carbon\Carbon::parse($shift->start_at)->translatedFormat('d M Y') . '?' }}"
-                        data-confirm-title="{{ $shift->attendance ? 'Hapus Paksa Shift (Super Admin)' : 'Batalkan Jadwal Shift' }}"
-                        data-confirm-variant="danger"
-                        data-confirm-btn="{{ $shift->attendance ? 'Ya, Hapus Paksa & Absensi' : 'Ya, Batalkan Jadwal' }}"
-                        data-confirm-action="{{ route('shifts.destroy', $shift->id) }}"
-                        class="p-2.5 rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
-                        title="{{ $shift->attendance ? 'Super Admin: Hapus Paksa Shift Beserta Absensi' : 'Batalkan & Hapus Shift' }}"
-                    >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                    </button>
+                    @if(! $shift->attendance && ! $shift->exceptions?->count())
+                        <button
+                            type="button"
+                            data-confirm="{{ 'Apakah Anda yakin ingin membatalkan dan menghapus jadwal shift untuk ' . $shift->employee_name . ' pada ' . \Carbon\Carbon::parse($shift->start_at)->translatedFormat('d M Y') . '?' }}"
+                            data-confirm-title="Batalkan Jadwal Shift"
+                            data-confirm-variant="danger"
+                            data-confirm-btn="Ya, Batalkan Jadwal"
+                            data-confirm-action="{{ route('shifts.destroy', $shift->id) }}"
+                            class="p-2.5 rounded-xl text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
+                            title="Batalkan & Hapus Shift"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    @elseif(\App\Support\Access::admin())
+                        {{-- Super Admin Force Delete Override --}}
+                        <button
+                            type="button"
+                            data-confirm="{{ 'PERINGATAN SUPER ADMIN: Shift ini sudah memiliki rekaman absensi/tiket kendala. Menghapus shift ini akan menghapus paksa seluruh presensi terkait dan tercatat di Jejak Audit. Lanjutkan penghapusan jadwal untuk ' . $shift->employee_name . '?' }}"
+                            data-confirm-title="Hapus Paksa Shift (Super Admin Override)"
+                            data-confirm-variant="danger"
+                            data-confirm-btn="Ya, Hapus Paksa Shift & Presensi"
+                            data-confirm-action="{{ route('shifts.destroy', $shift->id) }}"
+                            class="px-3.5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+                            title="Super Admin: Hapus Paksa Shift & Presensi Terkait"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            <span>Hapus Paksa (Admin)</span>
+                        </button>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-500 border border-slate-200 text-xs font-semibold" title="Shift ini memiliki catatan presensi atau tiket kendala sehingga tidak dapat dihapus demi integritas audit">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            <span>Terkunci (Ada Presensi)</span>
+                        </span>
+                    @endif
                 @endif
             </div>
         </div>

@@ -91,9 +91,9 @@ class DeletionAndLifecycleActionTest extends TestCase
 
     public function test_shift_with_attendance_cannot_be_deleted(): void
     {
-        $this->actingAsAdmin();
-        $user = $this->createUser();
         $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+        $user = $this->createUser(['branch_id' => $branch->id]);
         $shift = $this->createShift($user, $branch);
 
         Attendance::create([

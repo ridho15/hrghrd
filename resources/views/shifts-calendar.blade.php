@@ -164,6 +164,27 @@
         </form>
     </div>
 
+    {{-- Legenda Shift & Status --}}
+    <div class="flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-slate-500">
+        <div class="flex flex-wrap items-center gap-3">
+            <span class="inline-flex items-center gap-1.5 font-medium">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-sky-100 text-sky-800 border border-sky-300/80">S1</span>
+                <span>Shift 1 (Pagi: Mulai &lt; 12:00)</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 font-medium">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-800 border border-amber-300/80">S2</span>
+                <span>Shift 2 (Siang: Mulai &ge; 12:00)</span>
+            </span>
+            <span class="inline-flex items-center gap-1.5 font-medium">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-500 bg-slate-100 border border-slate-200">Libur</span>
+                <span>Hari Libur (Off-day)</span>
+            </span>
+        </div>
+        <div class="text-[11px] text-slate-400">
+            * Klik pada kartu shift untuk melihat rincian & menugaskan staf pengganti
+        </div>
+    </div>
+
     {{-- Grid Kalender Bulanan --}}
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         {{-- Header Nama Hari (Senin - Minggu) --}}
@@ -226,10 +247,23 @@
 
                     {{-- Daftar Chip Shift di Tanggal Ini --}}
                     <div class="space-y-1.5 flex-1 overflow-y-auto max-h-[120px] pr-0.5">
+                        {{-- Indikator Hari Libur (Off-Day) saat filter karyawan aktif --}}
+                        @if($dayCount === 0 && (request()->filled('user_id') || auth()->user()->role === 'employee'))
+                            <div class="h-full flex items-center justify-center p-2 min-h-[50px]">
+                                <span class="px-2.5 py-1 rounded-md text-[10px] font-extrabold text-slate-400 bg-slate-100/80 border border-slate-200/60 uppercase tracking-wider">
+                                    Libur
+                                </span>
+                            </div>
+                        @endif
+
                         @foreach($dayShifts->take(3) as $shiftItem)
                             @php
                                 $startTime = \Carbon\Carbon::parse($shiftItem->start_at)->format('H:i');
                                 $endTime = \Carbon\Carbon::parse($shiftItem->end_at)->format('H:i');
+                                $startHour = (int) \Carbon\Carbon::parse($shiftItem->start_at)->format('H');
+                                $isShift1 = $startHour < 12; // Shift 1 (Pagi: mulai < 12:00) vs Shift 2 (Siang: mulai >= 12:00)
+                                $shiftTypeLabel = $isShift1 ? 'Shift 1 (Pagi)' : 'Shift 2 (Siang)';
+                                $shiftBadge = $isShift1 ? 'S1' : 'S2';
                                 $isApproved = $shiftItem->status === 'approved';
                                 $attStatus = $shiftItem->attendance?->status;
 
@@ -262,7 +296,10 @@
                                 class="w-full text-left p-1.5 rounded-lg border {{ $chipTheme }} transition-all text-[11px] block shadow-2xs group cursor-pointer"
                             >
                                 <div class="flex items-center justify-between gap-1">
-                                    <div class="flex items-center gap-1 truncate font-bold">
+                                    <div class="flex items-center gap-1.5 truncate font-bold">
+                                        <span class="px-1 py-0.2 rounded text-[9px] font-black uppercase tracking-wider shrink-0 {{ $isShift1 ? 'bg-sky-100 text-sky-800 border border-sky-300/80' : 'bg-amber-100 text-amber-800 border border-amber-300/80' }}">
+                                            {{ $shiftBadge }}
+                                        </span>
                                         <span class="w-1.5 h-1.5 rounded-full {{ $dotColor }} shrink-0"></span>
                                         <span class="truncate">{{ $shiftItem->user?->name ?? 'Karyawan' }}</span>
                                     </div>
@@ -313,6 +350,12 @@
                                         </div>
 
                                         <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1">
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-500">Tipe Shift:</span>
+                                                <span class="font-bold {{ $isShift1 ? 'text-sky-700' : 'text-amber-700' }}">
+                                                    {{ $shiftTypeLabel }}
+                                                </span>
+                                            </div>
                                             <div class="flex justify-between">
                                                 <span class="text-slate-500">Tanggal Shift:</span>
                                                 <span class="font-bold text-slate-900">{{ \Carbon\Carbon::parse($shiftItem->start_at)->translatedFormat('l, d F Y') }}</span>

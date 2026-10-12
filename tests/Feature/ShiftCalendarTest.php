@@ -127,4 +127,51 @@ class ShiftCalendarTest extends TestCase
         $response->assertOk();
         $response->assertSee('Hadir');
     }
+
+    public function test_calendar_displays_s1_and_s2_badges_and_legend(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+        $emp = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan Roster']);
+
+        // Shift 1 (Pagi: 07:00)
+        $this->createShift($emp, $branch, [
+            'start_at' => '2026-10-06 07:00:00',
+            'end_at'   => '2026-10-06 15:00:00',
+            'status'   => 'approved',
+        ]);
+
+        // Shift 2 (Siang: 14:00)
+        $this->createShift($emp, $branch, [
+            'start_at' => '2026-10-07 14:00:00',
+            'end_at'   => '2026-10-07 22:00:00',
+            'status'   => 'approved',
+        ]);
+
+        $response = $this->get('/shifts/calendar?month=2026-10');
+        $response->assertOk();
+        $response->assertSee('S1');
+        $response->assertSee('S2');
+        $response->assertSee('Shift 1 (Pagi: Mulai &lt; 12:00)', false);
+        $response->assertSee('Shift 2 (Siang: Mulai &ge; 12:00)', false);
+    }
+
+    public function test_calendar_displays_libur_badge_when_employee_filtered(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+        $emp = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan Libur']);
+
+        // Hanya 1 shift di tanggal 10 Oktober
+        $this->createShift($emp, $branch, [
+            'start_at' => '2026-10-10 08:00:00',
+            'end_at'   => '2026-10-10 16:00:00',
+            'status'   => 'approved',
+        ]);
+
+        // Filter per user_id karyawan
+        $response = $this->get('/shifts/calendar?month=2026-10&user_id=' . $emp->id);
+        $response->assertOk();
+        $response->assertSee('Libur');
+    }
 }

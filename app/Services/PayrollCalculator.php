@@ -106,6 +106,7 @@ final class PayrollCalculator
             'overtime_minutes'=>$overtimeMinutes, 'overtime_sources'=>$overtimeSources, 'overtime_pay'=>$overtime,
             'adjustments'=>$adjustments, 'manual_total'=>$manual,
             'bonus_total'=>$bonusTotal, 'kasbon_total'=>$kasbonTotal,
+            'total_shifts'=>$shifts->count(), 'present_shifts'=>$attendances->where('status', 'present')->count(),
             'net'=>$base-$unpaid-$late+$overtime+$manual,
         ];
     }

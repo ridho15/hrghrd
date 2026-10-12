@@ -21,8 +21,8 @@ class PhaseOneQaFixesVerificationTest extends TestCase
 
     public function test_shift_with_attendance_cannot_be_deleted(): void
     {
-        $this->actingAsAdmin();
         $branch = $this->createBranch();
+        $this->actingAsManager($branch);
         $user = $this->createUser(['branch_id' => $branch->id]);
 
         $shift = Shift::create([
@@ -51,8 +51,8 @@ class PhaseOneQaFixesVerificationTest extends TestCase
 
     public function test_shift_with_exception_ticket_cannot_be_deleted(): void
     {
-        $this->actingAsAdmin();
         $branch = $this->createBranch();
+        $this->actingAsManager($branch);
         $user = $this->createUser(['branch_id' => $branch->id]);
 
         $shift = Shift::create([

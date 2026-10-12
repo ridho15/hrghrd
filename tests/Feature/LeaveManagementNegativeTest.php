@@ -237,4 +237,39 @@ class LeaveManagementNegativeTest extends TestCase
         $response->assertStatus(200);
         $this->assertStringContainsString('inline', (string) $response->headers->get('content-disposition'));
     }
+
+    public function test_leave_submission_fails_when_reason_less_than_10_characters(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsEmployee($branch);
+
+        $start = now('Asia/Jakarta')->addDays(10)->toDateString();
+
+        $response = $this->post('/leave', [
+            'type' => 'leave',
+            'start_date' => $start,
+            'end_date' => $start,
+            'reason' => 'Pendek', // Only 6 characters (< 10)
+        ]);
+
+        $response->assertSessionHasErrors(['reason']);
+    }
+
+    public function test_leave_service_throws_422_when_reason_less_than_10_characters(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['role' => 'employee', 'branch_id' => $branch->id]);
+
+        $service = new \App\Services\LeaveService();
+
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        $this->expectExceptionMessage('Alasan pengajuan izin/cuti minimal 10 karakter.');
+
+        $service->submit($employee, [
+            'type' => 'leave',
+            'start_date' => now('Asia/Jakarta')->addDays(10)->toDateString(),
+            'end_date' => now('Asia/Jakarta')->addDays(10)->toDateString(),
+            'reason' => 'Cuti saja', // 9 characters
+        ]);
+    }
 }
