@@ -17,6 +17,7 @@ class ShiftExchange extends Model
         'requester_shift_id',
         'replacement_id',
         'target_shift_id',
+        'target_date',
         'reason',
         'replacement_note',
         'review_note',
@@ -29,8 +30,9 @@ class ShiftExchange extends Model
     protected function casts(): array
     {
         return [
+            'target_date'       => 'date:Y-m-d',
             'peer_responded_at' => 'datetime',
-            'reviewed_at' => 'datetime',
+            'reviewed_at'       => 'datetime',
         ];
     }
 
@@ -80,5 +82,21 @@ class ShiftExchange extends Model
             $q->where('requester_id', $userId)
                 ->orWhere('replacement_id', $userId);
         });
+    }
+
+    public function scopeOpenSlot($query)
+    {
+        return $query->whereIn('type', ['change_shift', 'change_off_day']);
+    }
+
+    public function getIsOpenSlotAttribute(): bool
+    {
+        return in_array($this->type, ['change_shift', 'change_off_day'], true);
+    }
+
+    public function getTargetPositionNameAttribute(): ?string
+    {
+        return $this->targetShift?->position?->name
+            ?? ($this->targetShift?->user?->position?->name ?? $this->requester?->position?->name ?? 'Staf');
     }
 }

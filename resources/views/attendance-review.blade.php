@@ -357,8 +357,14 @@
 
                             {{-- Keterlambatan --}}
                             <td class="py-4 px-4 tabular-nums">
-                                <span class="font-semibold text-slate-800">{{ $a->late_minutes }} Menit</span>
-                                <span class="text-xs text-slate-500 block">({{ $a->late_units }} Unit Potongan)</span>
+                                @if(($a->late_minutes ?? 0) > 0)
+                                    <span class="font-semibold text-rose-700">{{ $a->late_minutes }} Menit</span>
+                                    <span class="text-xs text-slate-500 block">({{ $a->late_units }} Unit Potongan)</span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Tepat Waktu
+                                    </span>
+                                @endif
                             </td>
 
                             {{-- Lembur & Approval --}}
@@ -538,7 +544,7 @@
                                                         </span>
                                                     @else
                                                         <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                                                            Tepat Waktu (0 Menit Terlambat)
+                                                            Tepat Waktu
                                                         </span>
                                                     @endif
                                                 </div>

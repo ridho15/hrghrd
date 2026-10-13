@@ -284,15 +284,25 @@
                     </div>
                     <div class="flex justify-between py-2 border-b border-slate-100">
                         <span class="text-slate-500">Keterlambatan</span>
-                        <span class="font-semibold {{ ($shift->attendance->late_minutes ?? 0) > 0 ? 'text-amber-700 font-bold' : 'text-slate-700' }}">
-                            {{ $shift->attendance->late_minutes ?? 0 }} Menit
-                        </span>
+                        @if(($shift->attendance->late_minutes ?? 0) > 0)
+                            <span class="font-semibold text-rose-700 font-bold">
+                                {{ $shift->attendance->late_minutes }} Menit
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Tepat Waktu
+                            </span>
+                        @endif
                     </div>
                     <div class="flex justify-between py-2 border-b border-slate-100">
                         <span class="text-slate-500">Lembur (Overtime)</span>
-                        <span class="font-semibold text-slate-700">
-                            {{ $shift->attendance->overtime_minutes ?? 0 }} Menit
-                        </span>
+                        @if(($shift->attendance->overtime_minutes ?? 0) > 0)
+                            <span class="font-semibold text-slate-800 font-bold">
+                                {{ $shift->attendance->overtime_minutes }} Menit
+                            </span>
+                        @else
+                            <span class="text-slate-400 font-medium">—</span>
+                        @endif
                     </div>
                 </div>
             @else

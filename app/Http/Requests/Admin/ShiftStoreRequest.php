@@ -69,7 +69,9 @@ class ShiftStoreRequest extends FormRequest
         }
 
         return array_merge($base, [
-            'user_id'      => 'required|exists:users,id',
+            'is_open_slot' => 'nullable|boolean',
+            'position_id'  => 'nullable|exists:positions,id',
+            'user_id'      => 'required_unless:is_open_slot,1|nullable|exists:users,id',
             'date'         => 'required|date',
             'auto_approve' => 'nullable|boolean',
         ]);
@@ -114,9 +116,11 @@ class ShiftStoreRequest extends FormRequest
                     $validator->errors()->add('shift', 'Seluruh karyawan yang dipilih harus terdaftar di cabang shift ini.');
                 }
             } else {
-                $userBranch = DB::table('users')->where('id', $this->input('user_id'))->value('branch_id');
-                if ($userBranch && (int) $userBranch !== $branchId) {
-                    $validator->errors()->add('shift', 'Karyawan harus berada di cabang shift.');
+                if ($this->filled('user_id')) {
+                    $userBranch = DB::table('users')->where('id', $this->input('user_id'))->value('branch_id');
+                    if ($userBranch && (int) $userBranch !== $branchId) {
+                        $validator->errors()->add('shift', 'Karyawan harus berada di cabang shift.');
+                    }
                 }
             }
         });

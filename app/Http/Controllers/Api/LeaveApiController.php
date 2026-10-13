@@ -84,20 +84,79 @@ class LeaveApiController extends Controller
     }
 
     /**
-     * Ajukan Izin / Sakit
+     * Tipe Permohonan & Kuota Cuti Karyawan
      *
-     * Mengirim permohonan izin atau surat sakit baru.
-     * Dapat melampirkan file surat dokter (`certificate` file: pdf/jpg/png max 2MB).
+     * Mengembalikan daftar jenis izin yang dapat diajukan (cuti tahunan, sakit, hari libur, pergantian cuti),
+     * sisa kuota cuti tahunan, dan daftar cuti aktif yang dapat diganti (rescheduled).
+     */
+    public function types(Request $request)
+    {
+        $actor = $request->user();
+
+        $activeLeaves = LeaveRequest::where('user_id', $actor->id)
+            ->whereIn('status', ['approved', 'pending'])
+            ->whereIn('type', ['leave', 'leave_exchange'])
+            ->latest('start_date')
+            ->get(['id', 'type', 'start_date', 'end_date', 'reason', 'status']);
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'annual_leave_quota'   => $actor->annual_leave_quota ?? 12,
+                'used_leave_days'      => $actor->usedLeaveDays((int) now('Asia/Jakarta')->year),
+                'remaining_leave_days' => $actor->remainingLeaveDays(),
+                'leave_notice_days'    => \App\Support\Rules::int('leave_notice_days'),
+                'types'                => [
+                    [
+                        'key'                  => 'leave',
+                        'label'                => 'Cuti Tahunan / Izin Biasa',
+                        'description'          => 'Mengurangi kuota cuti tahunan, wajib diajukan minimal H-' . \App\Support\Rules::int('leave_notice_days') . '.',
+                        'requires_certificate' => false,
+                        'impacts_quota'        => true,
+                    ],
+                    [
+                        'key'                  => 'sick',
+                        'label'                => 'Izin Sakit',
+                        'description'          => 'Wajib melampirkan surat keterangan dokter resmi (PDF/JPG maks 5 MB).',
+                        'requires_certificate' => true,
+                        'impacts_quota'        => false,
+                    ],
+                    [
+                        'key'                  => 'day_off',
+                        'label'                => 'Pengajuan Hari Libur (Day Off)',
+                        'description'          => 'Pengajuan hari libur mingguan/roster, tidak memotong kuota cuti tahunan.',
+                        'requires_certificate' => false,
+                        'impacts_quota'        => false,
+                    ],
+                    [
+                        'key'                  => 'leave_exchange',
+                        'label'                => 'Pergantian Tanggal Cuti',
+                        'description'          => 'Menggeser/mengganti tanggal cuti aktif yang telah diajukan atau disetujui sebelumnya.',
+                        'requires_certificate' => false,
+                        'impacts_quota'        => true,
+                    ],
+                ],
+                'reschedulable_leaves' => $activeLeaves,
+            ],
+        ]);
+    }
+
+    /**
+     * Ajukan Izin / Sakit / Hari Libur / Pergantian Cuti
+     *
+     * Mengirim permohonan baru.
+     * Dapat melampirkan file surat dokter (`certificate` file: pdf/jpg/png max 5MB).
      */
     public function store(Request $request, LeaveService $service)
     {
         $data = $request->validate([
-            'user_id'     => ['nullable', 'integer', 'exists:users,id'],
-            'type'        => ['required', 'in:leave,sick'],
-            'start_date'  => ['required', 'date', 'date_format:Y-m-d'],
-            'end_date'    => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],
-            'reason'      => ['required', 'string', 'min:10', 'max:500'],
-            'certificate' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'user_id'           => ['nullable', 'integer', 'exists:users,id'],
+            'original_leave_id' => ['nullable', 'required_if:type,leave_exchange', 'integer', 'exists:leave_requests,id'],
+            'type'              => ['required', 'in:leave,sick,day_off,leave_exchange'],
+            'start_date'        => ['required', 'date', 'date_format:Y-m-d'],
+            'end_date'          => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'reason'            => ['required', 'string', 'min:10', 'max:500'],
+            'certificate'       => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
         ]);
 
         $actor = $request->user();
@@ -118,7 +177,39 @@ class LeaveApiController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Pengajuan izin berhasil dikirim.',
+            'message' => 'Pengajuan perizinan/libur berhasil dikirim.',
+            'data'    => new LeaveRequestResource($leave->load(['user.branch', 'days'])),
+        ], 201);
+    }
+
+    /**
+     * Pengajuan Pergantian Cuti Langsung (Shortcut Reschedule)
+     *
+     * Mengajukan pergantian tanggal untuk cuti tertentu.
+     */
+    public function exchange(Request $request, int $id, LeaveService $service)
+    {
+        $data = $request->validate([
+            'start_date' => ['required', 'date', 'date_format:Y-m-d'],
+            'end_date'   => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+            'reason'     => ['required', 'string', 'min:10', 'max:500'],
+        ]);
+
+        $data['type'] = 'leave_exchange';
+        $data['original_leave_id'] = $id;
+
+        try {
+            $leave = $service->submit($request->user(), $data);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage() ?: 'Permohonan pergantian cuti ditolak.',
+            ], $e->getStatusCode());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permohonan pergantian cuti berhasil dikirim.',
             'data'    => new LeaveRequestResource($leave->load(['user.branch', 'days'])),
         ], 201);
     }
@@ -127,7 +218,7 @@ class LeaveApiController extends Controller
      * Review Pengajuan Izin
      *
      * Memberikan keputusan (persetujuan/penolakan) per hari terhadap pengajuan izin.
-     * Hanya dapat dilakukan oleh Manager atau Admin.
+     * Mendukung opsi `vacate_shifts` (boolean) untuk otomatis membuka jadwal terdampak menjadi slot kosong setingkat.
      */
     public function review(Request $request, int $id, LeaveService $service)
     {
@@ -141,6 +232,8 @@ class LeaveApiController extends Controller
             'paid_dates'       => ['nullable', 'array'],
             'paid_dates.*'     => ['date_format:Y-m-d'],
             'review_note'      => ['required', 'string', 'min:3', 'max:500'],
+            'vacate_shifts'    => ['nullable', 'boolean'],
+            'replacements'     => ['nullable', 'array'],
         ]);
 
         $leave = LeaveRequest::with('user')->findOrFail($id);
@@ -151,7 +244,9 @@ class LeaveApiController extends Controller
                 $request->user(),
                 $data['approved_dates'] ?? [],
                 $data['paid_dates'] ?? [],
-                $data['review_note']
+                $data['review_note'],
+                $data['replacements'] ?? [],
+                (bool) ($data['vacate_shifts'] ?? false)
             );
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             return response()->json([

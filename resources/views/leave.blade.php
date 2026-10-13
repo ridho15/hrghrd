@@ -69,8 +69,10 @@
             <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
                 <select name="type" class="h-8 px-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 cursor-pointer shadow-2xs">
                     <option value="">Semua Jenis</option>
-                    <option value="leave" @selected(request('type') === 'leave')>Izin / Cuti</option>
-                    <option value="sick" @selected(request('type') === 'sick')>Sakit (Surat Dokter)</option>
+                    <option value="leave" @selected(request('type') === 'leave')>Cuti Tahunan / Izin</option>
+                    <option value="sick" @selected(request('type') === 'sick')>Izin Sakit</option>
+                    <option value="day_off" @selected(request('type') === 'day_off')>Hari Libur (Day Off)</option>
+                    <option value="leave_exchange" @selected(request('type') === 'leave_exchange')>Pergantian Cuti</option>
                 </select>
 
                 <select name="status" class="h-8 px-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 cursor-pointer shadow-2xs">
@@ -110,6 +112,13 @@
                                 (auth()->user()->role === 'manager' && $r->user?->branch_id === auth()->user()->branch_id) ||
                                 $r->user_id === auth()->id()
                             ));
+
+                            $typeMeta = match($r->type) {
+                                'sick' => ['label' => 'Izin Sakit', 'class' => 'bg-purple-50 text-purple-700 border-purple-200'],
+                                'day_off' => ['label' => 'Hari Libur', 'class' => 'bg-amber-50 text-amber-800 border-amber-200'],
+                                'leave_exchange' => ['label' => 'Ganti Cuti', 'class' => 'bg-sky-50 text-sky-700 border-sky-200'],
+                                default => ['label' => 'Cuti Tahunan', 'class' => 'bg-blue-50 text-blue-700 border-blue-200'],
+                            };
                         @endphp
                         <tr class="hover:bg-slate-50/60 transition-colors">
                             {{-- Nama Karyawan --}}
@@ -130,18 +139,25 @@
                             {{-- Jenis & Berkas Surat Dokter --}}
                             <td class="py-4 px-4 whitespace-nowrap">
                                 <div class="space-y-1">
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold {{ $r->type === 'sick' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold border {{ $typeMeta['class'] }}">
                                         @if($r->type === 'sick')
                                             <svg class="w-3.5 h-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                             </svg>
-                                            <span>Surat Sakit</span>
+                                        @elseif($r->type === 'day_off')
+                                            <svg class="w-3.5 h-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                        @elseif($r->type === 'leave_exchange')
+                                            <svg class="w-3.5 h-3.5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                            </svg>
                                         @else
                                             <svg class="w-3.5 h-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                             </svg>
-                                            <span>Izin / Cuti</span>
                                         @endif
+                                        <span>{{ $typeMeta['label'] }}</span>
                                     </span>
                                     @if($r->certificate_path)
                                         <div class="block">

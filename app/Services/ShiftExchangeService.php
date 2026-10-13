@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\Access;
 use App\Support\Audit;
 use App\Support\Period;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ShiftExchangeService
@@ -126,6 +127,123 @@ class ShiftExchangeService
     }
 
     /**
+     * Mengambil daftar jadwal kosong (Open Shifts) yang tersedia pada cabang
+     * khusus untuk posisi/level setingkat karyawan pemohon.
+     *
+     * @return \Illuminate\Support\Collection<int, Shift>
+     */
+    public function getAvailableOpenSlots(User $user, ?Carbon $startDate = null, ?Carbon $endDate = null)
+    {
+        $start = $startDate ? $startDate->copy()->startOfDay() : now('Asia/Jakarta')->startOfDay();
+        $end = $endDate ? $endDate->copy()->endOfDay() : now('Asia/Jakarta')->addDays(35)->endOfDay();
+
+        return Shift::with(['branch', 'position'])
+            ->whereNull('user_id')
+            ->where('branch_id', $user->branch_id)
+            ->where('end_at', '>', now('Asia/Jakarta'))
+            ->whereBetween('start_at', [$start->toDateTimeString(), $end->toDateTimeString()])
+            ->when($user->position_id, function ($q, $posId) {
+                $q->where(function ($sub) use ($posId) {
+                    $sub->where('position_id', $posId)
+                        ->orWhereNull('position_id');
+                });
+            })
+            // Tidak sedang diperebutkan permohonan aktif yang pending
+            ->whereDoesntHave('exchanges', function ($q) {
+                $q->whereIn('status', ['pending_peer', 'pending_manager']);
+            })
+            ->whereNotExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('shift_exchanges')
+                    ->whereColumn('shift_exchanges.target_shift_id', 'shifts.id')
+                    ->whereIn('shift_exchanges.status', ['pending_peer', 'pending_manager']);
+            })
+            ->orderBy('start_at')
+            ->get();
+    }
+
+    /**
+     * Mengajukan Ganti Shift atau Ganti Libur ke Jadwal Kosong (Open Slot) untuk level setingkat.
+     * Langsung berstatus 'pending_manager' (menunggu persetujuan Super Admin atau HRD).
+     */
+    public function requestOpenSlotExchange(
+        User $requester,
+        string $type,
+        Shift $targetShift,
+        ?Shift $requesterShift = null,
+        string $reason = '',
+        ?string $offDate = null
+    ): ShiftExchange {
+        abort_unless(in_array($type, ['change_shift', 'change_off_day'], true), 422, 'Tipe permohonan harus ganti shift atau ganti libur.');
+
+        if (! Access::admin() && ! Access::manager()) {
+            abort_unless($requester->id === auth()->id(), 403, 'Akses tidak sah untuk mengajukan pergantian atas nama karyawan lain.');
+        }
+
+        abort_unless($targetShift->user_id === null, 422, 'Jadwal yang dipilih bukan merupakan jadwal kosong.');
+
+        if (! Access::admin()) {
+            abort_unless($targetShift->branch_id === $requester->branch_id, 422, 'Jadwal kosong harus berada di cabang yang sama.');
+        }
+
+        // Validasi level setingkat (posisi yang sama jika ditentukan)
+        if ($targetShift->position_id && $requester->position_id) {
+            abort_unless($targetShift->position_id === $requester->position_id, 422, 'Jadwal kosong ini diperuntukkan untuk level jabatan yang berbeda dengan Anda.');
+        }
+
+        Period::writable($targetShift->branch_id, $targetShift->start_at->toDateString());
+
+        // Overlap check: Pastikan jadwal target tidak bentrok dengan jadwal shift lain milik pemohon
+        $conflict = Shift::where('user_id', $requester->id)
+            ->when($requesterShift, fn ($q, $rs) => $q->where('id', '!=', $rs->id))
+            ->where('start_at', '<', $targetShift->end_at)
+            ->where('end_at', '>', $targetShift->start_at)
+            ->exists();
+        abort_if($conflict, 409, 'Jadwal kosong yang dipilih bertabrakan dengan jadwal shift lain milik Anda.');
+
+        // Cek apakah target shift sedang dalam permohonan aktif
+        $hasActiveTarget = ShiftExchange::where('target_shift_id', $targetShift->id)
+            ->whereIn('status', ['pending_peer', 'pending_manager'])
+            ->exists();
+        abort_if($hasActiveTarget, 409, 'Jadwal kosong ini sudah memiliki permohonan yang sedang diproses.');
+
+        // Untuk Ganti Shift, requesterShift wajib diisi
+        if ($type === 'change_shift') {
+            abort_unless($requesterShift !== null, 422, 'Pilih jadwal shift asal yang ingin diganti.');
+        }
+
+        if ($requesterShift) {
+            if (! Access::admin() && ! Access::manager()) {
+                abort_unless($requesterShift->user_id === $requester->id, 403, 'Shift asal harus milik Anda sendiri.');
+            }
+            Period::writable($requesterShift->branch_id, $requesterShift->start_at->toDateString());
+            abort_if($requesterShift->attendance()->exists(), 409, 'Shift asal sudah memiliki rekaman absensi dan tidak dapat dialihkan.');
+            abort_if($requesterShift->exceptions()->exists(), 409, 'Shift asal memiliki kendala presensi aktif.');
+
+            $hasActiveRequester = ShiftExchange::where('requester_shift_id', $requesterShift->id)
+                ->whereIn('status', ['pending_peer', 'pending_manager'])
+                ->exists();
+            abort_if($hasActiveRequester, 409, 'Shift asal sudah memiliki permohonan pergantian yang sedang diproses.');
+        }
+
+        $exchange = ShiftExchange::create([
+            'type'               => $type,
+            'branch_id'          => $targetShift->branch_id,
+            'requester_id'       => $requester->id,
+            'requester_shift_id' => $requesterShift?->id,
+            'replacement_id'     => null, // Tanpa rekan pengganti
+            'target_shift_id'    => $targetShift->id,
+            'target_date'        => $offDate ?: $targetShift->start_at->toDateString(),
+            'reason'             => $reason,
+            'status'             => 'pending_manager', // Langsung menunggu persetujuan Super Admin / HRD
+        ]);
+
+        Audit::record('shift_exchange', $exchange->id, 'request_' . $type, $reason);
+
+        return $exchange;
+    }
+
+    /**
      * Konfirmasi persetujuan dari rekan pengganti (Peer Approval).
      */
     public function peerRespond(ShiftExchange $exchange, User $responder, bool $accept, ?string $note = null): ShiftExchange
@@ -195,10 +313,13 @@ class ShiftExchangeService
 
         DB::transaction(function () use ($exchange, $reviewer, $note) {
             $reqShift = $exchange->requesterShift;
-            Period::writable($reqShift->branch_id, $reqShift->start_at->toDateString());
-            abort_if($reqShift->attendance()->exists() || $reqShift->exceptions()->exists(), 409, 'Shift pemohon sudah berabsensi atau memiliki kendala.');
+            if ($reqShift) {
+                Period::writable($reqShift->branch_id, $reqShift->start_at->toDateString());
+                abort_if($reqShift->attendance()->exists() || $reqShift->exceptions()->exists(), 409, 'Shift pemohon sudah berabsensi atau memiliki kendala.');
+            }
 
             if ($exchange->type === 'replacement') {
+                abort_unless($reqShift, 422, 'Shift pemohon tidak ditemukan.');
                 // Eksekusi pengalihan shift searah
                 $conflict = Shift::where('user_id', $exchange->replacement_id)
                     ->where('id', '!=', $reqShift->id)
@@ -215,6 +336,7 @@ class ShiftExchangeService
 
                 Audit::record('shift', $reqShift->id, 'reassigned', "Shift dialihkan dari user #{$oldUser} ke user #{$exchange->replacement_id} melalui permohonan #{$exchange->id}");
             } elseif ($exchange->type === 'swap') {
+                abort_unless($reqShift, 422, 'Shift pemohon tidak ditemukan.');
                 // Eksekusi pertukaran dua arah
                 $targetShift = $exchange->targetShift;
                 abort_unless($targetShift, 422, 'Shift target tidak ditemukan.');
@@ -236,6 +358,38 @@ class ShiftExchangeService
 
                 Audit::record('shift', $reqShift->id, 'swapped', "Shift #{$reqShift->id} ditukar ke user #{$userB}");
                 Audit::record('shift', $targetShift->id, 'swapped', "Shift #{$targetShift->id} ditukar ke user #{$userA}");
+            } elseif (in_array($exchange->type, ['change_shift', 'change_off_day'], true)) {
+                // Eksekusi pengalihan ke jadwal kosong
+                $targetShift = $exchange->targetShift;
+                abort_unless($targetShift, 422, 'Jadwal kosong target tidak ditemukan.');
+                abort_unless($targetShift->user_id === null, 409, 'Jadwal kosong target telah diisi oleh karyawan lain.');
+
+                Period::writable($targetShift->branch_id, $targetShift->start_at->toDateString());
+
+                $conflict = Shift::where('user_id', $exchange->requester_id)
+                    ->when($exchange->requester_shift_id, fn ($q, $sid) => $q->where('id', '!=', $sid))
+                    ->where('start_at', '<', $targetShift->end_at)
+                    ->where('end_at', '>', $targetShift->start_at)
+                    ->exists();
+                abort_if($conflict, 409, 'Karyawan pemohon memiliki jadwal yang bertabrakan dengan jadwal ini.');
+
+                $targetShift->update([
+                    'user_id' => $exchange->requester_id,
+                    'status'  => 'approved',
+                    'version' => $targetShift->version + 1,
+                ]);
+
+                if ($reqShift) {
+                    $oldId = $reqShift->id;
+                    $reqShift->update([
+                        'user_id' => null,
+                        'status'  => 'approved',
+                        'version' => $reqShift->version + 1,
+                    ]);
+                    Audit::record('shift', $oldId, 'vacated_for_exchange', "Shift #{$oldId} dikosongkan menjadi slot terbuka karena pemohon dialihkan ke jadwal kosong #{$targetShift->id}");
+                }
+
+                Audit::record('shift', $targetShift->id, 'claimed_open_slot', "Jadwal kosong #{$targetShift->id} disetujui untuk pemohon #{$exchange->requester_id}");
             }
 
             $exchange->update([

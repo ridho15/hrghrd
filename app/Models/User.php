@@ -145,7 +145,9 @@ class User extends Authenticatable
     public function usedLeaveDays(int $year): int
     {
         return (int) LeaveDay::whereHas('leaveRequest', function ($q) {
-            $q->where('user_id', $this->id)->where('type', 'leave');
+            $q->where('user_id', $this->id)
+                ->whereIn('type', ['leave', 'leave_exchange'])
+                ->whereIn('status', ['approved', 'partial']);
         })
         ->whereYear('date', $year)
         ->where('status', 'approved')

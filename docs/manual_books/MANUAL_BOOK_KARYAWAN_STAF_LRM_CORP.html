@@ -209,6 +209,7 @@
               <tr><th>Badge Status</th><th>Warna</th><th>Arti & Implikasi</th></tr>
             </thead>
             <tbody>
+              <tr><td><span class="badge badge-success">Tepat Waktu</span></td><td>Hijau</td><td>Presensi masuk sebelum batas toleransi. Bersih tanpa potongan gaji.</td></tr>
               <tr><td><span class="badge badge-success">Selesai</span></td><td>Hijau</td><td>Presensi masuk dan pulang lengkap serta disahkan.</td></tr>
               <tr><td><span class="badge badge-warning">Terlambat</span></td><td>Oranye</td><td>Absen masuk melewati batas toleransi 15 menit.</td></tr>
               <tr><td><span class="badge badge-warning">Pulang Awal</span></td><td>Kuning</td><td>Absen pulang mendahului jadwal usai shift.</td></tr>
@@ -218,7 +219,7 @@
           </table>
 
           <div class="mini-warn">
-            <strong>Toleransi Waktu:</strong> Toleransi keterlambatan adalah maksimal 15 menit dari jam mulai shift. Presensi di atas menit ke-16 otomatis tercatat sebagai keterlambatan pada slip gaji.
+            <strong>Toleransi Waktu:</strong> Toleransi keterlambatan adalah maksimal 15 menit dari jam mulai shift. Karyawan yang absen tepat waktu berstatus <span class="badge badge-success">Tepat Waktu</span> tanpa potongan. Presensi di atas menit ke-16 otomatis tercatat sebagai keterlambatan pada slip gaji.
           </div>
         </div>
       </div>
@@ -230,7 +231,7 @@
     <div class="module-header">
       <div class="module-number-title">
         <span class="module-tag">MODUL 04</span>
-        <span>Riwayat Presensi, Catatan Ditolak & Lapor Kendala Presensi</span>
+        <span>Riwayat & Kalender Presensi, Catatan Ditolak & Lapor Kendala</span>
       </div>
       <span class="module-url">Riwayat & Tombol Lapor Kendala di Tab Presensi</span>
     </div>
@@ -238,9 +239,13 @@
       <div class="mobile-layout-grid">
         <div class="mobile-phone-frame">
           <img src="assets/mobile/03b_riwayat_presensi.png" class="mobile-screen-img" alt="Riwayat Presensi & Alasan Penolakan">
-          <div class="mobile-phone-caption">Riwayat Presensi & Alasan Penolakan</div>
+          <div class="mobile-phone-caption">Kalender Presensi & KPI Bulanan</div>
         </div>
         <div>
+          <div class="mini-tip" style="margin-bottom: 6px;">
+            <strong>Fitur Kalender Presensi:</strong> Layar riwayat kini menyediakan mode <b>Kalender Presensi</b> interaktif lengkap dengan metrik KPI bulanan (Total Hadir, Tepat Waktu, Terlambat, Dikoreksi, Ditolak) serta titik warna harian. Anda dapat beralih antara Tampilan Kalender dan Tampilan Daftar melalui ikon di pojok kanan atas.
+          </div>
+
           <div class="action-steps-title">Kapan Fitur Lapor Kendala Digunakan?</div>
           <p style="font-size: 8pt; margin-bottom: 6px;">
             Gunakan fitur ini apabila smartphone Anda mengalami kendala teknis di lokasi kerja (sinyal GPS terhalang gedung/basement, kamera buram, atau display QR padam) atau presensi Anda mendapat catatan <strong>Ditolak</strong> oleh Manager.

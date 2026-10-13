@@ -351,4 +351,64 @@ class ShiftCalendarTest extends TestCase
         $response->assertSee('Staf Mobile Agenda');
         $response->assertSee('2026-10-22');
     }
+
+    public function test_calendar_displays_light_blue_for_incomplete_and_deep_blue_for_completed_shift(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+
+        $emp1 = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan Selesai Dinas']);
+        $emp2 = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan Sedang Dinas']);
+        $emp3 = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan Belum Hadir']);
+
+        // 1. Shift selesai (checkin + checkout) -> Biru agak pekat (bg-blue-600)
+        $shiftCompleted = $this->createShift($emp1, $branch, [
+            'start_at' => '2026-10-18 08:00:00',
+            'end_at'   => '2026-10-18 16:00:00',
+            'status'   => 'approved',
+        ]);
+        Attendance::create([
+            'shift_id'   => $shiftCompleted->id,
+            'user_id'    => $emp1->id,
+            'checkin_at' => '2026-10-18 07:55:00',
+            'checkout_at'=> '2026-10-18 16:02:00',
+            'status'     => 'present',
+        ]);
+
+        // 2. Shift sedang berdinas (checkin saja, belum checkout) -> Biru muda aktif (bg-sky-100)
+        $shiftOnDuty = $this->createShift($emp2, $branch, [
+            'start_at' => '2026-10-18 08:00:00',
+            'end_at'   => '2026-10-18 16:00:00',
+            'status'   => 'approved',
+        ]);
+        Attendance::create([
+            'shift_id'   => $shiftOnDuty->id,
+            'user_id'    => $emp2->id,
+            'checkin_at' => '2026-10-18 07:58:00',
+            'checkout_at'=> null,
+            'status'     => 'present',
+        ]);
+
+        // 3. Shift belum checkin -> Biru muda soft (bg-sky-50)
+        $shiftUpcoming = $this->createShift($emp3, $branch, [
+            'start_at' => '2026-10-18 08:00:00',
+            'end_at'   => '2026-10-18 16:00:00',
+            'status'   => 'approved',
+        ]);
+
+        $response = $this->get('/shifts/calendar?month=2026-10');
+        $response->assertOk();
+
+        // Verifikasi chip shift selesai memiliki biru pekat bg-blue-600
+        $response->assertSee('bg-blue-600');
+        $response->assertSee('Karyawan Selesai Dinas');
+
+        // Verifikasi chip belum checkout memiliki biru aktif bg-sky-100
+        $response->assertSee('bg-sky-100');
+        $response->assertSee('Karyawan Sedang Dinas');
+
+        // Verifikasi chip belum checkin memiliki biru muda bg-sky-50
+        $response->assertSee('bg-sky-50');
+        $response->assertSee('Karyawan Belum Hadir');
+    }
 }

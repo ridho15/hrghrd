@@ -148,6 +148,16 @@
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 <span>Presensi Hari Ini</span>
                             </a>
+                            @if(auth()->user()->role === 'employee')
+                                <a href="{{ route('shifts.calendar') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('shifts.calendar') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <span>Jadwal & Presensi Saya</span>
+                                </a>
+                                <a href="{{ route('shifts.exchanges') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('shifts.exchanges*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                                    <span>Tukar Shift</span>
+                                </a>
+                            @endif
                             <a href="{{ route('leave') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('leave*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 <span>Izin & Sakit</span>

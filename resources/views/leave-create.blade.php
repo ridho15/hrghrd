@@ -136,10 +136,44 @@
                         onchange="toggleCertificateRequirement(this.value)"
                         class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all cursor-pointer @error('type') border-rose-300 bg-rose-50/50 @enderror"
                     >
-                        <option value="leave" @selected(old('type') === 'leave')>Izin Biasa / Cuti Terencana</option>
-                        <option value="sick" @selected(old('type') === 'sick')>Sakit (Wajib Surat Dokter)</option>
+                        <option value="leave" @selected(old('type') === 'leave')>Cuti Tahunan / Izin Biasa (Memotong Kuota)</option>
+                        <option value="sick" @selected(old('type') === 'sick')>Izin Sakit (Wajib Surat Dokter)</option>
+                        <option value="day_off" @selected(old('type') === 'day_off')>Pengajuan Hari Libur (Day Off - Non-Kuota)</option>
+                        <option value="leave_exchange" @selected(old('type') === 'leave_exchange')>Pergantian Tanggal Cuti (Reschedule)</option>
                     </select>
                     @error('type')
+                        <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            {{-- Kartu Pilihan Cuti Awal untuk Pergantian Cuti --}}
+            <div id="leave-exchange-card" class="p-4 bg-sky-50/80 border border-sky-200/80 rounded-xl space-y-3 hidden">
+                <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                    </span>
+                    <strong class="text-xs text-sky-950 font-bold uppercase tracking-wider">Pilih Permohonan Cuti Awal yang Ingin Diganti</strong>
+                </div>
+                <p class="text-[11px] text-sky-800 m-0">
+                    Pilih pengajuan cuti aktif yang ingin Anda geser tanggalnya. Kuota dari cuti lama akan dibebaskan dan dialokasikan untuk tanggal baru.
+                </p>
+                <div>
+                    <select
+                        name="original_leave_id"
+                        id="original-leave-id"
+                        class="w-full h-11 px-3.5 bg-white border border-sky-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 transition-all cursor-pointer"
+                    >
+                        <option value="">-- Pilih Cuti yang Ingin Digeser/Diganti --</option>
+                        @if(isset($activeLeaves))
+                            @foreach($activeLeaves as $al)
+                                <option value="{{ $al->id }}" @selected(old('original_leave_id') == $al->id)>
+                                    #LVR-{{ str_pad($al->id, 5, '0', STR_PAD_LEFT) }} &bull; ({{ $al->start_date ? $al->start_date->format('d M Y') : '' }} s.d. {{ $al->end_date ? $al->end_date->format('d M Y') : '' }}) - {{ Str::limit($al->reason, 40) }}
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                    @error('original_leave_id')
                         <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
                     @enderror
                 </div>
@@ -327,15 +361,29 @@
         const star = document.getElementById('cert-required-star');
         const desc = document.getElementById('certificate-desc');
         const fileInput = document.getElementById('leave-certificate');
+        const certCard = document.getElementById('certificate-card');
+        const exchangeCard = document.getElementById('leave-exchange-card');
+        const origSelect = document.getElementById('original-leave-id');
 
         if (type === 'sick') {
+            if (certCard) certCard.classList.remove('hidden');
+            if (exchangeCard) exchangeCard.classList.add('hidden');
             if (star) star.classList.remove('hidden');
-            if (desc) desc.textContent = 'Surat keterangan sakit dari dokter wajib dilampirkan untuk jenis sakit.';
+            if (desc) desc.textContent = 'Surat keterangan sakit dari dokter wajib dilampirkan untuk jenis sakit (Maks. 5 MB).';
             if (fileInput) fileInput.required = true;
+            if (origSelect) origSelect.required = false;
+        } else if (type === 'leave_exchange') {
+            if (certCard) certCard.classList.add('hidden');
+            if (exchangeCard) exchangeCard.classList.remove('hidden');
+            if (fileInput) fileInput.required = false;
+            if (origSelect) origSelect.required = true;
         } else {
+            if (certCard) certCard.classList.remove('hidden');
+            if (exchangeCard) exchangeCard.classList.add('hidden');
             if (star) star.classList.add('hidden');
             if (desc) desc.textContent = 'Opsional: Dapat melampirkan berkas pendukung jika diperlukan.';
             if (fileInput) fileInput.required = false;
+            if (origSelect) origSelect.required = false;
         }
     }
 

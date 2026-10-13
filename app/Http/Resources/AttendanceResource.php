@@ -13,6 +13,9 @@ class AttendanceResource extends JsonResource
     {
         $latestException = $this->shift?->exceptions?->sortByDesc('id')->first() ?? $this->exception;
 
+        $isLate = (int) ($this->late_minutes ?? 0) > 0;
+        $hasOvertime = (int) ($this->overtime_minutes ?? 0) > 0;
+
         return [
             'id'               => $this->id,
             'shift_id'         => $this->shift_id,
@@ -21,7 +24,12 @@ class AttendanceResource extends JsonResource
             'checkout_at'      => $this->checkout_at?->toIso8601String(),
             'late_minutes'     => $this->late_minutes,
             'late_units'       => $this->late_units,
+            'is_late'          => $isLate,
+            'late_display'     => $isLate ? "{$this->late_minutes} Menit" : null,
+            'late_badge_label' => $isLate ? "Terlambat {$this->late_minutes}m" : ($this->checkin_at ? 'Tepat Waktu' : null),
             'overtime_minutes' => $this->overtime_minutes,
+            'has_overtime'     => $hasOvertime,
+            'overtime_display' => $hasOvertime ? "{$this->overtime_minutes} Menit" : null,
             // Tambahan field baru untuk sinkronisasi Mobile:
             'exception_status' => $latestException?->status,
             'review_note'      => $latestException?->review_note,

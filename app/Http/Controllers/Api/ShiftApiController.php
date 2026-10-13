@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\ShiftDirectReassignRequest;
 use App\Http\Requests\Admin\ShiftExchangePeerRequest;
 use App\Http\Requests\Admin\ShiftExchangeReviewRequest;
 use App\Http\Requests\Admin\ShiftExchangeStoreRequest;
+use App\Http\Requests\Api\ShiftExchangeOpenSlotRequest;
 use App\Http\Resources\ShiftResource;
 use App\Models\Shift;
 use App\Models\ShiftExchange;
@@ -110,13 +111,15 @@ class ShiftApiController extends Controller
         }
 
         $data = $request->validate([
-            'user_id'    => ['required', 'integer', 'exists:users,id'],
-            'branch_id'  => ['required', 'integer', 'exists:branches,id'],
-            'date'       => ['sometimes', 'date_format:Y-m-d'],
-            'start_time' => ['sometimes', 'string'],
-            'end_time'   => ['sometimes', 'string'],
-            'start_at'   => ['sometimes', 'date'],
-            'end_at'     => ['sometimes', 'date'],
+            'is_open_slot'=> ['sometimes', 'boolean'],
+            'position_id' => ['sometimes', 'nullable', 'integer', 'exists:positions,id'],
+            'user_id'     => ['required_unless:is_open_slot,true,1', 'nullable', 'integer', 'exists:users,id'],
+            'branch_id'   => ['required', 'integer', 'exists:branches,id'],
+            'date'        => ['sometimes', 'date_format:Y-m-d'],
+            'start_time'  => ['sometimes', 'string'],
+            'end_time'    => ['sometimes', 'string'],
+            'start_at'    => ['sometimes', 'date'],
+            'end_at'      => ['sometimes', 'date'],
         ]);
 
         if (! Access::branch($data['branch_id'])) {
@@ -152,23 +155,26 @@ class ShiftApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Durasi shift tidak boleh lebih dari 24 jam.'], 422);
         }
 
-        // Cek overlap
-        $conflict = Shift::where('user_id', $data['user_id'])
-            ->where('start_at', '<', $end->toDateTimeString())
-            ->where('end_at', '>', $start->toDateTimeString())
-            ->exists();
+        // Cek overlap jika ada user_id
+        if (! empty($data['user_id'])) {
+            $conflict = Shift::where('user_id', $data['user_id'])
+                ->where('start_at', '<', $end->toDateTimeString())
+                ->where('end_at', '>', $start->toDateTimeString())
+                ->exists();
 
-        if ($conflict) {
-            return response()->json(['success' => false, 'message' => 'Shift karyawan bertumpang tindih.'], 409);
+            if ($conflict) {
+                return response()->json(['success' => false, 'message' => 'Shift karyawan bertumpang tindih.'], 409);
+            }
         }
 
         try {
             $shift = $service->create([
-                'user_id'    => $data['user_id'],
-                'branch_id'  => $data['branch_id'],
-                'date'       => $date,
-                'start_time' => $startTime,
-                'end_time'   => $endTime,
+                'user_id'     => $data['user_id'] ?? null,
+                'position_id' => $data['position_id'] ?? null,
+                'branch_id'   => $data['branch_id'],
+                'date'        => $date,
+                'start_time'  => $startTime,
+                'end_time'    => $endTime,
             ]);
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             return response()->json([
@@ -180,7 +186,7 @@ class ShiftApiController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Shift berhasil dibuat.',
-            'data'    => new ShiftResource($shift->load('user', 'branch')),
+            'data'    => new ShiftResource($shift->load('user', 'branch', 'position')),
         ], 201);
     }
 
@@ -393,13 +399,81 @@ class ShiftApiController extends Controller
     }
 
     /**
+     * Ambil Daftar Jadwal Kosong (Open Slots) untuk Level Setingkat
+     *
+     * Mengambil daftar jadwal kosong pada cabang pengguna yang sesuai dengan level/jabatannya.
+     */
+    public function openSlots(Request $request, ShiftExchangeService $service)
+    {
+        $user = $request->user();
+        $startDate = $request->filled('start_date') ? Carbon::parse($request->query('start_date'), 'Asia/Jakarta') : null;
+        $endDate = $request->filled('end_date') ? Carbon::parse($request->query('end_date'), 'Asia/Jakarta') : null;
+
+        $slots = $service->getAvailableOpenSlots($user, $startDate, $endDate);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar jadwal kosong level setingkat berhasil dimuat.',
+            'data'    => $slots->map(function ($s) {
+                return [
+                    'id'             => $s->id,
+                    'branch_id'      => $s->branch_id,
+                    'branch_name'    => $s->branch?->name,
+                    'position_id'    => $s->position_id,
+                    'position_name'  => $s->position_name,
+                    'date'           => $s->start_at->toDateString(),
+                    'start_at'       => $s->start_at->toIso8601String(),
+                    'end_at'         => $s->end_at->toIso8601String(),
+                    'start_time'     => $s->start_at->format('H:i'),
+                    'end_time'       => $s->end_at->format('H:i'),
+                    'duration_hours' => round($s->end_at->diffInMinutes($s->start_at) / 60, 1),
+                    'is_open_slot'   => true,
+                ];
+            }),
+        ]);
+    }
+
+    /**
+     * Ajukan Ganti Shift atau Ganti Libur ke Jadwal Kosong
+     *
+     * Endpoint untuk karyawan mobile mengajukan permohonan ke jadwal kosong level setingkat.
+     */
+    public function exchangeOpenSlot(ShiftExchangeOpenSlotRequest $request, ShiftExchangeService $service)
+    {
+        $data = $request->validated();
+        $targetShift = Shift::with(['branch', 'position'])->findOrFail((int) $data['target_shift_id']);
+        $reqShift = ! empty($data['requester_shift_id']) ? Shift::findOrFail((int) $data['requester_shift_id']) : null;
+
+        $exchange = $service->requestOpenSlotExchange(
+            $request->user(),
+            $data['type'],
+            $targetShift,
+            $reqShift,
+            $data['reason'],
+            $data['off_date'] ?? null
+        );
+
+        $msg = ($data['type'] === 'change_shift' ? 'Permohonan ganti shift' : 'Permohonan ganti libur') . ' ke jadwal kosong berhasil diajukan dan menunggu persetujuan Super Admin / HRD.';
+
+        return response()->json([
+            'success' => true,
+            'message' => $msg,
+            'data'    => $exchange->load([
+                'requester.position', 'targetShift.branch', 'targetShift.position', 'requesterShift', 'branch'
+            ]),
+        ], 201);
+    }
+
+    /**
      * Daftar Permohonan Pergantian Shift
      */
     public function exchanges(Request $request)
     {
         $user = $request->user();
         $query = ShiftExchange::with([
-            'requester', 'replacement', 'requesterShift', 'targetShift', 'branch', 'reviewer'
+            'requester.position', 'replacement.position',
+            'requesterShift.branch', 'targetShift.branch', 'targetShift.position',
+            'branch', 'reviewer'
         ])
         ->when(! Access::manager(), fn ($q) => $q->forUser($user->id))
         ->when(Access::manager() && ! Access::admin(), fn ($q) => $q->where('branch_id', $user->branch_id))
@@ -434,16 +508,27 @@ class ShiftApiController extends Controller
             $replacement = User::findOrFail((int) $data['replacement_id']);
             $exchange = $service->requestReplacement($request->user(), $shift, $replacement, $data['reason']);
             $msg = 'Permohonan penggantian shift berhasil diajukan.';
-        } else {
+        } elseif ($data['type'] === 'swap') {
             $targetShift = Shift::with('user')->findOrFail((int) $data['target_shift_id']);
             $exchange = $service->requestSwap($request->user(), $shift, $targetShift, $data['reason']);
             $msg = 'Permohonan pertukaran jadwal berhasil diajukan.';
+        } else {
+            $targetShift = Shift::with(['position', 'branch'])->findOrFail((int) $data['target_shift_id']);
+            $exchange = $service->requestOpenSlotExchange(
+                $request->user(),
+                $data['type'],
+                $targetShift,
+                $shift,
+                $data['reason'],
+                $data['target_date'] ?? null
+            );
+            $msg = ($data['type'] === 'change_shift' ? 'Permohonan ganti shift' : 'Permohonan ganti libur') . ' ke jadwal kosong berhasil diajukan.';
         }
 
         return response()->json([
             'success' => true,
             'message' => $msg,
-            'data'    => $exchange->load(['requester', 'replacement', 'requesterShift', 'targetShift']),
+            'data'    => $exchange->load(['requester.position', 'replacement.position', 'requesterShift', 'targetShift.position', 'targetShift.branch']),
         ], 201);
     }
 

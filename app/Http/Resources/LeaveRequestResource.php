@@ -12,14 +12,17 @@ class LeaveRequestResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'               => $this->id,
-            'type'             => $this->type,
-            'status'           => $this->status,
-            'reason'           => $this->reason,
-            'start_date'       => $this->start_date,
-            'end_date'         => $this->end_date,
-            'has_certificate'  => (bool) $this->certificate_path,
-            'review_note'      => $this->review_note,
+            'id'                => $this->id,
+            'type'              => $this->type,
+            'type_label'        => $this->type_label,
+            'original_leave_id' => $this->original_leave_id,
+            'vacate_shifts'     => (bool) $this->vacate_shifts,
+            'status'            => $this->status,
+            'reason'            => $this->reason,
+            'start_date'        => $this->start_date ? $this->start_date->format('Y-m-d') : null,
+            'end_date'          => $this->end_date ? $this->end_date->format('Y-m-d') : null,
+            'has_certificate'   => (bool) $this->certificate_path,
+            'review_note'       => $this->review_note,
             'user'             => $this->whenLoaded('user', fn () => [
                 'id'     => $this->user->id,
                 'name'   => $this->user->name,

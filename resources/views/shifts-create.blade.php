@@ -176,7 +176,42 @@
 
             {{-- Tampilan Mode Tunggal --}}
             <div id="section-employee-single" class="{{ $currentMode === 'recurring' ? 'hidden' : '' }} space-y-4">
-                <div>
+                {{-- Toggle Jadwalkan Sebagai Slot Kosong (Open Shift) --}}
+                <div class="p-3.5 bg-amber-50/70 border border-amber-200/90 rounded-xl flex items-start gap-3">
+                    <input
+                        type="checkbox"
+                        name="is_open_slot"
+                        id="toggle-is-open-slot"
+                        value="1"
+                        class="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500 cursor-pointer mt-0.5"
+                        {{ old('is_open_slot') ? 'checked' : '' }}
+                        onchange="toggleOpenSlotMode(this.checked)"
+                    >
+                    <div class="flex-1">
+                        <label for="toggle-is-open-slot" class="text-xs font-bold text-amber-950 cursor-pointer block">
+                            Jadwalkan Sebagai Slot Kosong (Open Shift / Belum Ditugaskan)
+                        </label>
+                        <p class="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                            Shift ini tidak terikat pada satu karyawan tertentu. Karyawan aktif level setingkat dapat mengajukan <strong>Ganti Shift</strong> atau <strong>Ganti Libur</strong> untuk mengisi slot ini dengan persetujuan Super Admin / HRD.
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Pilihan Posisi / Level Setingkat untuk Slot Kosong --}}
+                <div id="section-open-slot-position" class="{{ old('is_open_slot') ? '' : 'hidden' }} space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700">Level Jabatan / Posisi Setingkat</label>
+                    <select name="position_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                        <option value="">-- Terbuka Untuk Semua Level Staf --</option>
+                        @if(isset($positions))
+                            @foreach($positions as $pos)
+                                <option value="{{ $pos->id }}" @selected(old('position_id') == $pos->id)>{{ $pos->name }}</option>
+                            @endforeach
+                        @endif
+                    </select>
+                    <p class="text-[11px] text-slate-500">Pilih level posisi jika jadwal ini dikhususkan untuk jabatan tertentu.</p>
+                </div>
+
+                <div id="container-single-user-select" class="{{ old('is_open_slot') ? 'hidden' : '' }}">
                     @php
                         $peopleOpts = $people->map(fn($p) => [
                             'value' => (string)$p->id,
@@ -582,6 +617,13 @@
 
 <script>
     let currentMode = '{{ $currentMode }}';
+
+    window.toggleOpenSlotMode = function(checked) {
+        const posSec = document.getElementById('section-open-slot-position');
+        const userSec = document.getElementById('container-single-user-select');
+        if (posSec) posSec.classList.toggle('hidden', !checked);
+        if (userSec) userSec.classList.toggle('hidden', checked);
+    };
 
     function switchMode(mode) {
         currentMode = mode;

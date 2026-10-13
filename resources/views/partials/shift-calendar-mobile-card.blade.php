@@ -12,26 +12,25 @@
     $isPast = \Carbon\Carbon::parse($shiftItem->end_at, 'Asia/Jakarta')->isPast();
     $hasPendingException = $shiftItem->exceptions->where('status', 'pending')->isNotEmpty();
 
-    if ($attStatus === 'present') {
-        $cardBorder = 'border-emerald-200 bg-emerald-50/20';
-        $statusBadgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-        $statusText = 'Hadir Tepat Waktu';
-    } elseif ($attStatus === 'late') {
-        $cardBorder = 'border-amber-200 bg-amber-50/20';
-        $statusBadgeBg = 'bg-amber-100 text-amber-800 border-amber-300';
-        $statusText = 'Terlambat (' . ($att->late_units * 15) . 'm)';
-    } elseif ($attStatus === 'early_checkout') {
-        $cardBorder = 'border-amber-200 bg-amber-50/20';
-        $statusBadgeBg = 'bg-amber-100 text-amber-800 border-amber-300';
-        $statusText = 'Pulang Lebih Cepat';
+    $isCompleted = $att && $att->checkin_at && $att->checkout_at;
+    $isOnDuty = $att && $att->checkin_at && ! $att->checkout_at;
+
+    if ($shiftItem->isOpenSlot) {
+        $cardBorder = 'border-amber-300 border-dashed bg-amber-50/60';
+        $statusBadgeBg = 'bg-amber-100 text-amber-900 border-amber-300 font-bold';
+        $statusText = 'Slot Kosong (' . $shiftItem->positionName . ')';
+    } elseif ($isCompleted) {
+        $cardBorder = 'border-blue-400 bg-blue-50/40';
+        $statusBadgeBg = 'bg-blue-600 text-white border-blue-700 shadow-2xs';
+        $statusText = $attStatus === 'late' ? 'Terlambat (Selesai)' : 'Presensi Tuntas';
+    } elseif ($isOnDuty) {
+        $cardBorder = 'border-sky-300 bg-sky-50/30';
+        $statusBadgeBg = 'bg-sky-100 text-sky-800 border-sky-300';
+        $statusText = 'Sedang Berdinas';
     } elseif ($attStatus === 'absent' || (! $att && $isPast)) {
         $cardBorder = 'border-rose-200 bg-rose-50/20';
         $statusBadgeBg = 'bg-rose-100 text-rose-800 border-rose-300';
         $statusText = 'Alfa / Tidak Hadir';
-    } elseif ($att && $att->checkin_at && ! $att->checkout_at) {
-        $cardBorder = 'border-sky-200 bg-sky-50/20';
-        $statusBadgeBg = 'bg-sky-100 text-sky-800 border-sky-300';
-        $statusText = 'Sedang Berdinas';
     } elseif ($isApproved) {
         $cardBorder = 'border-slate-200 bg-white';
         $statusBadgeBg = 'bg-sky-50 text-sky-800 border-sky-200';
@@ -61,10 +60,10 @@
             </div>
 
             <h4 class="text-sm font-extrabold text-slate-900 mt-1 truncate">
-                {{ $shiftItem->user?->name ?? 'Karyawan' }}
+                {{ $shiftItem->isOpenSlot ? 'Slot Kosong (' . $shiftItem->positionName . ')' : ($shiftItem->user?->name ?? 'Karyawan') }}
             </h4>
             <div class="flex items-center gap-1.5 text-[11px] text-slate-500 truncate">
-                <span>{{ $shiftItem->user?->position?->name ?? 'Staf' }}</span>
+                <span>{{ $shiftItem->isOpenSlot ? 'Level: ' . $shiftItem->positionName : ($shiftItem->user?->position?->name ?? 'Staf') }}</span>
                 <span>•</span>
                 <span class="truncate">{{ $shiftItem->branch?->name }}</span>
             </div>
@@ -105,7 +104,7 @@
         </div>
 
         <div class="flex items-center gap-1.5">
-            @if(in_array(auth()->user()->role, ['admin', 'manager']) && ! $shiftItem->attendance)
+            @if((in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id()) && ! $shiftItem->attendance)
                 <button
                     type="button"
                     data-open-modal="modal-exchange-shift-{{ $shiftItem->id }}"

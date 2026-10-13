@@ -435,44 +435,78 @@
                                 $att = $shiftItem->attendance;
                                 $attStatus = $att?->status;
 
-                                if ($attStatus === 'present') {
-                                    $chipTheme = 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100';
-                                    $dotColor = 'bg-emerald-500';
-                                } elseif ($attStatus === 'late') {
-                                    $chipTheme = 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100';
-                                    $dotColor = 'bg-amber-500';
-                                } elseif ($attStatus === 'absent' || (! $att && \Carbon\Carbon::parse($shiftItem->end_at)->isPast())) {
+                                $isCompleted = $att && $att->checkin_at && $att->checkout_at;
+                                $isOnDuty = $att && $att->checkin_at && ! $att->checkout_at;
+                                $isPast = \Carbon\Carbon::parse($shiftItem->end_at)->isPast();
+
+                                if ($isCompleted) {
+                                    // Sudah check-in dan check-out: Biru agak pekat (solid blue)
+                                    $chipTheme = 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700 shadow-2xs';
+                                    $badgeClass = 'bg-white/20 text-white border border-white/30';
+                                    $dotColor = 'bg-emerald-300';
+                                    $timeColor = 'text-blue-100';
+                                    $branchColor = 'text-blue-100/90';
+                                    $statusLabel = $attStatus === 'late' ? 'Terlambat (Selesai)' : 'Hadir';
+                                } elseif ($isOnDuty) {
+                                    // Sudah check-in, belum check-out: Biru aktif (sedang berdinas)
+                                    $chipTheme = 'bg-sky-100 text-sky-950 border-sky-400 hover:bg-sky-200';
+                                    $badgeClass = $isShift1 ? 'bg-sky-200 text-sky-900 border border-sky-300' : 'bg-amber-100 text-amber-800 border border-amber-300';
+                                    $dotColor = 'bg-sky-500 animate-pulse';
+                                    $timeColor = 'text-sky-800 font-bold';
+                                    $branchColor = 'text-slate-500';
+                                    $statusLabel = 'Sedang Berdinas';
+                                } elseif ($attStatus === 'absent' || (! $att && $isPast)) {
+                                    // Alfa / mangkir
                                     $chipTheme = 'bg-rose-50 text-rose-950 border-rose-300 hover:bg-rose-100';
+                                    $badgeClass = $isShift1 ? 'bg-rose-100 text-rose-800 border border-rose-200' : 'bg-amber-100 text-amber-800 border border-amber-300';
                                     $dotColor = 'bg-rose-500';
+                                    $timeColor = 'text-slate-500';
+                                    $branchColor = 'text-slate-500';
+                                    $statusLabel = 'Alfa';
                                 } elseif ($isApproved) {
+                                    // Belum check-in / jadwal sah: Biru muda
                                     $chipTheme = 'bg-sky-50 text-sky-950 border-sky-300 hover:bg-sky-100';
+                                    $badgeClass = $isShift1 ? 'bg-sky-100 text-sky-800 border border-sky-300/80' : 'bg-amber-100 text-amber-800 border border-amber-300/80';
                                     $dotColor = 'bg-sky-500';
+                                    $timeColor = 'text-slate-500';
+                                    $branchColor = 'text-slate-500';
+                                    $statusLabel = 'Jadwal Sah';
                                 } else {
+                                    // Draf
                                     $chipTheme = 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100';
+                                    $badgeClass = 'bg-slate-100 text-slate-700 border border-slate-200';
                                     $dotColor = 'bg-slate-400';
+                                    $timeColor = 'text-slate-500';
+                                    $branchColor = 'text-slate-500';
+                                    $statusLabel = 'Draf';
                                 }
                             @endphp
 
                             <button
                                 type="button"
                                 data-open-modal="modal-shift-{{ $shiftItem->id }}"
+                                title="{{ $statusLabel }}"
                                 class="w-full text-left p-1.5 rounded-lg border {{ $chipTheme }} transition-all text-[11px] block shadow-2xs group cursor-pointer"
                             >
                                 <div class="flex items-center justify-between gap-1">
                                     <div class="flex items-center gap-1.5 truncate font-bold">
-                                        <span class="px-1 py-0.2 rounded text-[9px] font-black uppercase tracking-wider shrink-0 {{ $isShift1 ? 'bg-sky-100 text-sky-800 border border-sky-300/80' : 'bg-amber-100 text-amber-800 border border-amber-300/80' }}">
+                                        <span class="px-1 py-0.2 rounded text-[9px] font-black uppercase tracking-wider shrink-0 {{ $badgeClass }}">
                                             {{ $shiftBadge }}
                                         </span>
                                         <span class="w-1.5 h-1.5 rounded-full {{ $dotColor }} shrink-0"></span>
                                         <span class="truncate">{{ $shiftItem->user?->name ?? 'Karyawan' }}</span>
                                     </div>
-                                    <span class="text-[10px] font-mono text-slate-500 shrink-0">{{ $startTime }}</span>
+                                    <span class="text-[10px] font-mono {{ $timeColor }} shrink-0">{{ $startTime }}</span>
                                 </div>
-                                <div class="flex items-center justify-between text-[10px] text-slate-500 mt-0.5">
+                                <div class="flex items-center justify-between text-[10px] {{ $branchColor }} mt-0.5">
                                     <span class="truncate">{{ $shiftItem->branch?->name }}</span>
-                                    @if($att)
-                                        <span class="font-bold {{ $attStatus === 'late' ? 'text-amber-700' : 'text-emerald-700' }}">
-                                            {{ $att->checkin_at ? \Carbon\Carbon::parse($att->checkin_at)->format('H:i') : '-' }}
+                                    @if($isCompleted && $att)
+                                        <span class="font-bold text-blue-100">
+                                            {{ $att->checkin_at ? \Carbon\Carbon::parse($att->checkin_at)->format('H:i') : '-' }}-{{ $att->checkout_at ? \Carbon\Carbon::parse($att->checkout_at)->format('H:i') : '-' }}
+                                        </span>
+                                    @elseif($isOnDuty && $att)
+                                        <span class="font-bold text-sky-800">
+                                            Masuk: {{ \Carbon\Carbon::parse($att->checkin_at)->format('H:i') }}
                                         </span>
                                     @else
                                         <span class="font-semibold">{{ $startTime }}-{{ $endTime }}</span>
@@ -482,12 +516,21 @@
                         @endforeach
 
                         @if($dayCount > 3)
-                            <a
-                                href="{{ route('shifts', ['date_from' => $dateStr, 'date_to' => $dateStr]) }}"
-                                class="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline block text-center py-1 bg-emerald-50/50 rounded"
-                            >
-                                +{{ $dayCount - 3 }} shift lainnya
-                            </a>
+                            @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                                <a
+                                    href="{{ route('shifts', ['date_from' => $dateStr, 'date_to' => $dateStr]) }}"
+                                    class="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline block text-center py-1 bg-emerald-50/50 rounded"
+                                >
+                                    +{{ $dayCount - 3 }} shift lainnya
+                                </a>
+                            @else
+                                <a
+                                    href="{{ $routeAction }}?{{ http_build_query(array_merge(request()->query(), ['view' => $viewParam, 'date' => $dateStr])) }}"
+                                    class="text-[10px] font-bold text-emerald-700 hover:text-emerald-800 hover:underline block text-center py-1 bg-emerald-50/50 rounded"
+                                >
+                                    +{{ $dayCount - 3 }} shift lainnya
+                                </a>
+                            @endif
                         @endif
                     </div>
                 </div>
@@ -591,12 +634,14 @@
 
                 {{-- Aksi --}}
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                    <a
-                        href="{{ route('shifts.show', $shiftItem->id) }}"
-                        class="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
-                    >
-                        Lihat Detail Jadwal
-                    </a>
+                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                        <a
+                            href="{{ route('shifts.show', $shiftItem->id) }}"
+                            class="px-3 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
+                        >
+                            Lihat Detail Jadwal
+                        </a>
+                    @endif
                     <button
                         type="button"
                         data-close-modal

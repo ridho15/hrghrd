@@ -96,9 +96,9 @@
                 <thead>
                     <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
                         <th class="py-3.5 px-4 sm:px-6">Pemohon & Shift Asal</th>
-                        <th class="py-3.5 px-4">Karyawan Pengganti</th>
+                        <th class="py-3.5 px-4">Pengganti / Jadwal Kosong</th>
                         <th class="py-3.5 px-4">Tipe & Cabang</th>
-                        <th class="py-3.5 px-4">Alasan</th>
+                        <th class="py-3.5 px-4">Alasan & Info Jadwal</th>
                         <th class="py-3.5 px-4">Status & Waktu</th>
                         <th class="py-3.5 px-4 sm:px-6 text-right">Tindakan</th>
                     </tr>
@@ -125,21 +125,45 @@
                                 @endif
                             </td>
 
-                            {{-- Karyawan Pengganti --}}
+                            {{-- Karyawan Pengganti / Jadwal Kosong --}}
                             <td class="py-4 px-4 whitespace-nowrap">
-                                <div class="font-bold text-slate-900">{{ $exc->replacement?->name }}</div>
-                                <div class="text-[11px] text-slate-400 font-mono">{{ $exc->replacement?->position?->name ?? 'Staf' }}</div>
-                                @if($targetShift)
-                                    <div class="mt-1 text-xs text-slate-600 bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded inline-block">
-                                        Tukar: {{ \Carbon\Carbon::parse($targetShift->start_at)->translatedFormat('d M') }} ({{ \Carbon\Carbon::parse($targetShift->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($targetShift->end_at)->format('H:i') }})
+                                @if($exc->isOpenSlot)
+                                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-xs shadow-2xs">
+                                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                        <span>Slot Jadwal Kosong</span>
                                     </div>
+                                    <div class="text-[11px] text-slate-600 font-mono mt-1">
+                                        Level: <span class="font-bold text-emerald-700">{{ $exc->targetPositionName }}</span>
+                                    </div>
+                                    @if($targetShift)
+                                        <div class="mt-1 text-xs text-sky-800 bg-sky-50 border border-sky-200/80 px-2 py-0.5 rounded-md inline-block font-semibold">
+                                            {{ \Carbon\Carbon::parse($targetShift->start_at)->translatedFormat('d M Y') }} · 
+                                            {{ \Carbon\Carbon::parse($targetShift->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($targetShift->end_at)->format('H:i') }}
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="font-bold text-slate-900">{{ $exc->replacement?->name }}</div>
+                                    <div class="text-[11px] text-slate-400 font-mono">{{ $exc->replacement?->position?->name ?? 'Staf' }}</div>
+                                    @if($targetShift)
+                                        <div class="mt-1 text-xs text-slate-600 bg-sky-50 text-sky-800 border border-sky-200 px-2 py-0.5 rounded inline-block">
+                                            Tukar: {{ \Carbon\Carbon::parse($targetShift->start_at)->translatedFormat('d M') }} ({{ \Carbon\Carbon::parse($targetShift->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($targetShift->end_at)->format('H:i') }})
+                                        </div>
+                                    @endif
                                 @endif
                             </td>
 
                             {{-- Tipe & Cabang --}}
                             <td class="py-4 px-4 whitespace-nowrap">
                                 <div class="font-semibold text-slate-800">
-                                    @if($exc->type === 'replacement')
+                                    @if($exc->type === 'change_shift')
+                                        <span class="inline-flex items-center gap-1 text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/80 font-bold text-xs">
+                                            <span>Ganti Shift (Slot Kosong)</span>
+                                        </span>
+                                    @elseif($exc->type === 'change_off_day')
+                                        <span class="inline-flex items-center gap-1 text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200/80 font-bold text-xs">
+                                            <span>Ganti Libur (Slot Kosong)</span>
+                                        </span>
+                                    @elseif($exc->type === 'replacement')
                                         <span class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 font-bold text-xs">
                                             <span>Searah (Penggantian)</span>
                                         </span>
@@ -152,14 +176,52 @@
                                 <div class="text-xs text-slate-500 mt-1">{{ $exc->branch?->name }}</div>
                             </td>
 
-                            {{-- Alasan --}}
-                            <td class="py-4 px-4 max-w-xs">
-                                <p class="text-xs text-slate-700 truncate" title="{{ $exc->reason }}">{{ $exc->reason }}</p>
+                            {{-- Alasan & Informasi Jadwal Kosong --}}
+                            <td class="py-4 px-4 max-w-sm">
+                                <p class="text-xs text-slate-800 font-medium leading-relaxed" title="{{ $exc->reason }}">{{ $exc->reason }}</p>
+                                
+                                {{-- Kotak Informasi Khusus Jadwal Kosong untuk Super Admin / HRD --}}
+                                @if($exc->isOpenSlot)
+                                    <div class="mt-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-[11px] space-y-1 shadow-2xs">
+                                        <div class="font-bold text-slate-900 flex items-center gap-1.5 pb-1 border-b border-slate-200/60">
+                                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                            <span>Informasi Jadwal Kosong yang Diajukan</span>
+                                        </div>
+                                        <div class="text-slate-700 flex items-baseline justify-between gap-2">
+                                            <span class="text-slate-500">Jadwal Kosong Dituju:</span>
+                                            <span class="font-bold text-slate-900 text-right">
+                                                {{ $targetShift ? \Carbon\Carbon::parse($targetShift->start_at)->translatedFormat('l, d M Y') . ' (' . \Carbon\Carbon::parse($targetShift->start_at)->format('H:i') . '-' . \Carbon\Carbon::parse($targetShift->end_at)->format('H:i') . ')' : '-' }}
+                                            </span>
+                                        </div>
+                                        <div class="text-slate-700 flex items-baseline justify-between gap-2">
+                                            <span class="text-slate-500">Kesesuaian Level/Jabatan:</span>
+                                            <span class="font-bold text-emerald-700 text-right">
+                                                {{ $exc->targetPositionName }} (Setingkat: {{ $exc->requester?->position?->name ?? 'Staf' }})
+                                            </span>
+                                        </div>
+                                        @if($exc->type === 'change_shift' && $reqShift)
+                                            <div class="text-slate-700 flex items-baseline justify-between gap-2">
+                                                <span class="text-slate-500">Shift Asal Pemohon:</span>
+                                                <span class="font-bold text-rose-700 text-right">
+                                                    {{ \Carbon\Carbon::parse($reqShift->start_at)->translatedFormat('d M Y') }} ({{ \Carbon\Carbon::parse($reqShift->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($reqShift->end_at)->format('H:i') }}) → Libur
+                                                </span>
+                                            </div>
+                                        @elseif($exc->type === 'change_off_day')
+                                            <div class="text-slate-700 flex items-baseline justify-between gap-2">
+                                                <span class="text-slate-500">Tanggal Libur Terkait:</span>
+                                                <span class="font-bold text-indigo-700 text-right">
+                                                    {{ $exc->target_date ? \Carbon\Carbon::parse($exc->target_date)->translatedFormat('l, d M Y') : 'Hari Libur Pemohon' }}
+                                                </span>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
+
                                 @if($exc->replacement_note)
-                                    <div class="text-[11px] text-slate-500 mt-0.5 italic">Catatan Rekan: {{ $exc->replacement_note }}</div>
+                                    <div class="text-[11px] text-slate-500 mt-1 italic">Catatan Rekan: {{ $exc->replacement_note }}</div>
                                 @endif
                                 @if($exc->review_note)
-                                    <div class="text-[11px] text-emerald-700 mt-0.5 italic">Catatan Manajer: {{ $exc->review_note }}</div>
+                                    <div class="text-[11px] text-emerald-700 mt-1 italic">Catatan Manajer: {{ $exc->review_note }}</div>
                                 @endif
                             </td>
 

@@ -560,11 +560,29 @@ class AdminController extends Controller
         $mode = in_array($request->query('mode'), ['schedule', 'attendance'], true) ? $request->query('mode') : 'schedule';
         $attendanceStatus = trim((string) $request->query('attendance_status', ''));
 
-        $query = Shift::with(['user.position', 'user.branch', 'branch', 'attendance', 'exceptions'])
+        $isManager = Access::manager();
+        $isEmployee = ! $isManager;
+
+        // Tentukan lingkup tampilan & user_id filter
+        $scope = trim((string) $request->query('scope', ''));
+        if ($isEmployee) {
+            // Default untuk karyawan adalah melihat jadwal & presensi miliknya sendiri ('me')
+            if ($scope === 'branch') {
+                $selectedUserId = $request->filled('user_id') ? (int) $request->query('user_id') : null;
+            } else {
+                $scope = 'me';
+                $selectedUserId = (int) auth()->id();
+            }
+        } else {
+            $selectedUserId = $request->filled('user_id') ? (int) $request->query('user_id') : null;
+            $scope = $selectedUserId ? 'single' : ($scope === 'branch' ? 'branch' : 'all');
+        }
+
+        $query = Shift::with(['user.position', 'user.branch', 'position', 'branch', 'attendance', 'exceptions'])
             ->whereBetween('start_at', [$gridStart->toDateTimeString(), $gridEnd->toDateTimeString()])
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
-            ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', (int) $request->query('user_id')))
+            ->when($selectedUserId !== null, fn ($q) => $q->where('user_id', $selectedUserId))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
             ->when($attendanceStatus !== '', function ($q) use ($attendanceStatus) {
                 if ($attendanceStatus === 'present') {
@@ -660,6 +678,8 @@ class AdminController extends Controller
                 'success'                    => true,
                 'month'                      => $monthStr,
                 'mode'                       => $mode,
+                'scope'                      => $scope,
+                'selected_user_id'           => $selectedUserId,
                 'month_summary'              => $monthSummary,
                 'attendance_summary_by_date' => $attendanceSummaryByDate,
                 'data'                       => $shifts,
@@ -679,11 +699,27 @@ class AdminController extends Controller
             $selectedDate = $startOfMonth->toDateString();
         }
 
+        $userBranchId = Access::admin() ? ($selectedBranchId ?: auth()->user()->branch_id) : (int) auth()->user()->branch_id;
+        $openSlots = Shift::with(['position', 'branch'])
+            ->whereNull('user_id')
+            ->when($userBranchId, fn ($q) => $q->where('branch_id', $userBranchId))
+            ->whereBetween('start_at', [$gridStart->toDateTimeString(), $gridEnd->toDateTimeString()])
+            ->when($isEmployee && auth()->user()->position_id, function ($q) {
+                $posId = auth()->user()->position_id;
+                $q->where(fn ($sub) => $sub->where('position_id', $posId)->orWhereNull('position_id'));
+            })
+            ->whereDoesntHave('exchanges', function ($q) {
+                $q->whereIn('status', ['pending_peer', 'pending_manager']);
+            })
+            ->orderBy('start_at')
+            ->get();
+
         return view('shifts-calendar', compact(
             'branches', 'people', 'shifts', 'groupedShifts',
             'currentMonth', 'monthStr', 'prevMonth', 'nextMonth',
             'gridStart', 'gridEnd', 'selectedBranchId',
-            'mode', 'attendanceStatus', 'attendanceSummaryByDate', 'monthSummary', 'selectedDate'
+            'mode', 'attendanceStatus', 'attendanceSummaryByDate', 'monthSummary', 'selectedDate',
+            'selectedUserId', 'scope', 'isEmployee', 'openSlots'
         ));
     }
 
@@ -695,7 +731,7 @@ class AdminController extends Controller
         $query = ShiftExchange::with([
             'requester.position', 'requester.branch',
             'replacement.position', 'replacement.branch',
-            'requesterShift.branch', 'targetShift.branch',
+            'requesterShift.branch', 'targetShift.branch', 'targetShift.position',
             'branch', 'reviewer'
         ])
         ->when(! Access::manager(), fn ($q) => $q->forUser($user->id))
@@ -727,11 +763,43 @@ class AdminController extends Controller
             $replacement = User::findOrFail((int) $data['replacement_id']);
             $service->requestReplacement(auth()->user(), $shift, $replacement, $data['reason']);
             $msg = 'Permohonan penggantian shift berhasil diajukan dan menunggu persetujuan rekan.';
-        } else {
+        } elseif ($data['type'] === 'swap') {
             $targetShift = Shift::with('user')->findOrFail((int) $data['target_shift_id']);
             $service->requestSwap(auth()->user(), $shift, $targetShift, $data['reason']);
             $msg = 'Permohonan pertukaran jadwal berhasil diajukan dan menunggu persetujuan rekan.';
+        } else {
+            // change_shift atau change_off_day
+            $targetShift = Shift::with(['position', 'branch'])->findOrFail((int) $data['target_shift_id']);
+            $service->requestOpenSlotExchange(
+                auth()->user(),
+                $data['type'],
+                $targetShift,
+                $shift,
+                $data['reason'],
+                $data['target_date'] ?? null
+            );
+            $msg = ($data['type'] === 'change_shift' ? 'Permohonan ganti shift ke jadwal kosong' : 'Permohonan ganti libur ke jadwal kosong') . ' berhasil diajukan dan menunggu persetujuan Super Admin / HRD.';
         }
+
+        return redirect()->route('shifts.exchanges')->with('ok', $msg);
+    }
+
+    public function shiftExchangeOpenSlotStore(ShiftExchangeStoreRequest $request, ShiftExchangeService $service)
+    {
+        $data = $request->validated();
+        $targetShift = Shift::with(['position', 'branch'])->findOrFail((int) $data['target_shift_id']);
+        $reqShift = ! empty($data['requester_shift_id']) ? Shift::findOrFail((int) $data['requester_shift_id']) : null;
+
+        $service->requestOpenSlotExchange(
+            auth()->user(),
+            $data['type'],
+            $targetShift,
+            $reqShift,
+            $data['reason'],
+            $data['target_date'] ?? null
+        );
+
+        $msg = ($data['type'] === 'change_shift' ? 'Permohonan ganti shift ke jadwal kosong' : 'Permohonan ganti libur ke jadwal kosong') . ' berhasil diajukan dan menunggu persetujuan Super Admin / HRD.';
 
         return redirect()->route('shifts.exchanges')->with('ok', $msg);
     }
@@ -781,11 +849,12 @@ class AdminController extends Controller
     {
         abort_unless(Access::manager(), 403);
         $branches = Branch::orderBy('name')->get();
+        $positions = \App\Models\Position::orderBy('name')->get();
         $people = User::active()->whereIn('role', ['employee', 'manager'])
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->orderBy('name')->get();
 
-        return view('shifts-create', compact('branches', 'people'));
+        return view('shifts-create', compact('branches', 'people', 'positions'));
     }
 
     public function shiftShow(int $id)

@@ -65,12 +65,22 @@ class LeaveController extends Controller
                 ->get()
             : collect();
 
-        return view('leave-create', compact('people'));
+        $activeLeaves = LeaveRequest::whereIn('status', ['approved', 'pending'])
+            ->whereIn('type', ['leave', 'leave_exchange'])
+            ->when(! Access::admin(), fn ($q) => Access::manager()
+                ? $q->whereHas('user', fn ($u) => $u->where('branch_id', $user->branch_id))
+                : $q->where('user_id', $user->id)
+            )
+            ->with(['user', 'days'])
+            ->latest('start_date')
+            ->get();
+
+        return view('leave-create', compact('people', 'activeLeaves'));
     }
 
     public function show(int $id)
     {
-        $leave = LeaveRequest::with(['user.branch', 'user.position', 'days'])->findOrFail($id);
+        $leave = LeaveRequest::with(['user.branch', 'user.position', 'days', 'originalLeave.days'])->findOrFail($id);
         $user = auth()->user();
 
         if (! Access::admin()) {
@@ -115,7 +125,8 @@ class LeaveController extends Controller
             $data['approved_dates'] ?? [],
             $data['paid_dates'] ?? [],
             $data['review_note'],
-            $data['replacements'] ?? []
+            $data['replacements'] ?? [],
+            (bool) ($data['vacate_shifts'] ?? false)
         );
 
         return redirect()->route('leave.show', $leave->id)->with('ok', 'Keputusan pengajuan berhasil disimpan per tanggal.');

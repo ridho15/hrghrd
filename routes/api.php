@@ -54,7 +54,9 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
     Route::prefix('shifts')->group(function () {
         Route::get('/', [ShiftApiController::class, 'index']);
         Route::get('/calendar', [ShiftApiController::class, 'calendar']);
+        Route::get('/open-slots', [ShiftApiController::class, 'openSlots']);
         Route::get('/exchanges', [ShiftApiController::class, 'exchanges']);
+        Route::post('/exchanges/open-slot', [ShiftApiController::class, 'exchangeOpenSlot']);
         Route::post('/exchanges/{id}/peer-respond', [ShiftApiController::class, 'exchangePeerRespond']);
         Route::post('/exchanges/{id}/review', [ShiftApiController::class, 'exchangeReview']);
         Route::post('/{id}/exchange', [ShiftApiController::class, 'exchangeStore']);
@@ -68,9 +70,11 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
 
     // Pengajuan Izin & Cuti
     Route::prefix('leave')->group(function () {
+        Route::get('/types', [LeaveApiController::class, 'types']);
         Route::get('/', [LeaveApiController::class, 'index']);
         Route::post('/', [LeaveApiController::class, 'store']);
         Route::get('/{id}', [LeaveApiController::class, 'show']);
+        Route::post('/{id}/exchange', [LeaveApiController::class, 'exchange']);
         Route::get('/{id}/certificate', [LeaveApiController::class, 'certificate']);
         Route::post('/{id}/review', [LeaveApiController::class, 'review']);
         Route::delete('/{id}', [LeaveApiController::class, 'destroy']);

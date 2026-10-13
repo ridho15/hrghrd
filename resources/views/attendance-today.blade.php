@@ -22,6 +22,10 @@
             </div>
 
             <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 backdrop-blur-md shadow-xs transition-colors shrink-0">
+                    <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span>Kalender Kerja Saya</span>
+                </a>
                 @if(\App\Support\Access::manager())
                     <a href="{{ route('qr.page', ['branch_id' => auth()->user()->branch_id]) }}" target="_blank" class="inline-flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 backdrop-blur-md shadow-xs transition-colors shrink-0">
                         <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
@@ -63,7 +67,11 @@
                 <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                     Anda tidak memiliki jadwal tugas yang diagendakan untuk hari ini ({{ $today->translatedFormat('l, d F Y') }}). Jika Anda memiliki jadwal kerja, hubungi Admin atau Manager operasional cabang Anda.
                 </p>
-                <div class="mt-4">
+                <div class="mt-4 flex items-center justify-center gap-2 flex-wrap">
+                    <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span>Buka Kalender Kerja & Riwayat Presensi</span>
+                    </a>
                     <a href="{{ route('home') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">
                         Kembali ke Beranda
                     </a>

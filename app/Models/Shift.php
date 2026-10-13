@@ -15,6 +15,7 @@ class Shift extends Model
     protected $fillable = [
         'user_id',
         'branch_id',
+        'position_id',
         'start_at',
         'end_at',
         'status',
@@ -41,6 +42,11 @@ class Shift extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
     }
 
     public function approver(): BelongsTo
@@ -85,9 +91,24 @@ class Shift extends Model
         return $query->where('status', 'draft');
     }
 
+    public function scopeOpen($query)
+    {
+        return $query->whereNull('user_id');
+    }
+
+    public function getIsOpenSlotAttribute(): bool
+    {
+        return $this->user_id === null;
+    }
+
     public function getBranchNameAttribute(): string
     {
         return $this->branch?->name ?? '';
+    }
+
+    public function getPositionNameAttribute(): string
+    {
+        return $this->position?->name ?? ($this->user?->position?->name ?? 'Staf');
     }
 
     public function getAttendanceStatusAttribute(): ?string
@@ -107,7 +128,7 @@ class Shift extends Model
 
     public function getEmployeeNameAttribute(): string
     {
-        return $this->user?->name ?? '';
+        return $this->user?->name ?? 'Slot Kosong';
     }
 }
 

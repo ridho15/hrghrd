@@ -46,8 +46,16 @@
                         <span class="px-2.5 py-0.5 rounded-md border font-bold text-xs inline-flex items-center gap-1 {{ $statusBadge['class'] }}">
                             <span>{{ $statusBadge['label'] }}</span>
                         </span>
-                        <span class="px-2.5 py-0.5 rounded-md text-xs font-bold {{ $leave->type === 'sick' ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-700 border border-blue-200' }}">
-                            {{ $leave->type === 'sick' ? 'Izin Sakit' : 'Cuti / Izin' }}
+                        @php
+                            $typeBadge = match($leave->type) {
+                                'sick' => ['label' => 'Izin Sakit', 'class' => 'bg-purple-50 text-purple-700 border-purple-200'],
+                                'day_off' => ['label' => 'Hari Libur (Day Off)', 'class' => 'bg-amber-50 text-amber-800 border-amber-200'],
+                                'leave_exchange' => ['label' => 'Pergantian Cuti', 'class' => 'bg-sky-50 text-sky-700 border-sky-200'],
+                                default => ['label' => 'Cuti Tahunan / Izin', 'class' => 'bg-blue-50 text-blue-700 border-blue-200'],
+                            };
+                        @endphp
+                        <span class="px-2.5 py-0.5 rounded-md text-xs font-bold border {{ $typeBadge['class'] }}">
+                            {{ $typeBadge['label'] }}
                         </span>
                     </div>
 
@@ -66,6 +74,16 @@
                             </a>
                         @endif
                     </p>
+                    @if($leave->originalLeave)
+                        <div class="mt-2.5 p-3 rounded-xl bg-sky-50 border border-sky-200/80 text-xs flex items-center gap-2">
+                            <span class="w-5 h-5 rounded-md bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            </span>
+                            <span class="text-sky-900 font-medium">
+                                <strong>Pergantian Cuti:</strong> Menggeser permohonan awal <strong class="font-mono">#LVR-{{ str_pad($leave->originalLeave->id, 5, '0', STR_PAD_LEFT) }}</strong> ({{ $leave->originalLeave->start_date ? $leave->originalLeave->start_date->translatedFormat('d M Y') : '' }} s.d. {{ $leave->originalLeave->end_date ? $leave->originalLeave->end_date->translatedFormat('d M Y') : '' }})
+                            </span>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -503,6 +521,24 @@
                                 </div>
                             </div>
                         @endif
+
+                        {{-- Opsi Buka Jadwal Menjadi Slot Kosong Terbuka --}}
+                        <div class="p-4 bg-amber-50/80 rounded-2xl border border-amber-200/90 flex items-start gap-3">
+                            <input
+                                type="checkbox"
+                                name="vacate_shifts"
+                                id="vacate-shifts"
+                                value="1"
+                                checked
+                                class="w-4 h-4 mt-0.5 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                            >
+                            <label for="vacate-shifts" class="text-xs text-amber-950 cursor-pointer select-none space-y-1">
+                                <strong class="font-bold block text-slate-900">Otomatis Buka Jadwal Terdampak Menjadi Slot Kosong Terbuka (Level: {{ $leave->user?->position?->name ?? 'Staf' }})</strong>
+                                <span class="text-[11px] text-amber-900/90 leading-relaxed block">
+                                    Jika dicentang, shift aktif karyawan pada tanggal yang disetujui akan otomatis dikosongkan (<em>user_id = null</em>) menjadi <strong>Slot Kosong Terbuka</strong> sesuai level jabatan karyawan. Staf setingkat lainnya di cabang dapat langsung memilih dan mengajukan <strong>Ganti Shift / Ganti Libur</strong> untuk mengisi kekosongan tersebut.
+                                </span>
+                            </label>
+                        </div>
 
                         {{-- Catatan Peninjau --}}
                         <div>

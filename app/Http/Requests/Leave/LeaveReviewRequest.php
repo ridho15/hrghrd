@@ -20,6 +20,7 @@ class LeaveReviewRequest extends FormRequest
             'paid_dates' => 'nullable|array',
             'paid_dates.*' => 'date',
             'review_note' => 'required|string|min:5|max:1000',
+            'vacate_shifts' => 'nullable|boolean',
             'replacements' => 'nullable|array',
             'replacements.*' => 'nullable|integer|exists:users,id',
         ];

@@ -24,9 +24,14 @@ class ShiftService
 
         $isAutoApprove = ! empty($data['auto_approve']) && (($actor?->role === 'admin') || Access::admin());
 
+        $userId = ! empty($data['user_id']) ? (int) $data['user_id'] : null;
+        $user = $userId ? User::find($userId) : null;
+        $positionId = ! empty($data['position_id']) ? (int) $data['position_id'] : ($user?->position_id);
+
         $shift = Shift::create([
-            'user_id' => $data['user_id'],
+            'user_id' => $userId,
             'branch_id' => $data['branch_id'],
+            'position_id' => $positionId,
             'start_at' => $start,
             'end_at' => $end,
             'status' => $isAutoApprove ? 'approved' : 'draft',
@@ -129,9 +134,11 @@ class ShiftService
         $createdShifts = collect();
         $skippedCount = 0;
 
+        $userPositionMap = User::whereIn('id', $userIds)->pluck('position_id', 'id')->all();
+
         DB::transaction(function () use (
             $startDate, $endDate, $daysOfWeek, $userIds, $data, $branchId,
-            $status, $approvedBy, $approvedAt, &$createdShifts, &$skippedCount
+            $status, $approvedBy, $approvedAt, $userPositionMap, &$createdShifts, &$skippedCount
         ) {
             $currentDate = $startDate->copy();
             while ($currentDate->lte($endDate)) {
@@ -162,6 +169,7 @@ class ShiftService
                         $shift = Shift::create([
                             'user_id'     => $userId,
                             'branch_id'   => $branchId,
+                            'position_id' => $userPositionMap[$userId] ?? null,
                             'start_at'    => $start,
                             'end_at'      => $end,
                             'status'      => $status,

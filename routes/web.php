@@ -61,6 +61,7 @@ Route::middleware(['auth','active','must.change.password'])->group(function () {
     Route::get('/shifts', [AdminController::class, 'shifts'])->name('shifts');
     Route::get('/shifts/calendar', [AdminController::class, 'shiftsCalendar'])->name('shifts.calendar');
     Route::get('/shifts/exchanges', [AdminController::class, 'shiftExchanges'])->name('shifts.exchanges');
+    Route::post('/shifts/exchanges/open-slot', [AdminController::class, 'shiftExchangeOpenSlotStore'])->name('shifts.exchanges.open-slot');
     Route::post('/shifts/exchanges/{id}/peer-respond', [AdminController::class, 'shiftExchangePeerRespond'])->name('shifts.exchanges.peer-respond');
     Route::post('/shifts/exchanges/{id}/review', [AdminController::class, 'shiftExchangeReview'])->name('shifts.exchanges.review');
     Route::post('/shifts/{id}/exchange', [AdminController::class, 'shiftExchangeStore'])->name('shifts.exchange.store');

@@ -13,6 +13,7 @@ class LeaveRequest extends Model
 
     protected $fillable = [
         'user_id',
+        'original_leave_id',
         'created_by',
         'type',
         'start_date',
@@ -21,6 +22,7 @@ class LeaveRequest extends Model
         'certificate_path',
         'certificate_name',
         'status',
+        'vacate_shifts',
         'reviewed_by',
         'review_note',
         'reviewed_at',
@@ -29,8 +31,9 @@ class LeaveRequest extends Model
     protected function casts(): array
     {
         return [
-            'start_date' => 'date',
-            'end_date' => 'date',
+            'start_date' => 'date:Y-m-d',
+            'end_date' => 'date:Y-m-d',
+            'vacate_shifts' => 'boolean',
             'reviewed_at' => 'datetime',
         ];
     }
@@ -38,6 +41,16 @@ class LeaveRequest extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function originalLeave(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'original_leave_id');
+    }
+
+    public function replacementRequests(): HasMany
+    {
+        return $this->hasMany(self::class, 'original_leave_id');
     }
 
     public function creator(): BelongsTo
@@ -68,6 +81,31 @@ class LeaveRequest extends Model
     public function getEmployeeNameAttribute(): string
     {
         return $this->user?->name ?? '';
+    }
+
+    public function getTypeLabelAttribute(): string
+    {
+        return match ($this->type) {
+            'sick' => 'Izin Sakit',
+            'day_off' => 'Pengajuan Hari Libur',
+            'leave_exchange' => 'Pergantian Cuti',
+            default => 'Cuti Tahunan / Izin',
+        };
+    }
+
+    public function getIsDayOffAttribute(): bool
+    {
+        return $this->type === 'day_off';
+    }
+
+    public function getIsLeaveExchangeAttribute(): bool
+    {
+        return $this->type === 'leave_exchange';
+    }
+
+    public function getIsSickAttribute(): bool
+    {
+        return $this->type === 'sick';
     }
 }
 
