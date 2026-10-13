@@ -20,13 +20,6 @@
 
         <div class="flex items-center gap-2 flex-wrap">
             <a
-                href="{{ route('shifts.calendar', ['mode' => 'attendance']) }}"
-                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-slate-700 hover:text-emerald-900 text-xs font-bold transition-all shadow-2xs"
-            >
-                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                <span>Kalender Tinjau Presensi</span>
-            </a>
-            <a
                 href="{{ route('attendance.today') }}"
                 class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs"
             >
@@ -36,7 +29,70 @@
         </div>
     </div>
 
-    {{-- Bagian 1: Pengecualian Menunggu (Pending Exceptions) --}}
+    {{-- Tab Switcher Bar: [ 📅 Kalender Presensi ] & [ 📋 Tabel & Log Presensi ] --}}
+    <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl max-w-fit border border-slate-200/80">
+        <button
+            type="button"
+            id="tab-btn-calendar"
+            data-tab-switch="calendar"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $view === 'calendar' ? 'bg-white text-emerald-800 shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900' }}"
+        >
+            <svg class="w-4 h-4 {{ $view === 'calendar' ? 'text-emerald-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span>Kalender Presensi</span>
+        </button>
+
+        <button
+            type="button"
+            id="tab-btn-table"
+            data-tab-switch="table"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer {{ $view === 'table' ? 'bg-white text-emerald-800 shadow-2xs font-extrabold' : 'text-slate-600 hover:text-slate-900' }}"
+        >
+            <svg class="w-4 h-4 {{ $view === 'table' ? 'text-emerald-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+            <span>Tabel & Log Presensi</span>
+            @if(($pendingExceptionsTotal ?? 0) > 0)
+                <span class="px-2 py-0.2 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 border border-amber-300">
+                    {{ $pendingExceptionsTotal }} Tertunda
+                </span>
+            @endif
+        </button>
+    </div>
+
+    {{-- KONTEN TAB 1: KALENDER PRESENSI --}}
+    <div id="tab-calendar-container" class="{{ $view === 'calendar' ? 'space-y-6' : 'hidden space-y-6' }}">
+        @if(($pendingExceptionsTotal ?? 0) > 0)
+            <div class="p-3.5 sm:p-4 rounded-2xl bg-amber-50 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-800 flex items-center justify-center font-bold shrink-0">
+                        ⚠️
+                    </span>
+                    <div>
+                        <h4 class="text-xs font-bold text-amber-950 m-0">
+                            Terdapat {{ $pendingExceptionsTotal }} pengajuan kendala presensi yang menunggu verifikasi.
+                        </h4>
+                        <p class="text-[11px] text-amber-800 m-0 mt-0.5">
+                            Karyawan mengajukan pengecualian presensi (GPS/kamera kendala). Harap tinjau bukti agar kehadiran sah.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    data-tab-switch="table"
+                    class="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 transition-colors cursor-pointer self-start sm:self-auto"
+                >
+                    Lihat di Tabel &rarr;
+                </button>
+            </div>
+        @endif
+
+        @include('partials.attendance-calendar-matrix', [
+            'routeAction' => route('attendance.review'),
+            'viewParam' => 'calendar'
+        ])
+    </div>
+
+    {{-- KONTEN TAB 2: TABEL & LOG PRESENSI --}}
+    <div id="tab-table-container" class="{{ $view === 'table' ? 'space-y-8' : 'hidden space-y-8' }}">
+        {{-- Bagian 1: Pengecualian Menunggu (Pending Exceptions) --}}
     <section class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-100">
             <div class="flex items-center gap-2.5">
@@ -710,5 +766,42 @@
 
         <x-pagination :paginator="$attempts" />
     </section>
+    </div>
 </div>
+
+@push('scripts')
+<script>
+    document.querySelectorAll('[data-tab-switch]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.tabSwitch;
+            const calContainer = document.getElementById('tab-calendar-container');
+            const tableContainer = document.getElementById('tab-table-container');
+            const btnCal = document.getElementById('tab-btn-calendar');
+            const btnTable = document.getElementById('tab-btn-table');
+
+            if (target === 'calendar') {
+                calContainer?.classList.remove('hidden');
+                tableContainer?.classList.add('hidden');
+                btnCal?.classList.add('bg-white', 'text-emerald-800', 'shadow-2xs', 'font-extrabold');
+                btnCal?.classList.remove('text-slate-600');
+                btnTable?.classList.remove('bg-white', 'text-emerald-800', 'shadow-2xs', 'font-extrabold');
+                btnTable?.classList.add('text-slate-600');
+                const url = new URL(window.location);
+                url.searchParams.set('view', 'calendar');
+                window.history.replaceState({}, '', url);
+            } else if (target === 'table') {
+                calContainer?.classList.add('hidden');
+                tableContainer?.classList.remove('hidden');
+                btnTable?.classList.add('bg-white', 'text-emerald-800', 'shadow-2xs', 'font-extrabold');
+                btnTable?.classList.remove('text-slate-600');
+                btnCal?.classList.remove('bg-white', 'text-emerald-800', 'shadow-2xs', 'font-extrabold');
+                btnCal?.classList.add('text-slate-600');
+                const url = new URL(window.location);
+                url.searchParams.set('view', 'table');
+                window.history.replaceState({}, '', url);
+            }
+        });
+    });
+</script>
+@endpush
 @endsection

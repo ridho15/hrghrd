@@ -12,10 +12,12 @@ use App\Models\AttendanceAttempt;
 use App\Models\AttendanceException;
 use App\Models\Branch;
 use App\Models\Shift;
+use App\Models\User;
 use App\Services\AttendanceService;
 use App\Support\Access;
 use App\Support\Audit;
 use App\Support\Period;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
@@ -84,6 +86,14 @@ class AttendanceController extends Controller
         $branch = auth()->user()->branch_id;
         $branches = Access::admin() ? Branch::orderBy('name')->get() : Branch::where('id', $branch)->get();
 
+        $view = in_array($request->query('view'), ['calendar', 'table'], true)
+            ? $request->query('view')
+            : 'calendar';
+
+        $pendingExceptionsQuery = AttendanceException::whereHas('shift', fn ($q) => Access::admin() ? $q : $q->where('branch_id', $branch))->pending();
+        $pendingExceptionsTotal = $pendingExceptionsQuery->count();
+
+        // 1. Data untuk Tab Tabel Log Presensi & Pengecualian
         $exceptions = AttendanceException::with(['user', 'shift'])
             ->whereHas('shift', fn ($q) => Access::admin() ? $q : $q->where('branch_id', $branch))
             ->pending()
@@ -127,7 +137,142 @@ class AttendanceController extends Controller
 
         $attendances = $attendancesQuery->paginate(10, ['*'], 'attendance_page')->withQueryString();
 
-        return view('attendance-review', compact('exceptions', 'attempts', 'attendances', 'branches'));
+        // 2. Data untuk Tab Kalender Presensi
+        $monthInput = (string) $request->query('month', '');
+        if (preg_match('/^\d{4}-\d{2}$/', $monthInput)) {
+            $currentMonth = Carbon::createFromFormat('Y-m', $monthInput, 'Asia/Jakarta')->startOfMonth();
+        } else {
+            $currentMonth = now('Asia/Jakarta')->startOfMonth();
+        }
+
+        $monthStr = $currentMonth->format('Y-m');
+        $startOfMonth = $currentMonth->copy()->startOfMonth();
+        $endOfMonth = $currentMonth->copy()->endOfMonth();
+        $gridStart = $startOfMonth->copy()->startOfWeek(Carbon::MONDAY);
+        $gridEnd = $endOfMonth->copy()->endOfWeek(Carbon::SUNDAY);
+        $prevMonth = $currentMonth->copy()->subMonth()->format('Y-m');
+        $nextMonth = $currentMonth->copy()->addMonth()->format('Y-m');
+
+        $selectedBranchId = Access::admin()
+            ? ($request->filled('branch_id') ? (int) $request->query('branch_id') : null)
+            : (int) auth()->user()->branch_id;
+
+        $people = User::active()->whereIn('role', ['employee', 'manager'])
+            ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
+            ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
+            ->orderBy('name')->get();
+
+        $attendanceStatus = trim((string) $request->query('attendance_status', ''));
+
+        $shiftsQuery = Shift::with(['user.position', 'user.branch', 'branch', 'attendance', 'exceptions'])
+            ->whereBetween('start_at', [$gridStart->toDateTimeString(), $gridEnd->toDateTimeString()])
+            ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
+            ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
+            ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', (int) $request->query('user_id')))
+            ->when($attendanceStatus !== '', function ($q) use ($attendanceStatus) {
+                if ($attendanceStatus === 'present') {
+                    $q->whereHas('attendance', fn ($a) => $a->where('status', 'present'));
+                } elseif ($attendanceStatus === 'late') {
+                    $q->whereHas('attendance', fn ($a) => $a->where('status', 'late'));
+                } elseif ($attendanceStatus === 'absent') {
+                    $q->where(function ($sub) {
+                        $sub->whereHas('attendance', fn ($a) => $a->where('status', 'absent'))
+                            ->orWhere(function ($noAtt) {
+                                $noAtt->doesntHave('attendance')
+                                    ->where('end_at', '<', now('Asia/Jakarta'));
+                            });
+                    });
+                } elseif ($attendanceStatus === 'on_duty') {
+                    $q->whereHas('attendance', fn ($a) => $a->whereNotNull('checkin_at')->whereNull('checkout_at'));
+                } elseif ($attendanceStatus === 'early_checkout') {
+                    $q->whereHas('attendance', fn ($a) => $a->where('status', 'early_checkout'));
+                } elseif ($attendanceStatus === 'pending_exception') {
+                    $q->whereHas('exceptions', fn ($e) => $e->where('status', 'pending'));
+                }
+            })
+            ->orderBy('start_at');
+
+        $shifts = $shiftsQuery->get();
+        $groupedShifts = $shifts->groupBy(fn ($s) => $s->start_at->toDateString());
+
+        $attendanceSummaryByDate = [];
+        $monthSummary = [
+            'total_shifts'      => $shifts->count(),
+            'total_present'     => 0,
+            'total_late'        => 0,
+            'total_absent'      => 0,
+            'total_on_duty'     => 0,
+            'total_exceptions'  => 0,
+        ];
+
+        foreach ($groupedShifts as $dStr => $dayShiftsList) {
+            $presentCount = 0;
+            $lateCount = 0;
+            $absentCount = 0;
+            $onDutyCount = 0;
+            $pendingExceptionCount = 0;
+
+            foreach ($dayShiftsList as $s) {
+                $att = $s->attendance;
+                if ($s->exceptions->where('status', 'pending')->isNotEmpty()) {
+                    $pendingExceptionCount++;
+                }
+
+                if ($att) {
+                    if ($att->status === 'present') {
+                        $presentCount++;
+                    } elseif ($att->status === 'late') {
+                        $lateCount++;
+                    } elseif ($att->status === 'absent') {
+                        $absentCount++;
+                    } elseif ($att->status === 'early_checkout') {
+                        $lateCount++;
+                    }
+
+                    if ($att->checkin_at && ! $att->checkout_at) {
+                        $onDutyCount++;
+                    }
+                } else {
+                    if ($s->end_at && Carbon::parse($s->end_at, 'Asia/Jakarta')->isPast()) {
+                        $absentCount++;
+                    }
+                }
+            }
+
+            $attendanceSummaryByDate[$dStr] = [
+                'total_shifts'      => $dayShiftsList->count(),
+                'present'           => $presentCount,
+                'late'              => $lateCount,
+                'absent'            => $absentCount,
+                'on_duty'           => $onDutyCount,
+                'pending_exception' => $pendingExceptionCount,
+            ];
+
+            $monthSummary['total_present']    += $presentCount;
+            $monthSummary['total_late']       += $lateCount;
+            $monthSummary['total_absent']     += $absentCount;
+            $monthSummary['total_on_duty']    += $onDutyCount;
+            $monthSummary['total_exceptions'] += $pendingExceptionCount;
+        }
+
+        $selectedDateParam = trim((string) $request->query('date', ''));
+        $todayStr = now('Asia/Jakarta')->toDateString();
+        if ($selectedDateParam !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDateParam)) {
+            $selectedDate = $selectedDateParam;
+        } elseif ($currentMonth->isSameMonth(now('Asia/Jakarta'))) {
+            $selectedDate = $todayStr;
+        } else {
+            $selectedDate = $startOfMonth->toDateString();
+        }
+
+        return view('attendance-review', compact(
+            'exceptions', 'attempts', 'attendances', 'branches',
+            'view', 'pendingExceptionsTotal',
+            'currentMonth', 'monthStr', 'prevMonth', 'nextMonth',
+            'gridStart', 'gridEnd', 'selectedBranchId', 'people',
+            'shifts', 'groupedShifts', 'attendanceStatus',
+            'attendanceSummaryByDate', 'monthSummary', 'selectedDate'
+        ));
     }
 
     public function reviewException(AttendanceExceptionReviewRequest $request, int $id, AttendanceService $service)
