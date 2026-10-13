@@ -557,34 +557,133 @@ class AdminController extends Controller
             ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
             ->orderBy('name')->get();
 
+        $mode = in_array($request->query('mode'), ['schedule', 'attendance'], true) ? $request->query('mode') : 'schedule';
+        $attendanceStatus = trim((string) $request->query('attendance_status', ''));
+
         $query = Shift::with(['user.position', 'user.branch', 'branch', 'attendance', 'exceptions'])
             ->whereBetween('start_at', [$gridStart->toDateTimeString(), $gridEnd->toDateTimeString()])
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
             ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', (int) $request->query('user_id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->query('status')))
+            ->when($attendanceStatus !== '', function ($q) use ($attendanceStatus) {
+                if ($attendanceStatus === 'present') {
+                    $q->whereHas('attendance', fn ($a) => $a->where('status', 'present'));
+                } elseif ($attendanceStatus === 'late') {
+                    $q->whereHas('attendance', fn ($a) => $a->where('status', 'late'));
+                } elseif ($attendanceStatus === 'absent') {
+                    $q->where(function ($sub) {
+                        $sub->whereHas('attendance', fn ($a) => $a->where('status', 'absent'))
+                            ->orWhere(function ($noAtt) {
+                                $noAtt->doesntHave('attendance')
+                                    ->where('end_at', '<', now('Asia/Jakarta'));
+                            });
+                    });
+                } elseif ($attendanceStatus === 'on_duty') {
+                    $q->whereHas('attendance', fn ($a) => $a->whereNotNull('checkin_at')->whereNull('checkout_at'));
+                } elseif ($attendanceStatus === 'early_checkout') {
+                    $q->whereHas('attendance', fn ($a) => $a->where('status', 'early_checkout'));
+                } elseif ($attendanceStatus === 'pending_exception') {
+                    $q->whereHas('exceptions', fn ($e) => $e->where('status', 'pending'));
+                }
+            })
             ->orderBy('start_at');
 
         $shifts = $query->get();
 
+        // Kelompokkan per Y-m-d
+        $groupedShifts = $shifts->groupBy(fn ($s) => $s->start_at->toDateString());
+
+        // Hitung ringkasan statistik presensi per tanggal & total bulanan
+        $attendanceSummaryByDate = [];
+        $monthSummary = [
+            'total_shifts'      => $shifts->count(),
+            'total_present'     => 0,
+            'total_late'        => 0,
+            'total_absent'      => 0,
+            'total_on_duty'     => 0,
+            'total_exceptions'  => 0,
+        ];
+
+        foreach ($groupedShifts as $dStr => $dayShiftsList) {
+            $presentCount = 0;
+            $lateCount = 0;
+            $absentCount = 0;
+            $onDutyCount = 0;
+            $pendingExceptionCount = 0;
+
+            foreach ($dayShiftsList as $s) {
+                $att = $s->attendance;
+                if ($s->exceptions->where('status', 'pending')->isNotEmpty()) {
+                    $pendingExceptionCount++;
+                }
+
+                if ($att) {
+                    if ($att->status === 'present') {
+                        $presentCount++;
+                    } elseif ($att->status === 'late') {
+                        $lateCount++;
+                    } elseif ($att->status === 'absent') {
+                        $absentCount++;
+                    } elseif ($att->status === 'early_checkout') {
+                        $lateCount++;
+                    }
+
+                    if ($att->checkin_at && ! $att->checkout_at) {
+                        $onDutyCount++;
+                    }
+                } else {
+                    if ($s->end_at && Carbon::parse($s->end_at, 'Asia/Jakarta')->isPast()) {
+                        $absentCount++;
+                    }
+                }
+            }
+
+            $attendanceSummaryByDate[$dStr] = [
+                'total_shifts'      => $dayShiftsList->count(),
+                'present'           => $presentCount,
+                'late'              => $lateCount,
+                'absent'            => $absentCount,
+                'on_duty'           => $onDutyCount,
+                'pending_exception' => $pendingExceptionCount,
+            ];
+
+            $monthSummary['total_present']    += $presentCount;
+            $monthSummary['total_late']       += $lateCount;
+            $monthSummary['total_absent']     += $absentCount;
+            $monthSummary['total_on_duty']    += $onDutyCount;
+            $monthSummary['total_exceptions'] += $pendingExceptionCount;
+        }
+
         if ($request->wantsJson()) {
             return response()->json([
-                'success' => true,
-                'month'   => $monthStr,
-                'data'    => $shifts,
+                'success'                    => true,
+                'month'                      => $monthStr,
+                'mode'                       => $mode,
+                'month_summary'              => $monthSummary,
+                'attendance_summary_by_date' => $attendanceSummaryByDate,
+                'data'                       => $shifts,
             ]);
         }
 
         $prevMonth = $currentMonth->copy()->subMonth()->format('Y-m');
         $nextMonth = $currentMonth->copy()->addMonth()->format('Y-m');
 
-        // Kelompokkan per Y-m-d
-        $groupedShifts = $shifts->groupBy(fn ($s) => $s->start_at->toDateString());
+        $selectedDateParam = trim((string) $request->query('date', ''));
+        $todayStr = now('Asia/Jakarta')->toDateString();
+        if ($selectedDateParam !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDateParam)) {
+            $selectedDate = $selectedDateParam;
+        } elseif ($currentMonth->isSameMonth(now('Asia/Jakarta'))) {
+            $selectedDate = $todayStr;
+        } else {
+            $selectedDate = $startOfMonth->toDateString();
+        }
 
         return view('shifts-calendar', compact(
             'branches', 'people', 'shifts', 'groupedShifts',
             'currentMonth', 'monthStr', 'prevMonth', 'nextMonth',
-            'gridStart', 'gridEnd', 'selectedBranchId'
+            'gridStart', 'gridEnd', 'selectedBranchId',
+            'mode', 'attendanceStatus', 'attendanceSummaryByDate', 'monthSummary', 'selectedDate'
         ));
     }
 

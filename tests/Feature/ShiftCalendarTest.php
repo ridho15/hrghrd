@@ -174,4 +174,181 @@ class ShiftCalendarTest extends TestCase
         $response->assertOk();
         $response->assertSee('Libur');
     }
+
+    public function test_calendar_attendance_mode_renders_summaries_and_stats(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+
+        $emp1 = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan Hadir']);
+        $emp2 = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan Terlambat']);
+        $emp3 = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan Alfa']);
+
+        $shift1 = $this->createShift($emp1, $branch, [
+            'start_at' => '2026-10-14 08:00:00',
+            'end_at'   => '2026-10-14 16:00:00',
+            'status'   => 'approved',
+        ]);
+        Attendance::create([
+            'shift_id'   => $shift1->id,
+            'user_id'    => $emp1->id,
+            'checkin_at' => '2026-10-14 07:55:00',
+            'checkout_at'=> '2026-10-14 16:00:00',
+            'status'     => 'present',
+        ]);
+
+        $shift2 = $this->createShift($emp2, $branch, [
+            'start_at' => '2026-10-14 08:00:00',
+            'end_at'   => '2026-10-14 16:00:00',
+            'status'   => 'approved',
+        ]);
+        Attendance::create([
+            'shift_id'   => $shift2->id,
+            'user_id'    => $emp2->id,
+            'checkin_at' => '2026-10-14 08:25:00',
+            'checkout_at'=> '2026-10-14 16:00:00',
+            'status'     => 'late',
+            'late_minutes' => 25,
+            'late_units' => 1,
+        ]);
+
+        $shift3 = $this->createShift($emp3, $branch, [
+            'start_at' => '2026-10-14 08:00:00',
+            'end_at'   => '2026-10-14 16:00:00',
+            'status'   => 'approved',
+        ]);
+        Attendance::create([
+            'shift_id'   => $shift3->id,
+            'user_id'    => $emp3->id,
+            'status'     => 'absent',
+        ]);
+
+        $response = $this->get('/shifts/calendar?month=2026-10&mode=attendance');
+        $response->assertOk();
+
+        // Cek header dan switcher
+        $response->assertSee('Kalender Tinjau Presensi');
+        $response->assertSee('Total Shift Bulan Ini');
+        $response->assertSee('Hadir Tepat Waktu');
+        $response->assertSee('Terlambat Presensi');
+        $response->assertSee('Alfa / Mangkir');
+
+        // Cek komponen mobile render dengan baik
+        $response->assertSee('id="mobile-cal-section"', false);
+        $response->assertSee('id="mobile-agenda-cards-container"', false);
+        $response->assertSee('id="mobile-list-section"', false);
+        $response->assertSee('Kalender Mini');
+        $response->assertSee('List Agenda');
+
+        // Cek nama karyawan dan card partial
+        $response->assertSee('Karyawan Hadir');
+        $response->assertSee('Karyawan Terlambat');
+        $response->assertSee('Karyawan Alfa');
+    }
+
+    public function test_calendar_filters_by_attendance_status(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+
+        $emp1 = $this->createUser(['branch_id' => $branch->id, 'name' => 'Staf Ontime']);
+        $emp2 = $this->createUser(['branch_id' => $branch->id, 'name' => 'Staf Telat']);
+
+        $shift1 = $this->createShift($emp1, $branch, [
+            'start_at' => '2026-10-15 08:00:00',
+            'end_at'   => '2026-10-15 16:00:00',
+            'status'   => 'approved',
+        ]);
+        Attendance::create([
+            'shift_id'   => $shift1->id,
+            'user_id'    => $emp1->id,
+            'checkin_at' => '2026-10-15 07:58:00',
+            'status'     => 'present',
+        ]);
+
+        $shift2 = $this->createShift($emp2, $branch, [
+            'start_at' => '2026-10-15 08:00:00',
+            'end_at'   => '2026-10-15 16:00:00',
+            'status'   => 'approved',
+        ]);
+        Attendance::create([
+            'shift_id'   => $shift2->id,
+            'user_id'    => $emp2->id,
+            'checkin_at' => '2026-10-15 08:30:00',
+            'status'     => 'late',
+            'late_minutes' => 30,
+            'late_units' => 2,
+        ]);
+
+        // Filter status 'late'
+        $resLate = $this->get('/shifts/calendar?month=2026-10&mode=attendance&attendance_status=late');
+        $resLate->assertOk();
+        $resLate->assertSee('modal-shift-' . $shift2->id);
+        $resLate->assertDontSee('modal-shift-' . $shift1->id);
+
+        // Filter status 'present'
+        $resPresent = $this->get('/shifts/calendar?month=2026-10&mode=attendance&attendance_status=present');
+        $resPresent->assertOk();
+        $resPresent->assertSee('modal-shift-' . $shift1->id);
+        $resPresent->assertDontSee('modal-shift-' . $shift2->id);
+    }
+
+    public function test_calendar_json_feed_includes_attendance_summary(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+
+        $emp = $this->createUser(['branch_id' => $branch->id, 'name' => 'Staf JSON Stat']);
+        $shift = $this->createShift($emp, $branch, [
+            'start_at' => '2026-10-16 08:00:00',
+            'end_at'   => '2026-10-16 16:00:00',
+            'status'   => 'approved',
+        ]);
+        Attendance::create([
+            'shift_id'   => $shift->id,
+            'user_id'    => $emp->id,
+            'checkin_at' => '2026-10-16 07:50:00',
+            'checkout_at'=> '2026-10-16 16:00:00',
+            'status'     => 'present',
+        ]);
+
+        $response = $this->getJson('/shifts/calendar?month=2026-10&mode=attendance');
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'success',
+            'month',
+            'mode',
+            'month_summary' => [
+                'total_shifts',
+                'total_present',
+                'total_late',
+                'total_absent',
+                'total_on_duty',
+                'total_exceptions',
+            ],
+            'attendance_summary_by_date',
+            'data',
+        ]);
+
+        $this->assertEquals(1, $response->json('month_summary.total_present'));
+    }
+
+    public function test_calendar_mobile_selected_date_parameter(): void
+    {
+        $branch = $this->createBranch();
+        $this->actingAsManager($branch);
+
+        $emp = $this->createUser(['branch_id' => $branch->id, 'name' => 'Staf Mobile Agenda']);
+        $this->createShift($emp, $branch, [
+            'start_at' => '2026-10-22 08:00:00',
+            'end_at'   => '2026-10-22 16:00:00',
+            'status'   => 'approved',
+        ]);
+
+        // Akses langsung tanggal tertentu via query param date
+        $response = $this->get('/shifts/calendar?month=2026-10&date=2026-10-22');
+        $response->assertOk();
+        $response->assertSee('Staf Mobile Agenda');
+        $response->assertSee('2026-10-22');
+    }
 }

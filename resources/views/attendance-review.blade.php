@@ -17,6 +17,23 @@
                 Verifikasi pengajuan pengecualian kendala teknis, pantau keterlambatan, setujui lembur resmi, dan lakukan koreksi status jika diperlukan.
             </p>
         </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+            <a
+                href="{{ route('shifts.calendar', ['mode' => 'attendance']) }}"
+                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 text-slate-700 hover:text-emerald-900 text-xs font-bold transition-all shadow-2xs"
+            >
+                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>Kalender Tinjau Presensi</span>
+            </a>
+            <a
+                href="{{ route('attendance.today') }}"
+                class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-2xs"
+            >
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Presensi Hari Ini</span>
+            </a>
+        </div>
     </div>
 
     {{-- Bagian 1: Pengecualian Menunggu (Pending Exceptions) --}}
