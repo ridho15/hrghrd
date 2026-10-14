@@ -87,7 +87,8 @@
             </div>
         </x-table-toolbar>
 
-        <div class="overflow-x-auto">
+        {{-- Tabel Desktop (Tampil di Layar md ke atas) --}}
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full text-left text-xs sm:text-sm">
                 <thead>
                     <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-500 uppercase tracking-wider text-[11px] font-bold">
@@ -219,7 +220,7 @@
                                     <a
                                         href="{{ route('leave.show', $r->id) }}"
                                         class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200/80 transition-colors inline-flex items-center gap-1 shadow-2xs"
-                                        title="Buka berkas lengkap dan matriks persetujuan"
+                                        title="Buka detail pengajuan dan riwayat persetujuan"
                                     >
                                         <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         <span>Detail</span>
@@ -259,6 +260,128 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        {{-- Card-View Responsif Khusus Layar Smartphone (< 768px) --}}
+        <div class="md:hidden divide-y divide-slate-100">
+            @forelse($requests as $r)
+                @php
+                    $statusBadge = [
+                        'pending' => ['label' => 'Menunggu', 'class' => 'bg-amber-50 text-amber-700 border-amber-200'],
+                        'approved' => ['label' => 'Disetujui', 'class' => 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+                        'partial' => ['label' => 'Sebagian', 'class' => 'bg-sky-50 text-sky-700 border-sky-200'],
+                        'rejected' => ['label' => 'Ditolak', 'class' => 'bg-rose-50 text-rose-700 border-rose-200']
+                    ][$r->status] ?? ['label' => $r->status, 'class' => 'bg-slate-100 text-slate-600 border-slate-200'];
+
+                    $canCancel = ($r->status === 'pending' && (
+                        auth()->user()->role === 'admin' ||
+                        (auth()->user()->role === 'manager' && $r->user?->branch_id === auth()->user()->branch_id) ||
+                        $r->user_id === auth()->id()
+                    ));
+
+                    $typeMeta = match($r->type) {
+                        'sick' => ['label' => 'Izin Sakit', 'class' => 'bg-purple-50 text-purple-700 border-purple-200'],
+                        'day_off' => ['label' => 'Hari Libur', 'class' => 'bg-amber-50 text-amber-800 border-amber-200'],
+                        'leave_exchange' => ['label' => 'Ganti Cuti', 'class' => 'bg-sky-50 text-sky-700 border-sky-200'],
+                        default => ['label' => 'Cuti Tahunan', 'class' => 'bg-blue-50 text-blue-700 border-blue-200'],
+                    };
+
+                    $startDateFormatted = \Carbon\Carbon::parse($r->start_date)->translatedFormat('d M Y');
+                    $endDateFormatted = \Carbon\Carbon::parse($r->end_date)->translatedFormat('d M Y');
+                    $dayCount = \Carbon\Carbon::parse($r->start_date)->diffInDays(\Carbon\Carbon::parse($r->end_date)) + 1;
+                @endphp
+                <div class="p-4 space-y-3 bg-white hover:bg-slate-50/50 transition-colors">
+                    {{-- Header Kartu: Tipe Cuti & Badge Status --}}
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold border {{ $typeMeta['class'] }}">
+                            @if($r->type === 'sick')
+                                <svg class="w-3.5 h-3.5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                            @else
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            @endif
+                            <span>{{ $typeMeta['label'] }}</span>
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border {{ $statusBadge['class'] }}">
+                            {{ $statusBadge['label'] }}
+                        </span>
+                    </div>
+
+                    {{-- Nama Pemohon jika dibuka oleh Atasan/Admin --}}
+                    @if(auth()->user()->role !== 'employee' || $r->user_id !== auth()->id())
+                        <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            <span>{{ $r->employee_name }}</span>
+                            <span class="text-slate-400 font-normal">({{ $r->user?->branch?->name ?? 'Cabang' }})</span>
+                        </div>
+                    @endif
+
+                    {{-- Periode Tanggal & Durasi --}}
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between gap-2">
+                        <div class="text-xs">
+                            <span class="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Periode Izin</span>
+                            <strong class="text-slate-900 font-bold tabular-nums">
+                                {{ $startDateFormatted === $endDateFormatted ? $startDateFormatted : "{$startDateFormatted} – {$endDateFormatted}" }}
+                            </strong>
+                        </div>
+                        <span class="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 text-xs font-bold shrink-0">
+                            {{ $dayCount }} Hari
+                        </span>
+                    </div>
+
+                    {{-- Alasan --}}
+                    <p class="text-xs text-slate-600 m-0 leading-relaxed">
+                        <strong class="text-slate-700">Alasan:</strong> {{ $r->reason }}
+                    </p>
+
+                    {{-- Berkas Surat Dokter jika ada --}}
+                    @if($r->certificate_path)
+                        <div class="pt-1">
+                            <a href="{{ route('leave.certificate', $r->id) }}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline">
+                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                <span>Lihat Surat Dokter Terlampir</span>
+                                <svg class="w-2.5 h-2.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            </a>
+                        </div>
+                    @endif
+
+                    {{-- Footer Aksi --}}
+                    <div class="pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
+                        <a
+                            href="{{ route('leave.show', $r->id) }}"
+                            class="flex-1 py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200/80 transition-colors inline-flex items-center justify-center gap-1.5 shadow-2xs"
+                        >
+                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            <span>Lihat Detail</span>
+                        </a>
+
+                        @if($canCancel)
+                            <button
+                                type="button"
+                                data-confirm="Batalkan pengajuan {{ $r->type === 'sick' ? 'izin sakit' : 'cuti' }} untuk {{ $r->employee_name }}? Pengajuan akan dihapus permanen."
+                                data-confirm-title="Batalkan Pengajuan Izin"
+                                data-confirm-variant="danger"
+                                data-confirm-btn="Ya, Batalkan Pengajuan"
+                                data-confirm-action="{{ route('leave.destroy', $r->id) }}"
+                                class="py-2 px-3 rounded-xl text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition-colors inline-flex items-center justify-center gap-1 cursor-pointer"
+                                title="Batalkan Pengajuan"
+                            >
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <span>Batalkan</span>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+            @empty
+                <div class="p-8 text-center text-slate-500 space-y-2">
+                    <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-700">Belum ada data pengajuan izin atau sakit.</p>
+                    <p class="text-[11px] text-slate-400">Gunakan tombol "+ Ajukan Izin / Sakit" untuk mengirim permohonan baru.</p>
+                </div>
+            @endforelse
         </div>
 
         @if($requests->hasPages())

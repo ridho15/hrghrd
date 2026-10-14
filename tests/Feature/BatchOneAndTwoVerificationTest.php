@@ -169,7 +169,7 @@ class BatchOneAndTwoVerificationTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee($employee->name);
-        $response->assertSee('Dossier Karyawan');
+        $response->assertSee('Profil Karyawan');
     }
 
     public function test_employee_cannot_view_other_employees_profile(): void

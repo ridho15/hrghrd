@@ -4,45 +4,40 @@
 
 @section('content')
 <div class="space-y-6">
-    {{-- Top Hero Banner: Digital Live Clock & User Context --}}
-    <div style="background: linear-gradient(135deg, #065f46 0%, #047857 50%, #115e59 100%);" class="rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
-        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div class="space-y-1.5">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/40 text-emerald-200 border border-emerald-500/30 text-xs font-semibold">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>Waktu Server Presensi (Asia/Jakarta)</span>
-                </div>
-                <h1 class="text-xl sm:text-2xl font-black tracking-tight text-white m-0">
-                    Presensi Kerja Hari Ini
-                </h1>
-                <p class="text-xs sm:text-sm text-emerald-100 font-medium m-0">
-                    Halo, <strong class="text-white font-bold">{{ $user->name }}</strong> ({{ $user->username ?: $user->email }}) &middot; Silakan lakukan verifikasi kehadiran sesuai jadwal shift Anda.
-                </p>
+    {{-- Header Presensi: Jam Digital & Informasi Shift (Clean Enterprise) --}}
+    <div class="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="space-y-1">
+            <div class="inline-flex items-center gap-2 text-xs font-bold text-slate-500">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span>Waktu Server: Asia/Jakarta (WIB)</span>
             </div>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight m-0">
+                Presensi Kerja Hari Ini
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 m-0">
+                {{ $user->name }} &middot; Silakan catat kehadiran sesuai jadwal shift Anda.
+            </p>
+        </div>
 
-            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 backdrop-blur-md shadow-xs transition-colors shrink-0">
-                    <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                    <span>Kalender Kerja Saya</span>
+        <div class="flex items-center gap-3 self-start sm:self-auto flex-wrap sm:flex-nowrap">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-center min-w-[140px]">
+                <div id="live-time" class="text-2xl font-black font-mono tracking-wider text-slate-900 leading-none">
+                    {{ $today->format('H:i:s') }}
+                </div>
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">
+                    {{ $today->translatedFormat('d M Y') }}
+                </div>
+            </div>
+            <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span>Kalender Kerja Saya</span>
+            </a>
+            @if(\App\Support\Access::manager())
+                <a href="{{ route('qr.page', ['branch_id' => auth()->user()->branch_id]) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors">
+                    <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    <span>Layar QR</span>
                 </a>
-                @if(\App\Support\Access::manager())
-                    <a href="{{ route('qr.page', ['branch_id' => auth()->user()->branch_id]) }}" target="_blank" class="inline-flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-bold border border-white/30 backdrop-blur-md shadow-xs transition-colors shrink-0">
-                        <svg class="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                        <span>Buka Layar QR Kiosk</span>
-                    </a>
-                @endif
-
-                {{-- Real-time Clock Widget --}}
-                <div class="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center min-w-[180px] shrink-0">
-                    <div id="live-time" class="text-2xl sm:text-3xl font-black font-mono tracking-wider text-white">
-                        {{ $today->format('H:i:s') }}
-                    </div>
-                    <div class="text-[11px] font-semibold text-emerald-200 uppercase tracking-wider mt-1">
-                        {{ $today->translatedFormat('l, d F Y') }}
-                    </div>
-                </div>
-            </div>
+            @endif
         </div>
     </div>
 
@@ -51,7 +46,7 @@
         <div class="flex items-center justify-between">
             <h2 class="text-sm sm:text-base font-bold text-slate-900 tracking-tight m-0 flex items-center gap-2">
                 <svg class="w-5 h-5 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                <span>Jadwal Shift & Aksi Presensi ({{ $today->translatedFormat('d M Y') }})</span>
+                <span>Jadwal Shift Hari Ini ({{ $today->translatedFormat('d M Y') }})</span>
             </h2>
             <span class="text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
                 {{ $shifts->count() }} Jadwal Terdaftar
@@ -109,7 +104,7 @@
                                     @elseif($isCompleted)
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">Shift Selesai</span>
                                     @elseif($hasCheckin)
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-300 animate-pulse">Sedang Bertugas</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-300">Sedang Bertugas</span>
                                     @else
                                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">Belum Check-in</span>
                                     @endif
@@ -136,7 +131,7 @@
                                     class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer {{ $hasCheckin ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white' }}"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    <span>{{ $hasCheckin ? 'Buka Form Check-out' : 'Buka Form Check-in' }}</span>
+                                    <span>{{ $hasCheckin ? 'Check Out' : 'Check In' }}</span>
                                 </button>
                             </div>
                         @endif
@@ -147,13 +142,13 @@
                         <div id="attendance-{{ $shift->id }}" class="p-5 sm:p-6 bg-white border-t border-slate-100">
                             <div class="max-w-2xl">
                                 <div class="flex items-center gap-2 mb-2">
-                                    <span class="w-2.5 h-2.5 rounded-full {{ $hasCheckin ? 'bg-amber-500' : 'bg-emerald-500' }} animate-ping"></span>
+                                    <span class="w-2.5 h-2.5 rounded-full {{ $hasCheckin ? 'bg-amber-500' : 'bg-emerald-500' }}"></span>
                                     <h4 class="text-sm font-bold text-slate-900 m-0">
-                                        Formulir Verifikasi Presensi {{ $hasCheckin ? 'Check-out (Pulang)' : 'Check-in (Masuk)' }}
+                                        Presensi {{ $hasCheckin ? 'Pulang (Check-out)' : 'Masuk (Check-in)' }}
                                     </h4>
                                 </div>
                                 <p class="text-xs text-slate-500 mb-5 leading-relaxed">
-                                    Berdirilah di area cabang <strong>{{ $shift->branch?->name }}</strong>. Arahkan kamera pemindai ke layar QR Kiosk cabang untuk verifikasi instan. Koordinat GPS Anda akan divalidasi otomatis saat pengiriman.
+                                    Pastikan Anda berada di area cabang <strong>{{ $shift->branch?->name }}</strong> dan arahkan kamera ke layar QR Kiosk cabang.
                                 </p>
 
                                 <form method="post" action="{{ route('attendance.act', $shift->id) }}" class="space-y-4 attendance-form"
@@ -228,7 +223,7 @@
                                     <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <button class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                                            <span>Ambil Lokasi & Kirim Presensi</span>
+                                            <span>Kirim Presensi</span>
                                         </button>
                                         <small class="form-status text-xs font-semibold text-emerald-700" aria-live="polite"></small>
                                     </div>
@@ -344,7 +339,7 @@
                                 </span>
                             @else
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600 animate-pulse"></span>
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
                                     Menunggu Review
                                 </span>
                             @endif
@@ -382,7 +377,7 @@
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <strong class="text-xs text-slate-900">{{ $rs->start_at?->format('l, d M Y') }}</strong>
+                                    <strong class="text-xs text-slate-900">{{ $rs->start_at?->translatedFormat('l, d M Y') }}</strong>
                                     <span class="text-slate-400">&middot;</span>
                                     <span class="text-xs text-slate-600 font-mono">{{ $rs->start_at?->format('H:i') }} - {{ $rs->end_at?->format('H:i') }} WIB</span>
                                     <span class="text-slate-400">&middot;</span>
@@ -469,11 +464,11 @@
         </div>
     @endif
 
-    {{-- Riwayat Percobaan Presensi Hari Ini (Logs) --}}
-    @if(isset($attempts) && $attempts->isNotEmpty())
+    {{-- Riwayat Percobaan Presensi Hari Ini (Logs Khusus Manajerial) --}}
+    @if((\App\Support\Access::admin() || \App\Support\Access::manager()) && isset($attempts) && $attempts->isNotEmpty())
         <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
             <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
-                Riwayat Validasi Presensi Hari Ini
+                Log Validasi Presensi Hari Ini (Akses Manajerial)
             </h3>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">

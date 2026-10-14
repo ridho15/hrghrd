@@ -773,7 +773,7 @@
                     <div>
                         <div class="flex items-center gap-1.5 flex-wrap">
                             <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold {{ $isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                                <span>{{ $isApproved ? 'Shift Disetujui' : 'Draf Shift' }} · v{{ $shiftItem->version }}</span>
+                                <span>{{ $isApproved ? 'Shift Disetujui' : 'Draf Shift' }}</span>
                             </span>
                             @if($att)
                                 <span class="px-2 py-0.5 rounded text-xs font-bold {{ $att->status === 'present' ? 'bg-emerald-100 text-emerald-800' : ($att->status === 'late' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') }}">
@@ -781,7 +781,7 @@
                                 </span>
                             @endif
                         </div>
-                        <h3 class="text-lg font-black text-slate-900 mt-1">Dossier Jadwal & Presensi</h3>
+                        <h3 class="text-lg font-black text-slate-900 mt-1">Detail Jadwal Shift</h3>
                     </div>
                     <button
                         type="button"
@@ -828,14 +828,14 @@
                             <span class="font-bold text-slate-900">{{ \Carbon\Carbon::parse($shiftItem->start_at)->translatedFormat('l, d F Y') }}</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-slate-500">Jam Jadwal Roster:</span>
+                            <span class="text-slate-500">Jam Kerja:</span>
                             <span class="font-bold text-slate-900 font-mono">{{ $startTime }} – {{ $endTime }} WIB</span>
                         </div>
                     </div>
 
                     {{-- Data Realisasi Presensi (Audit Box) --}}
                     <div class="p-3 rounded-xl border {{ $att ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200' }} space-y-1.5">
-                        <span class="text-xs font-bold text-slate-900 block uppercase tracking-wider">Realisasi Kehadiran:</span>
+                        <span class="text-xs font-bold text-slate-900 block uppercase tracking-wider">Waktu Kehadiran:</span>
                         @if($att)
                             <div class="flex justify-between text-xs">
                                 <span class="text-slate-600">Jam Check-in:</span>

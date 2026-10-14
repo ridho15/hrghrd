@@ -19,7 +19,7 @@
                 <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
-                <span>Permohonan Ketidakhadiran</span>
+                <span>Pengajuan Cuti & Izin</span>
             </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
                 Formulir Pengajuan Izin & Sakit
@@ -40,31 +40,31 @@
         </a>
     </div>
 
-    {{-- Kotak Informasi Kebijakan --}}
-    <div class="p-5 bg-slate-900 border border-slate-800 text-white rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    {{-- Kotak Informasi Kebijakan (Clean Enterprise Light Callout) --}}
+    <div class="p-5 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div class="flex items-start gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30">
-                <svg class="w-5 h-5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200">
+                <svg class="w-5 h-5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
             </div>
             <div class="text-xs space-y-1">
-                <strong class="text-sm text-emerald-200 font-bold block">Ketentuan Kebijakan Perusahaan</strong>
-                <p class="text-slate-300 m-0 leading-relaxed">
-                    &bull; Izin biasa / cuti tahunan wajib diajukan minimal <strong>H-{{ \App\Support\Rules::int('leave_notice_days') }}</strong> sebelum tanggal pelaksanaan.<br>
+                <strong class="text-sm text-emerald-950 font-bold block">Ketentuan Pengajuan Izin</strong>
+                <p class="text-slate-700 m-0 leading-relaxed">
+                    &bull; Izin cuti wajib diajukan minimal <strong>H-{{ \App\Support\Rules::int('leave_notice_days') }}</strong> sebelum tanggal pelaksanaan.<br>
                     &bull; Izin sakit wajib melampirkan <strong>Surat Keterangan Dokter</strong> resmi (Maksimal 5 MB).
                 </p>
             </div>
         </div>
-        <div class="flex items-center gap-6 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-700/60 shrink-0">
+        <div class="flex items-center gap-6 border-t sm:border-t-0 pt-3 sm:pt-0 border-emerald-200/60 shrink-0">
             <div class="text-left sm:text-right">
-                <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block">Notice Days</span>
-                <span class="text-base font-black text-emerald-400">H-{{ \App\Support\Rules::int('leave_notice_days') }}</span>
+                <span class="text-[11px] uppercase tracking-wider text-slate-500 font-bold block">Batas Pengajuan</span>
+                <span class="text-base font-black text-emerald-800">H-{{ \App\Support\Rules::int('leave_notice_days') }}</span>
             </div>
             @if(\App\Support\Access::manager())
-                <div class="text-left sm:text-right pl-4 border-l border-slate-700/60">
-                    <span class="text-[11px] uppercase tracking-wider text-emerald-300 font-bold block">Sisa Cuti Tahunan</span>
-                    <span class="text-base font-black text-white">{{ auth()->user()->remainingLeaveDays() }} / {{ auth()->user()->annual_leave_quota ?? 12 }} Hari</span>
+                <div class="text-left sm:text-right pl-4 border-l border-emerald-200/60">
+                    <span class="text-[11px] uppercase tracking-wider text-emerald-800 font-bold block">Sisa Cuti Tahunan</span>
+                    <span class="text-base font-black text-slate-900">{{ auth()->user()->remainingLeaveDays() }} / {{ auth()->user()->annual_leave_quota ?? 12 }} Hari</span>
                 </div>
             @endif
         </div>

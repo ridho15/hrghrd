@@ -98,7 +98,7 @@
                     <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60 hidden sm:inline-block">Enterprise HRIS</span>
                 </a>
                 <div class="flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-100/80 px-3 py-1.5 rounded-full border border-slate-200">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span>WIB (UTC+7) Jakarta</span>
                 </div>
             </div>
@@ -109,7 +109,7 @@
         </main>
 
         <footer class="py-5 border-t border-slate-200 text-center text-xs text-slate-500 print:hidden">
-            HR Group Enterprise HRIS &middot; Sistem presensi dan kalkulasi waktu berstandar Asia/Jakarta
+            &copy; {{ date('Y') }} HR Group &middot; Sistem Presensi & Penggajian Karyawan
         </footer>
     </div>
 @endguest
@@ -158,6 +158,12 @@
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                 <span>Izin & Sakit</span>
                             </a>
+                            @if(auth()->user()->role === 'employee')
+                                <a href="{{ route('payroll.slip', auth()->id()) }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('payroll.slip*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    <span>Slip Gaji Saya</span>
+                                </a>
+                            @endif
                         </div>
                     </div>
 
@@ -291,7 +297,7 @@
                         </button>
 
                         <div class="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-600 bg-slate-100/80 px-3 py-1.5 rounded-full border border-slate-200">
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                             <span>Asia/Jakarta (WIB)</span>
                         </div>
                         <span class="text-xs font-bold text-slate-700 bg-emerald-50 text-emerald-800 border border-emerald-200/60 px-2.5 py-1 rounded-lg">
@@ -311,14 +317,14 @@
             {{-- Footer Area Dashboard --}}
             <footer class="py-4 px-6 border-t border-slate-200/80 bg-white/50 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2 print:hidden">
                 <div class="flex items-center gap-2">
-                    <span>&copy; {{ date('Y') }} HR Group &middot; Enterprise HRIS & Payroll System</span>
-                    <span class="text-slate-300">&middot;</span>
-                    <button type="button" data-open-modal="modal-keyboard-shortcuts" class="text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer inline-flex items-center gap-1">
+                    <span>&copy; {{ date('Y') }} HR Group &middot; Sistem Presensi & Penggajian Karyawan</span>
+                    <span class="text-slate-300 hidden sm:inline">&middot;</span>
+                    <button type="button" data-open-modal="modal-keyboard-shortcuts" class="text-emerald-700 hover:text-emerald-800 font-semibold cursor-pointer hidden sm:inline-flex items-center gap-1">
                         <span>Pintasan Keyboard</span>
                         <kbd class="px-1 py-0.2 bg-slate-100 text-[10px] font-mono text-slate-500 rounded border border-slate-200">?</kbd>
                     </button>
                 </div>
-                <span class="text-slate-400">Sinkronisasi Waktu Server Asia/Jakarta (WIB) &middot; Multi-Factor Anti-Fraud</span>
+                <span class="text-slate-400 text-center sm:text-right">Waktu Server: Asia/Jakarta (WIB)</span>
             </footer>
         </div>
     </div>

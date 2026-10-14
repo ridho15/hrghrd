@@ -20,7 +20,7 @@
                 @endif
             </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Dossier Karyawan
+                Profil Karyawan
             </h1>
             <p class="text-sm text-slate-500 mt-1">
                 Informasi profil lengkap, penempatan kerja, kompensasi, dan jejak riwayat operasional.
@@ -120,15 +120,15 @@
                         <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold border {{ $roleBadge['class'] }}">
                             {{ $roleBadge['label'] }}
                         </span>
-                        <span class="text-xs text-slate-400">ID Akun #{{ $person->id }}</span>
+                        <span class="text-xs text-slate-400">ID Karyawan #{{ $person->id }}</span>
                     </div>
                 </div>
             </div>
 
-            {{-- Kartu Status HP Karyawan (Device Binding) --}}
+            {{-- Kartu Status Perangkat Karyawan (Device Binding) --}}
             <div class="bg-slate-50 rounded-xl border border-slate-200/80 p-4 shrink-0 sm:max-w-xs w-full">
                 <div class="flex items-center justify-between mb-1.5">
-                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Kunci HP Karyawan</span>
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Perangkat Presensi Terdaftar</span>
                     @if($person->device_hash)
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Terkunci</span>
                     @else
@@ -136,7 +136,7 @@
                     @endif
                 </div>
                 <p class="text-xs text-slate-500 mb-2 leading-relaxed">
-                    {{ $person->device_hash ? 'Karyawan hanya bisa absen dari smartphone yang telah terdaftar.' : 'Belum ada smartphone yang dikunci. Karyawan bebas absen dari perangkat pertama.' }}
+                    {{ $person->device_hash ? 'Karyawan hanya bisa absen dari perangkat yang telah terdaftar.' : 'Belum ada perangkat yang ditautkan. Sistem akan mengunci perangkat pada presensi pertama.' }}
                 </p>
                 @if($person->device_hash && \App\Support\Access::admin())
                     <form method="post" action="{{ route('people.update', $person->id) }}">
@@ -151,7 +151,7 @@
                         <input type="hidden" name="active" value="{{ $person->active ? '1' : '0' }}">
                         <input type="hidden" name="reset_device" value="1">
                         <button type="submit" class="w-full py-1.5 px-3 rounded-lg bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold border border-slate-300 transition-colors shadow-2xs cursor-pointer">
-                            Reset Kunci HP Karyawan
+                            Reset Tautan Perangkat
                         </button>
                     </form>
                 @endif
@@ -354,7 +354,13 @@
                                     {{ $lr->type === 'sick' ? 'Sakit' : 'Izin' }}
                                 </td>
                                 <td class="py-2.5 px-2.5 text-slate-600 tabular-nums">
-                                    {{ $lr->start_date }} s.d. {{ $lr->end_date }}
+                                    @php
+                                        $startDateFormatted = \Carbon\Carbon::parse($lr->start_date)->translatedFormat('d M Y');
+                                        $endDateFormatted = \Carbon\Carbon::parse($lr->end_date)->translatedFormat('d M Y');
+                                    @endphp
+                                    <span class="text-xs font-semibold text-slate-800">
+                                        {{ $startDateFormatted === $endDateFormatted ? $startDateFormatted : "{$startDateFormatted} – {$endDateFormatted}" }}
+                                    </span>
                                 </td>
                                 <td class="py-2.5 px-2.5 text-slate-600 truncate max-w-[150px]">
                                     {{ $lr->reason }}

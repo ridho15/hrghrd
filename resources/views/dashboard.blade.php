@@ -21,7 +21,7 @@
                 @elseif(\App\Support\Access::manager())
                     Supervisi operasional {{ $managerStats['branch_name'] ?? 'cabang' }}, pemantauan shift staf, dan rekapitulasi kehadiran hari ini.
                 @else
-                    Jadwal shift kerja aktif, presensi lokasi terverifikasi, dan ringkasan pengajuan Anda hari ini.
+                    Pantau jadwal kerja, kehadiran hari ini, dan informasi slip gaji Anda.
                 @endif
             </p>
         </div>
@@ -51,7 +51,11 @@
                 </a>
                 <a href="{{ route('leave') }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-sm font-bold border border-emerald-200/80 transition-colors shadow-xs">
                     <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    <span>Ajukan Izin / Sakit</span>
+                    <span>Ajukan Cuti / Izin</span>
+                </a>
+                <a href="{{ route('payroll.slip', auth()->id()) }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm font-bold border border-slate-200/90 shadow-xs transition-colors">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Slip Gaji</span>
                 </a>
             @endif
         </div>
@@ -530,7 +534,7 @@
                                     class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs shrink-0 cursor-pointer {{ $shift->checkin_at ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-emerald-700 hover:bg-emerald-800 text-white' }}"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    <span>{{ $shift->checkin_at ? 'Verifikasi Check-out' : 'Verifikasi Check-in' }}</span>
+                                    <span>{{ $shift->checkin_at ? 'Check Out' : 'Check In' }}</span>
                                 </button>
                             @endif
                         </article>
@@ -538,9 +542,9 @@
                         {{-- Panel Presensi Tersembunyi (Dikontrol JS via [data-open-attendance]) --}}
                         <div id="attendance-{{ $shift->id }}" class="mt-4 pt-4 border-t border-slate-200 bg-white rounded-xl p-4 sm:p-5 border shadow-xs" hidden>
                             <div class="flex items-center gap-2 mb-3">
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                                 <h3 class="text-sm font-bold text-slate-900 m-0">
-                                    Verifikasi Kehadiran {{ $shift->checkin_at ? 'Check-out' : 'Check-in' }}
+                                    Presensi {{ $shift->checkin_at ? 'Pulang (Check-out)' : 'Masuk (Check-in)' }}
                                 </h3>
                             </div>
                             <p class="text-xs text-slate-500 mb-4 leading-relaxed">
@@ -620,7 +624,7 @@
                                 <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <button class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
-                                        <span>Ambil Lokasi & Kirim Presensi</span>
+                                        <span>Kirim Presensi</span>
                                     </button>
                                     <small class="form-status text-xs font-semibold text-emerald-700" aria-live="polite"></small>
                                 </div>
@@ -704,7 +708,7 @@
                     <div class="text-center py-10 px-4 rounded-xl border border-dashed border-slate-200">
                         <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <p class="text-xs sm:text-sm font-semibold text-slate-500 m-0">Belum ada shift terjadwal untuk akun Anda hari ini.</p>
-                        <p class="text-xs text-slate-400 mt-1">Jadwal tugas baru akan muncul otomatis begitu manajer cabang memplot jadwal Anda.</p>
+                        <p class="text-xs text-slate-400 mt-1">Jadwal kerja akan tampil setelah ditetapkan oleh manajer cabang.</p>
                         <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center gap-1.5 mt-3.5 px-3.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors shadow-2xs">
                             <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                             <span>Lihat Kalender Kerja Bulanan &rarr;</span>
@@ -714,8 +718,30 @@
             </div>
         </section>
 
-        {{-- Kolom Kanan: Status Pengajuan Terakhir (5 Cols) --}}
+        {{-- Kolom Kanan: Status Pengajuan Terakhir & Slip Gaji (5 Cols) --}}
         <section class="lg:col-span-5 space-y-6">
+            {{-- Kartu Akses Cepat Slip Gaji Karyawan (Clean White Enterprise) --}}
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4 hover:border-slate-300 transition-all">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold border border-emerald-100 shrink-0">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900 m-0">Slip Gaji Karyawan</h3>
+                            <span class="text-xs text-slate-500 font-medium">Periode {{ now('Asia/Jakarta')->translatedFormat('F Y') }}</span>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/70 text-[11px] font-bold">Resmi</span>
+                </div>
+                <p class="text-xs text-slate-600 m-0 leading-relaxed">
+                    Lihat rincian penerimaan gaji pokok, tunjangan kehadiran, dan potongan periode berjalan.
+                </p>
+                <a href="{{ route('payroll.slip', auth()->id()) }}" class="inline-flex items-center justify-center w-full gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs transition-colors shadow-xs">
+                    <span>Lihat Slip Gaji</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </a>
+            </div>
             {{-- Status Permohonan Pengecualian Presensi (Jika ada pengajuan aktif) --}}
             @if(isset($myExceptions) && $myExceptions->isNotEmpty())
                 <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 space-y-4">
