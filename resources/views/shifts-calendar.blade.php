@@ -94,13 +94,15 @@
                 <span>Tabel Jadwal Shift</span>
             </a>
         @endif
-        <a
-            href="{{ route('shifts.exchanges') }}"
-            class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium transition-colors shrink-0"
-        >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-            <span>Permohonan Tukar Shift</span>
-        </a>
+        @if(in_array(auth()->user()->role, ['admin', 'manager']))
+            <a
+                href="{{ route('shifts.exchanges') }}"
+                class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium transition-colors shrink-0"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                <span>Permohonan Tukar Shift</span>
+            </a>
+        @endif
         @if(in_array(auth()->user()->role, ['admin', 'manager']))
             <a
                 href="{{ route('attendance.review') }}"
@@ -113,7 +115,7 @@
     </div>
 
     {{-- Banner Jadwal Kosong & Akses Pengajuan Ganti Shift / Ganti Libur --}}
-    @if(isset($openSlots) && $openSlots->isNotEmpty())
+    @if(in_array(auth()->user()->role, ['admin', 'manager']) && isset($openSlots) && $openSlots->isNotEmpty())
         <div class="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-50/70 to-emerald-50/50 border border-amber-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex items-start gap-3">
                 <div class="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
@@ -882,27 +884,18 @@
 
                     <div class="flex items-center gap-2">
                         @if($shiftItem->isOpenSlot)
-                            <button
-                                type="button"
-                                data-close-modal
-                                data-open-modal="modal-claim-open-slot-{{ $shiftItem->id }}"
-                                class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
-                            >
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                                <span>Ajukan Ambil Jadwal Ini</span>
-                            </button>
-                        @elseif(! $shiftItem->attendance()->exists())
-                            @if(in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id())
+                            @if(in_array(auth()->user()->role, ['admin', 'manager']))
                                 <button
                                     type="button"
                                     data-close-modal
-                                    data-open-modal="modal-exchange-shift-{{ $shiftItem->id }}"
-                                    class="px-3 py-2 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                                    data-open-modal="modal-claim-open-slot-{{ $shiftItem->id }}"
+                                    class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
                                 >
-                                    <span>Ganti / Tukar</span>
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                                    <span>Ajukan Ambil Jadwal Ini</span>
                                 </button>
                             @endif
-
+                        @elseif(! $shiftItem->attendance()->exists())
                             @if(in_array(auth()->user()->role, ['admin', 'manager']))
                                 <button
                                     type="button"
@@ -920,7 +913,7 @@
         </div>
 
         {{-- 2. Modal Formulir Permohonan Pergantian / Pertukaran Shift Milik Karyawan --}}
-        @if(! $shiftItem->isOpenSlot && ! $shiftItem->attendance()->exists() && (in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id()))
+        @if(! $shiftItem->isOpenSlot && ! $shiftItem->attendance()->exists() && in_array(auth()->user()->role, ['admin', 'manager']))
             <div
                 id="modal-exchange-shift-{{ $shiftItem->id }}"
                 data-modal-container
@@ -1033,7 +1026,7 @@
         @endif
 
         {{-- 2B. Modal Formulir Pengajuan Ambil Khusus Slot Kosong Ini --}}
-        @if($shiftItem->isOpenSlot)
+        @if($shiftItem->isOpenSlot && in_array(auth()->user()->role, ['admin', 'manager']))
             <div
                 id="modal-claim-open-slot-{{ $shiftItem->id }}"
                 data-modal-container
@@ -1169,6 +1162,7 @@
     @endforeach
 
     {{-- 4. Modal Formulir Pengajuan Ganti Shift / Libur ke Jadwal Kosong --}}
+    @if(in_array(auth()->user()->role, ['admin', 'manager']))
     <div
         id="modal-general-open-slot"
         data-modal-container
@@ -1265,6 +1259,7 @@
             </form>
         </div>
     </div>
+    @endif
 </div>
 
 {{-- Skrip Interaktivitas Kalender Mobile & Switcher Tampilan --}}

@@ -54,8 +54,20 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $startDate = Carbon::now('Asia/Jakarta')->addDays(5)->toDateString();
         $endDate = Carbon::now('Asia/Jakarta')->addDays(6)->toDateString();
 
+        // Karyawan dilarang mengajukan day_off secara mandiri (403)
         $this->actingAs($employee);
+        $resEmp = $this->postJson('/api/v1/leave', [
+            'type'       => 'day_off',
+            'start_date' => $startDate,
+            'end_date'   => $endDate,
+            'reason'     => 'Pengajuan hari libur mingguan untuk urusan keluarga penting',
+        ]);
+        $resEmp->assertStatus(403);
+
+        // Manajer dapat mendaftarkan day_off terpusat atas nama karyawan
+        $this->actingAs($manager);
         $resStore = $this->postJson('/api/v1/leave', [
+            'user_id'    => $employee->id,
             'type'       => 'day_off',
             'start_date' => $startDate,
             'end_date'   => $endDate,
@@ -71,8 +83,9 @@ class LeaveAndScheduleIntegrationTest extends TestCase
             'status' => 'pending',
         ]);
 
-        // Manajer menyetujui pengajuan hari libur
-        $this->actingAs($manager);
+        // Super Admin menyetujui pengajuan hari libur
+        $admin = $this->createUser(['role' => 'admin']);
+        $this->actingAs($admin);
         $resReview = $this->postJson("/api/v1/leave/{$leaveId}/review", [
             'approved_dates' => [$startDate, $endDate],
             'paid_dates'     => [$startDate, $endDate],
@@ -162,11 +175,23 @@ class LeaveAndScheduleIntegrationTest extends TestCase
 
         $this->assertSame(11, $employee->fresh()->remainingLeaveDays());
 
-        // 2. Karyawan mengajukan pergantian cuti ke tanggal baru
+        // 2. Karyawan dilarang mengajukan pergantian cuti mandiri (403)
         $newDate = Carbon::now('Asia/Jakarta')->addDays(15)->toDateString();
 
         $this->actingAs($employee);
+        $resEmp = $this->postJson('/api/v1/leave', [
+            'type'              => 'leave_exchange',
+            'original_leave_id' => $origLeave->id,
+            'start_date'        => $newDate,
+            'end_date'          => $newDate,
+            'reason'            => 'Menggeser jadwal cuti karena ada penyesuaian acara keluarga',
+        ]);
+        $resEmp->assertStatus(403);
+
+        // Manajer memproses pergantian cuti terpusat untuk karyawan
+        $this->actingAs($manager);
         $resExchange = $this->postJson('/api/v1/leave', [
+            'user_id'           => $employee->id,
             'type'              => 'leave_exchange',
             'original_leave_id' => $origLeave->id,
             'start_date'        => $newDate,
@@ -177,8 +202,9 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $resExchange->assertStatus(201);
         $newLeaveId = $resExchange->json('data.id');
 
-        // 3. Manajer menyetujui pergantian cuti
-        $this->actingAs($manager);
+        // 3. Super Admin menyetujui pergantian cuti
+        $admin = $this->createUser(['role' => 'admin']);
+        $this->actingAs($admin);
         $resReview = $this->postJson("/api/v1/leave/{$newLeaveId}/review", [
             'approved_dates' => [$newDate],
             'paid_dates'     => [$newDate],
@@ -309,7 +335,18 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $resList->assertOk();
         $this->assertTrue(collect($resList->json('data'))->pluck('id')->contains($openSlot->id));
 
-        // Karyawan B mengajukan Ganti Shift ke open slot tersebut
+        // Karyawan B dilarang mengajukan klaim open slot mandiri (403)
+        $this->actingAs($employeeB);
+        $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
+            'type'               => 'change_shift',
+            'target_shift_id'    => $openSlot->id,
+            'requester_shift_id' => $shiftB->id,
+            'reason'             => 'Mengambil slot kosong Barista dan menukar shift kerja saya',
+        ]);
+        $resEmp->assertStatus(403);
+
+        // Manajer memproses Ganti Shift ke open slot tersebut
+        $this->actingAs($manager);
         $resClaim = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'               => 'change_shift',
             'target_shift_id'    => $openSlot->id,
@@ -320,7 +357,6 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $exchangeId = $resClaim->json('data.id');
 
         // Manajer menyetujui
-        $this->actingAs($manager);
         $resApprove = $this->postJson("/api/v1/shifts/exchanges/{$exchangeId}/review", [
             'decision' => 'approve',
             'note'     => 'Disetujui manajer',
@@ -334,7 +370,7 @@ class LeaveAndScheduleIntegrationTest extends TestCase
     }
 
     /**
-     * 8. Penolakan bila karyawan level berbeda mencoba klaim slot kosong (Negative Path: 422).
+     * 8. Penolakan bila level berbeda mencoba klaim slot kosong (Negative Path: 422 untuk manajer, 403 untuk karyawan).
      */
     public function test_vacated_slot_cannot_be_claimed_by_different_position_level(): void
     {
@@ -354,7 +390,18 @@ class LeaveAndScheduleIntegrationTest extends TestCase
             'version'     => 1,
         ]);
 
+        // Karyawan dilarang mengajukan klaim open slot mandiri (403)
         $this->actingAs($employeeKitchen);
+        $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
+            'type'            => 'change_off_day',
+            'target_shift_id' => $openSlotSupervisor->id,
+            'reason'          => 'Mencoba ambil slot supervisor padahal level kitchen',
+        ]);
+        $resEmp->assertStatus(403);
+
+        // Manajer memproses penukaran jadwal tetapi ditolak 422 karena posisi tidak setingkat
+        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
+        $this->actingAs($manager);
         $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'            => 'change_off_day',
             'target_shift_id' => $openSlotSupervisor->id,
@@ -392,8 +439,16 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $types = collect($response->json('data.types'))->pluck('key')->all();
         $this->assertContains('leave', $types);
         $this->assertContains('sick', $types);
-        $this->assertContains('day_off', $types);
-        $this->assertContains('leave_exchange', $types);
+        $this->assertNotContains('day_off', $types);
+        $this->assertNotContains('leave_exchange', $types);
+
+        // Bagi manajer, types lengkap tersedia
+        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
+        $this->actingAs($manager);
+        $resMgr = $this->getJson('/api/v1/leave/types');
+        $mgrTypes = collect($resMgr->json('data.types'))->pluck('key')->all();
+        $this->assertContains('day_off', $mgrTypes);
+        $this->assertContains('leave_exchange', $mgrTypes);
     }
 
     /**
@@ -403,18 +458,35 @@ class LeaveAndScheduleIntegrationTest extends TestCase
     {
         $branch = $this->createBranch();
         $employee = $this->createUser(['branch_id' => $branch->id]);
+        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
 
         $this->actingAs($employee);
 
-        // Halaman create form
+        // Halaman create form untuk karyawan tidak menampilkan day_off / leave_exchange
         $resCreate = $this->get('/leave/create');
         $resCreate->assertOk();
-        $resCreate->assertSee('Pengajuan Hari Libur (Day Off - Non-Kuota)');
-        $resCreate->assertSee('Pergantian Tanggal Cuti (Reschedule)');
+        $resCreate->assertDontSee('Pengajuan Hari Libur (Day Off)');
+        $resCreate->assertDontSee('Pergantian Tanggal Cuti (Reschedule)');
 
-        // Buat satu pengajuan day_off
+        // Karyawan dilarang submit day_off
         $startDate = Carbon::now('Asia/Jakarta')->addDays(7)->toDateString();
+        $resPostEmp = $this->post('/leave', [
+            'type'       => 'day_off',
+            'start_date' => $startDate,
+            'end_date'   => $startDate,
+            'reason'     => 'Pengajuan hari libur mingguan via web interface',
+        ]);
+        $resPostEmp->assertSessionHasErrors('type');
+
+        // Manajer dapat melihat opsi day_off dan membuat pengajuan
+        $this->actingAs($manager);
+        $resCreateMgr = $this->get('/leave/create');
+        $resCreateMgr->assertOk();
+        $resCreateMgr->assertSee('Pengajuan Hari Libur (Day Off)');
+        $resCreateMgr->assertSee('Pergantian Tanggal Cuti (Reschedule)');
+
         $resPost = $this->post('/leave', [
+            'user_id'    => $employee->id,
             'type'       => 'day_off',
             'start_date' => $startDate,
             'end_date'   => $startDate,
@@ -593,5 +665,106 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $response->assertOk();
         $response->assertSee('Tepat Waktu');
         $response->assertDontSee('0 Menit');
+    }
+
+    /**
+     * 14. Web View: Karyawan biasa tidak melihat kuota cuti di /leave, /leave/create, dan profil /people/{id}.
+     */
+    public function test_employee_does_not_see_leave_quota_cards_on_leave_views_and_profile(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser([
+            'role'               => 'employee',
+            'branch_id'          => $branch->id,
+            'annual_leave_quota' => 12,
+        ]);
+
+        $this->actingAs($employee);
+
+        // 1. /leave: Tidak menampilkan kartu Kuota Cuti & Sisa Kuota Cuti
+        $resLeave = $this->get('/leave');
+        $resLeave->assertOk();
+        $resLeave->assertDontSee('Kuota Cuti (');
+        $resLeave->assertDontSee('Sisa Kuota Cuti');
+
+        // 2. /leave/create: Tidak menampilkan widget Sisa Cuti Tahunan & teks Memotong Kuota
+        $resCreate = $this->get('/leave/create');
+        $resCreate->assertOk();
+        $resCreate->assertDontSee('Sisa Cuti Tahunan');
+        $resCreate->assertDontSee('Memotong Kuota');
+
+        // 3. /people/{id}: Saat karyawan membuka profilnya sendiri, kartu Sisa Cuti tidak tampil
+        $resProfile = $this->get("/people/{$employee->id}");
+        $resProfile->assertOk();
+        $resProfile->assertDontSee('Sisa Cuti (');
+    }
+
+    /**
+     * 15. Web View: Manager dan Admin tetap dapat melihat kartu kuota cuti untuk kebutuhan manajerial.
+     */
+    public function test_manager_can_still_see_leave_quota_cards_on_leave_views_and_profile(): void
+    {
+        $branch = $this->createBranch();
+        $manager = $this->createUser([
+            'role'               => 'manager',
+            'branch_id'          => $branch->id,
+            'annual_leave_quota' => 12,
+        ]);
+        $employee = $this->createUser([
+            'role'               => 'employee',
+            'branch_id'          => $branch->id,
+            'annual_leave_quota' => 12,
+        ]);
+
+        $this->actingAs($manager);
+
+        // 1. /leave: Menampilkan kartu Kuota Cuti & Sisa Kuota Cuti untuk manajer
+        $resLeave = $this->get('/leave');
+        $resLeave->assertOk();
+        $resLeave->assertSee('Kuota Cuti (');
+        $resLeave->assertSee('Sisa Kuota Cuti');
+
+        // 2. /leave/create: Menampilkan widget Sisa Cuti Tahunan
+        $resCreate = $this->get('/leave/create');
+        $resCreate->assertOk();
+        $resCreate->assertSee('Sisa Cuti Tahunan');
+
+        // 3. /people/{id}: Menampilkan kartu Sisa Cuti saat meninjau staf
+        $resProfile = $this->get("/people/{$employee->id}");
+        $resProfile->assertOk();
+        $resProfile->assertSee('Sisa Cuti (');
+    }
+
+    /**
+     * 16. Mobile API: GET /api/v1/leave/types menyembunyikan kuota (null) untuk karyawan biasa, namun ada untuk manajer.
+     */
+    public function test_api_leave_types_masks_leave_quota_for_regular_employees(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser([
+            'role'               => 'employee',
+            'branch_id'          => $branch->id,
+            'annual_leave_quota' => 12,
+        ]);
+        $manager = $this->createUser([
+            'role'               => 'manager',
+            'branch_id'          => $branch->id,
+            'annual_leave_quota' => 12,
+        ]);
+
+        // Karyawan biasa -> kuota bernilai null
+        $this->actingAs($employee, 'sanctum');
+        $resEmp = $this->getJson('/api/v1/leave/types');
+        $resEmp->assertOk();
+        $resEmp->assertJsonPath('data.annual_leave_quota', null);
+        $resEmp->assertJsonPath('data.used_leave_days', null);
+        $resEmp->assertJsonPath('data.remaining_leave_days', null);
+
+        // Manajer -> kuota integer tersedia
+        $this->actingAs($manager, 'sanctum');
+        $resMgr = $this->getJson('/api/v1/leave/types');
+        $resMgr->assertOk();
+        $resMgr->assertJsonPath('data.annual_leave_quota', 12);
+        $this->assertNotNull($resMgr->json('data.remaining_leave_days'));
     }
 }

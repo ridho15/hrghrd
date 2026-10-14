@@ -113,4 +113,41 @@ class AuthAndRbacNegativeTest extends TestCase
         $response = $this->get("/leave/{$leaveB->id}/certificate");
         $response->assertForbidden();
     }
+
+    public function test_employee_slip_view_does_not_contain_forbidden_rekap_link(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser(['role' => 'employee', 'branch_id' => $branch->id]);
+
+        $this->actingAs($employee);
+        $response = $this->get("/payroll/slip/{$employee->id}?month=2026-09&branch_id={$branch->id}");
+        $response->assertOk();
+        $response->assertDontSee('Kembali ke Rekap');
+        $response->assertSee('Kembali ke Profil');
+        $response->assertSee(route('people.show', $employee->id));
+    }
+
+    public function test_manager_profile_view_does_not_link_to_forbidden_people_index(): void
+    {
+        $branch = $this->createBranch();
+        $manager = $this->actingAsManager($branch);
+        $employee = $this->createUser(['role' => 'employee', 'branch_id' => $branch->id]);
+
+        $response = $this->get("/people/{$employee->id}");
+        $response->assertOk();
+        $response->assertDontSee('Kembali ke Direktori Karyawan');
+        $response->assertSee('Kembali ke Beranda');
+        $response->assertSee(route('home'));
+    }
+
+    public function test_employee_profile_view_contains_link_to_own_slip_gaji(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->actingAsEmployee($branch);
+
+        $response = $this->get("/people/{$employee->id}");
+        $response->assertOk();
+        $response->assertSee('Lihat Slip Gaji Bulan Ini');
+        $response->assertSee('/payroll/slip/' . $employee->id);
+    }
 }

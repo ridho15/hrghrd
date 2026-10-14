@@ -61,10 +61,12 @@
                 <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold block">Notice Days</span>
                 <span class="text-base font-black text-emerald-400">H-{{ \App\Support\Rules::int('leave_notice_days') }}</span>
             </div>
-            <div class="text-left sm:text-right pl-4 border-l border-slate-700/60">
-                <span class="text-[11px] uppercase tracking-wider text-emerald-300 font-bold block">Sisa Cuti Tahunan</span>
-                <span class="text-base font-black text-white">{{ auth()->user()->remainingLeaveDays() }} / {{ auth()->user()->annual_leave_quota ?? 12 }} Hari</span>
-            </div>
+            @if(\App\Support\Access::manager())
+                <div class="text-left sm:text-right pl-4 border-l border-slate-700/60">
+                    <span class="text-[11px] uppercase tracking-wider text-emerald-300 font-bold block">Sisa Cuti Tahunan</span>
+                    <span class="text-base font-black text-white">{{ auth()->user()->remainingLeaveDays() }} / {{ auth()->user()->annual_leave_quota ?? 12 }} Hari</span>
+                </div>
+            @endif
         </div>
     </div>
 
@@ -136,10 +138,12 @@
                         onchange="toggleCertificateRequirement(this.value)"
                         class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all cursor-pointer @error('type') border-rose-300 bg-rose-50/50 @enderror"
                     >
-                        <option value="leave" @selected(old('type') === 'leave')>Cuti Tahunan / Izin Biasa (Memotong Kuota)</option>
+                        <option value="leave" @selected(old('type') === 'leave')>Cuti Tahunan / Izin Biasa</option>
                         <option value="sick" @selected(old('type') === 'sick')>Izin Sakit (Wajib Surat Dokter)</option>
-                        <option value="day_off" @selected(old('type') === 'day_off')>Pengajuan Hari Libur (Day Off - Non-Kuota)</option>
-                        <option value="leave_exchange" @selected(old('type') === 'leave_exchange')>Pergantian Tanggal Cuti (Reschedule)</option>
+                        @if(\App\Support\Access::manager())
+                            <option value="day_off" @selected(old('type') === 'day_off')>Pengajuan Hari Libur (Day Off)</option>
+                            <option value="leave_exchange" @selected(old('type') === 'leave_exchange')>Pergantian Tanggal Cuti (Reschedule)</option>
+                        @endif
                     </select>
                     @error('type')
                         <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
@@ -147,37 +151,39 @@
                 </div>
             </div>
 
-            {{-- Kartu Pilihan Cuti Awal untuk Pergantian Cuti --}}
-            <div id="leave-exchange-card" class="p-4 bg-sky-50/80 border border-sky-200/80 rounded-xl space-y-3 hidden">
-                <div class="flex items-center gap-2">
-                    <span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                    </span>
-                    <strong class="text-xs text-sky-950 font-bold uppercase tracking-wider">Pilih Permohonan Cuti Awal yang Ingin Diganti</strong>
+            @if(\App\Support\Access::manager())
+                {{-- Kartu Pilihan Cuti Awal untuk Pergantian Cuti --}}
+                <div id="leave-exchange-card" class="p-4 bg-sky-50/80 border border-sky-200/80 rounded-xl space-y-3 hidden">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        </span>
+                        <strong class="text-xs text-sky-950 font-bold uppercase tracking-wider">Pilih Permohonan Cuti Awal yang Ingin Diganti</strong>
+                    </div>
+                    <p class="text-[11px] text-sky-800 m-0">
+                        Pilih pengajuan cuti aktif yang ingin Anda geser tanggalnya untuk dialokasikan ke jadwal baru.
+                    </p>
+                    <div>
+                        <select
+                            name="original_leave_id"
+                            id="original-leave-id"
+                            class="w-full h-11 px-3.5 bg-white border border-sky-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 transition-all cursor-pointer"
+                        >
+                            <option value="">-- Pilih Cuti yang Ingin Digeser/Diganti --</option>
+                            @if(isset($activeLeaves))
+                                @foreach($activeLeaves as $al)
+                                    <option value="{{ $al->id }}" @selected(old('original_leave_id') == $al->id)>
+                                        #LVR-{{ str_pad($al->id, 5, '0', STR_PAD_LEFT) }} &bull; ({{ $al->start_date ? $al->start_date->format('d M Y') : '' }} s.d. {{ $al->end_date ? $al->end_date->format('d M Y') : '' }}) - {{ Str::limit($al->reason, 40) }}
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
+                        @error('original_leave_id')
+                            <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
-                <p class="text-[11px] text-sky-800 m-0">
-                    Pilih pengajuan cuti aktif yang ingin Anda geser tanggalnya. Kuota dari cuti lama akan dibebaskan dan dialokasikan untuk tanggal baru.
-                </p>
-                <div>
-                    <select
-                        name="original_leave_id"
-                        id="original-leave-id"
-                        class="w-full h-11 px-3.5 bg-white border border-sky-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 transition-all cursor-pointer"
-                    >
-                        <option value="">-- Pilih Cuti yang Ingin Digeser/Diganti --</option>
-                        @if(isset($activeLeaves))
-                            @foreach($activeLeaves as $al)
-                                <option value="{{ $al->id }}" @selected(old('original_leave_id') == $al->id)>
-                                    #LVR-{{ str_pad($al->id, 5, '0', STR_PAD_LEFT) }} &bull; ({{ $al->start_date ? $al->start_date->format('d M Y') : '' }} s.d. {{ $al->end_date ? $al->end_date->format('d M Y') : '' }}) - {{ Str::limit($al->reason, 40) }}
-                                </option>
-                            @endforeach
-                        @endif
-                    </select>
-                    @error('original_leave_id')
-                        <p class="text-[11px] text-rose-600 font-semibold mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-            </div>
+            @endif
         </div>
 
         {{-- KARTU 2: Periode Tanggal & Alasan --}}

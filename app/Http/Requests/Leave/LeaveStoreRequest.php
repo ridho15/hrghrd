@@ -50,6 +50,10 @@ class LeaveStoreRequest extends FormRequest
 
                 $type = $this->input('type');
 
+                if (in_array($type, ['day_off', 'leave_exchange'], true) && !Access::manager()) {
+                    $validator->errors()->add('type', 'Pengaturan hari libur dan pergantian cuti saat ini dikelola terpusat oleh Super Admin / HRD.');
+                }
+
                 if ($type === 'leave') {
                     $minDate = now('Asia/Jakarta')->startOfDay()->addDays(Rules::int('leave_notice_days'));
                     if ($start->lt($minDate)) {
@@ -62,7 +66,10 @@ class LeaveStoreRequest extends FormRequest
                         $requestedDays = (int) $start->copy()->daysUntil($end)->count();
                         $remaining = $user->remainingLeaveDays($start->year);
                         if ($requestedDays > $remaining) {
-                            $validator->errors()->add('end_date', "Sisa kuota cuti tahunan tidak mencukupi (tersisa {$remaining} hari, diajukan {$requestedDays} hari).");
+                            $msg = $user->role === 'employee'
+                                ? 'Pengajuan cuti tahunan tidak dapat diproses karena melebihi batas yang diizinkan perusahaan. Silakan koordinasikan dengan atasan atau HRD.'
+                                : "Sisa kuota cuti tahunan tidak mencukupi (tersisa {$remaining} hari, diajukan {$requestedDays} hari).";
+                            $validator->errors()->add('end_date', $msg);
                         }
                     }
                 } elseif ($type === 'sick') {

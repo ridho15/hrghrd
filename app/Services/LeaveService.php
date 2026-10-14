@@ -48,7 +48,10 @@ class LeaveService
         if ($type === 'leave') {
             $requestedDays = (int) $start->copy()->daysUntil($end)->count();
             $remaining = $employee->remainingLeaveDays($start->year);
-            abort_if($requestedDays > $remaining, 422, "Sisa kuota cuti tahunan tidak mencukupi (tersisa {$remaining} hari, diajukan {$requestedDays} hari).");
+            $msg = $employee->role === 'employee'
+                ? 'Pengajuan cuti tahunan tidak dapat diproses karena melebihi batas yang diizinkan perusahaan. Silakan koordinasikan dengan atasan atau HRD.'
+                : "Sisa kuota cuti tahunan tidak mencukupi (tersisa {$remaining} hari, diajukan {$requestedDays} hari).";
+            abort_if($requestedDays > $remaining, 422, $msg);
         } elseif ($type === 'leave_exchange') {
             abort_unless(! empty($data['original_leave_id']), 422, 'Permohonan pergantian cuti wajib memilih pengajuan cuti awal.');
             $origLeave = LeaveRequest::findOrFail($data['original_leave_id']);

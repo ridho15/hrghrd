@@ -27,8 +27,17 @@ class ShiftExchangeLifecycleAndIntegrationTest extends TestCase
             'version' => 1,
         ]);
 
-        // 1. Karyawan A mengajukan permohonan penggantian
+        // 1. Karyawan dilarang mengajukan pertukaran mandiri (403)
         $this->actingAs($empA);
+        $resEmp = $this->post("/shifts/{$shift->id}/exchange", [
+            'type' => 'replacement',
+            'replacement_id' => $empB->id,
+            'reason' => 'Perlu menghadiri wisuda keluarga',
+        ]);
+        $resEmp->assertForbidden();
+
+        // 1b. Manajer mengajukan permohonan penggantian terpusat
+        $this->actingAs($manager);
         $resReq = $this->post("/shifts/{$shift->id}/exchange", [
             'type' => 'replacement',
             'replacement_id' => $empB->id,
@@ -91,8 +100,17 @@ class ShiftExchangeLifecycleAndIntegrationTest extends TestCase
             'version' => 1,
         ]);
 
-        // 1. Karyawan A mengajukan swap dua arah
+        // 1. Karyawan dilarang mengajukan swap mandiri (403)
         $this->actingAs($empA);
+        $resEmp = $this->post("/shifts/{$shiftA->id}/exchange", [
+            'type' => 'swap',
+            'target_shift_id' => $shiftB->id,
+            'reason' => 'Tukar shift hari Selasa dengan Kamis',
+        ]);
+        $resEmp->assertForbidden();
+
+        // 1b. Manajer memproses swap dua arah
+        $this->actingAs($manager);
         $this->post("/shifts/{$shiftA->id}/exchange", [
             'type' => 'swap',
             'target_shift_id' => $shiftB->id,

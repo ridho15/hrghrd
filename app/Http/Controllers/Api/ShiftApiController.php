@@ -440,6 +440,13 @@ class ShiftApiController extends Controller
      */
     public function exchangeOpenSlot(ShiftExchangeOpenSlotRequest $request, ShiftExchangeService $service)
     {
+        if (! Access::manager()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fitur pengajuan tukar shift mandiri dinonaktifkan sementara. Pengaturan jadwal shift dan libur dikelola terpusat oleh Super Admin / HRD.',
+            ], 403);
+        }
+
         $data = $request->validated();
         $targetShift = Shift::with(['branch', 'position'])->findOrFail((int) $data['target_shift_id']);
         $reqShift = ! empty($data['requester_shift_id']) ? Shift::findOrFail((int) $data['requester_shift_id']) : null;
@@ -450,7 +457,8 @@ class ShiftApiController extends Controller
             $targetShift,
             $reqShift,
             $data['reason'],
-            $data['off_date'] ?? null
+            $data['off_date'] ?? null,
+            ! empty($data['user_id']) ? (int) $data['user_id'] : null
         );
 
         $msg = ($data['type'] === 'change_shift' ? 'Permohonan ganti shift' : 'Permohonan ganti libur') . ' ke jadwal kosong berhasil diajukan dan menunggu persetujuan Super Admin / HRD.';
@@ -501,6 +509,13 @@ class ShiftApiController extends Controller
      */
     public function exchangeStore(ShiftExchangeStoreRequest $request, int $id, ShiftExchangeService $service)
     {
+        if (! Access::manager()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Fitur pengajuan tukar shift mandiri dinonaktifkan sementara. Pengaturan jadwal shift dan libur dikelola terpusat oleh Super Admin / HRD.',
+            ], 403);
+        }
+
         $shift = Shift::findOrFail($id);
         $data = $request->validated();
 

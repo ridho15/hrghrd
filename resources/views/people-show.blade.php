@@ -7,7 +7,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
             <div class="flex items-center gap-2 mb-2">
-                @if(\App\Support\Access::manager())
+                @if(\App\Support\Access::admin())
                     <a href="{{ route('people') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-emerald-700 transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
                         <span>Kembali ke Direktori Karyawan</span>
@@ -161,12 +161,25 @@
 
     {{-- Grid 4 Metrik Detail --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Gaji Pokok Bulanan</span>
-            <strong class="text-xl font-extrabold text-slate-900 mt-1 block tabular-nums">
-                Rp {{ number_format($person->base_salary, 0, ',', '.') }}
-            </strong>
-            <span class="text-[11px] text-slate-400 mt-0.5 block">Kompensasi dasar</span>
+        <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+            <div>
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Gaji Pokok Bulanan</span>
+                <strong class="text-xl font-extrabold text-slate-900 mt-1 block tabular-nums">
+                    Rp {{ number_format($person->base_salary, 0, ',', '.') }}
+                </strong>
+                <span class="text-[11px] text-slate-400 mt-0.5 block">Kompensasi dasar</span>
+            </div>
+            @if(auth()->id() === $person->id || \App\Support\Access::admin())
+                <div class="mt-3 pt-2.5 border-t border-slate-100">
+                    <a
+                        href="{{ route('payroll.slip', ['userId' => $person->id, 'month' => now('Asia/Jakarta')->format('Y-m')]) }}"
+                        class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
+                    >
+                        <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <span>Lihat Slip Gaji Bulan Ini &rarr;</span>
+                    </a>
+                </div>
+            @endif
         </div>
 
         <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
@@ -193,13 +206,15 @@
             <span class="text-[11px] text-slate-400 mt-0.5 block">Struktur resmi</span>
         </div>
 
-        <div class="bg-white rounded-xl border border-emerald-200 bg-emerald-50/20 p-4 shadow-xs">
-            <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Sisa Cuti ({{ now()->year }})</span>
-            <strong class="text-xl font-extrabold text-emerald-700 mt-1 block">
-                {{ $person->remainingLeaveDays() }} / {{ $person->annual_leave_quota ?? 12 }} <span class="text-xs font-semibold text-emerald-600">Hari</span>
-            </strong>
-            <span class="text-[11px] text-slate-500 mt-0.5 block">Terpakai: {{ $person->usedLeaveDays(now()->year) }} hari</span>
-        </div>
+        @if(\App\Support\Access::manager())
+            <div class="bg-white rounded-xl border border-emerald-200 bg-emerald-50/20 p-4 shadow-xs">
+                <span class="text-xs font-bold text-emerald-800 uppercase tracking-wider block">Sisa Cuti ({{ now()->year }})</span>
+                <strong class="text-xl font-extrabold text-emerald-700 mt-1 block">
+                    {{ $person->remainingLeaveDays() }} / {{ $person->annual_leave_quota ?? 12 }} <span class="text-xs font-semibold text-emerald-600">Hari</span>
+                </strong>
+                <span class="text-[11px] text-slate-500 mt-0.5 block">Terpakai: {{ $person->usedLeaveDays(now()->year) }} hari</span>
+            </div>
+        @endif
     </div>
 
     {{-- Kartu Data Rekening Bank & Identitas Akun Login --}}

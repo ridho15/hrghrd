@@ -214,12 +214,21 @@ class EmployeeCalendarUnhappyPathTest extends TestCase
             'reason'         => 'Ingin menukar padahal sudah check-in',
         ]);
 
-        $response->assertStatus(409);
+        $response->assertStatus(403);
+
+        $manager = $this->createUser(['branch_id' => $branch->id, 'role' => 'manager']);
+        $this->actingAs($manager);
+        $resMgr = $this->post('/shifts/' . $shiftA->id . '/exchange', [
+            'type'           => 'replacement',
+            'replacement_id' => $empB->id,
+            'reason'         => 'Ingin menukar padahal sudah check-in',
+        ]);
+        $resMgr->assertStatus(409);
     }
 
     /**
      * Unhappy 8: Karyawan mencoba menukar jadwal dengan diri sendiri.
-     * Harus ditolak dengan status 422 Unprocessable Entity.
+     * Harus ditolak dengan status 403 (karyawan tidak berhak) dan 422 jika diproses manajer.
      */
     public function test_unhappy_employee_cannot_exchange_shift_with_self(): void
     {
@@ -238,12 +247,21 @@ class EmployeeCalendarUnhappyPathTest extends TestCase
             'reason'         => 'Menukar dengan diri sendiri',
         ]);
 
-        $response->assertStatus(422);
+        $response->assertStatus(403);
+
+        $manager = $this->createUser(['branch_id' => $branch->id, 'role' => 'manager']);
+        $this->actingAs($manager);
+        $resMgr = $this->post('/shifts/' . $shiftA->id . '/exchange', [
+            'type'           => 'replacement',
+            'replacement_id' => $empA->id,
+            'reason'         => 'Menukar dengan diri sendiri',
+        ]);
+        $resMgr->assertStatus(422);
     }
 
     /**
      * Unhappy 9: Karyawan mencoba menukar jadwal dengan rekan dari cabang yang berbeda.
-     * Harus ditolak dengan status 422 Unprocessable Entity.
+     * Harus ditolak dengan status 403 (karyawan tidak berhak) dan 422 jika diproses manajer.
      */
     public function test_unhappy_employee_cannot_exchange_shift_with_colleague_from_different_branch(): void
     {
@@ -265,12 +283,21 @@ class EmployeeCalendarUnhappyPathTest extends TestCase
             'reason'         => 'Menukar ke cabang lain yang berbeda',
         ]);
 
-        $response->assertStatus(422);
+        $response->assertStatus(403);
+
+        $manager = $this->createUser(['branch_id' => $branchA->id, 'role' => 'manager']);
+        $this->actingAs($manager);
+        $resMgr = $this->post('/shifts/' . $shiftA->id . '/exchange', [
+            'type'           => 'replacement',
+            'replacement_id' => $empDifferentBranch->id,
+            'reason'         => 'Menukar ke cabang lain yang berbeda',
+        ]);
+        $resMgr->assertStatus(422);
     }
 
     /**
      * Unhappy 10: Karyawan mencoba menukar ke rekan yang sudah memiliki jadwal bentrok (overlapping shift).
-     * Harus ditolak dengan status 409 Conflict.
+     * Harus ditolak dengan status 403 (karyawan tidak berhak) dan 409 jika diproses manajer.
      */
     public function test_unhappy_employee_cannot_exchange_shift_with_overlapping_schedule(): void
     {
@@ -297,7 +324,16 @@ class EmployeeCalendarUnhappyPathTest extends TestCase
             'reason'         => 'Menukar ke rekan yang jamnya tumpang tindih',
         ]);
 
-        $response->assertStatus(409);
+        $response->assertStatus(403);
+
+        $manager = $this->createUser(['branch_id' => $branch->id, 'role' => 'manager']);
+        $this->actingAs($manager);
+        $resMgr = $this->post('/shifts/' . $shiftA->id . '/exchange', [
+            'type'           => 'replacement',
+            'replacement_id' => $empB->id,
+            'reason'         => 'Menukar ke rekan yang jamnya tumpang tindih',
+        ]);
+        $resMgr->assertStatus(409);
     }
 
     /**

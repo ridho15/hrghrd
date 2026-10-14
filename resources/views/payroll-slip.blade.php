@@ -32,8 +32,13 @@
     <nav class="flex items-center gap-2 text-xs font-semibold text-slate-500 print:hidden">
         <a href="{{ route('home') }}" class="hover:text-emerald-700 transition-colors">Beranda</a>
         <span>/</span>
-        <a href="{{ route('payroll.index', ['branch_id' => $branch->id, 'month' => $month]) }}" class="hover:text-emerald-700 transition-colors">Rekap Payroll</a>
-        <span>/</span>
+        @if(\App\Support\Access::admin())
+            <a href="{{ route('payroll.index', ['branch_id' => $branch->id, 'month' => $month]) }}" class="hover:text-emerald-700 transition-colors">Rekap Payroll</a>
+            <span>/</span>
+        @elseif(auth()->id() === $employee->id)
+            <a href="{{ route('people.show', $employee->id) }}" class="hover:text-emerald-700 transition-colors">Profil Saya</a>
+            <span>/</span>
+        @endif
         <span class="text-slate-900 font-bold">Slip: {{ $employee->name }}</span>
     </nav>
 
@@ -53,15 +58,27 @@
         </div>
 
         <div class="flex items-center gap-2.5 self-start sm:self-auto">
-            <a
-                href="{{ route('payroll.index', ['branch_id' => $branch->id, 'month' => $month]) }}"
-                class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 shadow-2xs"
-            >
-                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                <span>Kembali ke Rekap</span>
-            </a>
+            @if(\App\Support\Access::admin())
+                <a
+                    href="{{ route('payroll.index', ['branch_id' => $branch->id, 'month' => $month]) }}"
+                    class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                >
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span>Kembali ke Rekap</span>
+                </a>
+            @else
+                <a
+                    href="{{ auth()->id() === $employee->id ? route('people.show', $employee->id) : route('home') }}"
+                    class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-1.5 shadow-2xs"
+                >
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    <span>{{ auth()->id() === $employee->id ? 'Kembali ke Profil' : 'Kembali ke Beranda' }}</span>
+                </a>
+            @endif
 
             <button
                 type="button"

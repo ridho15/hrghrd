@@ -725,7 +725,7 @@ class AdminController extends Controller
 
     public function shiftExchanges(Request $request)
     {
-        abort_unless(auth()->check(), 403);
+        abort_unless(Access::manager(), 403, 'Akses terbatas untuk Super Admin & Manager.');
         $user = auth()->user();
 
         $query = ShiftExchange::with([
@@ -756,6 +756,8 @@ class AdminController extends Controller
 
     public function shiftExchangeStore(ShiftExchangeStoreRequest $request, int $id, ShiftExchangeService $service)
     {
+        abort_unless(Access::manager(), 403, 'Fitur permohonan tukar shift saat ini dikelola terpusat oleh Super Admin / HRD.');
+
         $shift = Shift::with('branch')->findOrFail($id);
         $data = $request->validated();
 
@@ -786,6 +788,8 @@ class AdminController extends Controller
 
     public function shiftExchangeOpenSlotStore(ShiftExchangeStoreRequest $request, ShiftExchangeService $service)
     {
+        abort_unless(Access::manager(), 403, 'Fitur permohonan tukar shift saat ini dikelola terpusat oleh Super Admin / HRD.');
+
         $data = $request->validated();
         $targetShift = Shift::with(['position', 'branch'])->findOrFail((int) $data['target_shift_id']);
         $reqShift = ! empty($data['requester_shift_id']) ? Shift::findOrFail((int) $data['requester_shift_id']) : null;
@@ -796,7 +800,8 @@ class AdminController extends Controller
             $targetShift,
             $reqShift,
             $data['reason'],
-            $data['target_date'] ?? null
+            $data['target_date'] ?? null,
+            ! empty($data['user_id']) ? (int) $data['user_id'] : null
         );
 
         $msg = ($data['type'] === 'change_shift' ? 'Permohonan ganti shift ke jadwal kosong' : 'Permohonan ganti libur ke jadwal kosong') . ' berhasil diajukan dan menunggu persetujuan Super Admin / HRD.';

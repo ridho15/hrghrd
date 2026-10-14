@@ -92,50 +92,56 @@ class LeaveApiController extends Controller
     public function types(Request $request)
     {
         $actor = $request->user();
+        $isManager = in_array($actor->role, ['admin', 'manager'], true);
 
-        $activeLeaves = LeaveRequest::where('user_id', $actor->id)
+        $activeLeaves = $isManager ? LeaveRequest::where('user_id', $actor->id)
             ->whereIn('status', ['approved', 'pending'])
             ->whereIn('type', ['leave', 'leave_exchange'])
             ->latest('start_date')
-            ->get(['id', 'type', 'start_date', 'end_date', 'reason', 'status']);
+            ->get(['id', 'type', 'start_date', 'end_date', 'reason', 'status']) : collect([]);
+
+        $types = [
+            [
+                'key'                  => 'leave',
+                'label'                => 'Cuti Tahunan / Izin Biasa',
+                'description'          => 'Wajib diajukan minimal H-' . \App\Support\Rules::int('leave_notice_days') . '.',
+                'requires_certificate' => false,
+                'impacts_quota'        => true,
+            ],
+            [
+                'key'                  => 'sick',
+                'label'                => 'Izin Sakit',
+                'description'          => 'Wajib melampirkan surat keterangan dokter resmi (PDF/JPG maks 5 MB).',
+                'requires_certificate' => true,
+                'impacts_quota'        => false,
+            ],
+        ];
+
+        if ($isManager) {
+            $types[] = [
+                'key'                  => 'day_off',
+                'label'                => 'Pengajuan Hari Libur (Day Off)',
+                'description'          => 'Pengajuan hari libur mingguan/roster kerja.',
+                'requires_certificate' => false,
+                'impacts_quota'        => false,
+            ];
+            $types[] = [
+                'key'                  => 'leave_exchange',
+                'label'                => 'Pergantian Tanggal Cuti',
+                'description'          => 'Menggeser/mengganti tanggal cuti aktif yang telah diajukan atau disetujui sebelumnya.',
+                'requires_certificate' => false,
+                'impacts_quota'        => true,
+            ];
+        }
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'annual_leave_quota'   => $actor->annual_leave_quota ?? 12,
-                'used_leave_days'      => $actor->usedLeaveDays((int) now('Asia/Jakarta')->year),
-                'remaining_leave_days' => $actor->remainingLeaveDays(),
+                'annual_leave_quota'   => $isManager ? ($actor->annual_leave_quota ?? 12) : null,
+                'used_leave_days'      => $isManager ? $actor->usedLeaveDays((int) now('Asia/Jakarta')->year) : null,
+                'remaining_leave_days' => $isManager ? $actor->remainingLeaveDays() : null,
                 'leave_notice_days'    => \App\Support\Rules::int('leave_notice_days'),
-                'types'                => [
-                    [
-                        'key'                  => 'leave',
-                        'label'                => 'Cuti Tahunan / Izin Biasa',
-                        'description'          => 'Mengurangi kuota cuti tahunan, wajib diajukan minimal H-' . \App\Support\Rules::int('leave_notice_days') . '.',
-                        'requires_certificate' => false,
-                        'impacts_quota'        => true,
-                    ],
-                    [
-                        'key'                  => 'sick',
-                        'label'                => 'Izin Sakit',
-                        'description'          => 'Wajib melampirkan surat keterangan dokter resmi (PDF/JPG maks 5 MB).',
-                        'requires_certificate' => true,
-                        'impacts_quota'        => false,
-                    ],
-                    [
-                        'key'                  => 'day_off',
-                        'label'                => 'Pengajuan Hari Libur (Day Off)',
-                        'description'          => 'Pengajuan hari libur mingguan/roster, tidak memotong kuota cuti tahunan.',
-                        'requires_certificate' => false,
-                        'impacts_quota'        => false,
-                    ],
-                    [
-                        'key'                  => 'leave_exchange',
-                        'label'                => 'Pergantian Tanggal Cuti',
-                        'description'          => 'Menggeser/mengganti tanggal cuti aktif yang telah diajukan atau disetujui sebelumnya.',
-                        'requires_certificate' => false,
-                        'impacts_quota'        => true,
-                    ],
-                ],
+                'types'                => $types,
                 'reschedulable_leaves' => $activeLeaves,
             ],
         ]);
@@ -160,6 +166,14 @@ class LeaveApiController extends Controller
         ]);
 
         $actor = $request->user();
+
+        // Sentralisasi: day_off dan leave_exchange hanya boleh diajukan oleh manager/admin
+        if (in_array($data['type'], ['day_off', 'leave_exchange'], true) && ! Access::manager()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengaturan hari libur dan pergantian cuti saat ini dikelola terpusat oleh Super Admin / HRD.',
+            ], 403);
+        }
 
         // Hanya manager/admin yang bisa mengajukan atas nama user lain
         if (! empty($data['user_id']) && $data['user_id'] != $actor->id && ! Access::manager()) {
@@ -189,6 +203,13 @@ class LeaveApiController extends Controller
      */
     public function exchange(Request $request, int $id, LeaveService $service)
     {
+        if (! Access::manager()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pengaturan pergantian cuti saat ini dikelola terpusat oleh Super Admin / HRD.',
+            ], 403);
+        }
+
         $data = $request->validate([
             'start_date' => ['required', 'date', 'date_format:Y-m-d'],
             'end_date'   => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],

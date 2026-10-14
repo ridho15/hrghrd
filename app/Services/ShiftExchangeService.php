@@ -167,17 +167,30 @@ class ShiftExchangeService
      * Langsung berstatus 'pending_manager' (menunggu persetujuan Super Admin atau HRD).
      */
     public function requestOpenSlotExchange(
-        User $requester,
+        User $actor,
         string $type,
         Shift $targetShift,
         ?Shift $requesterShift = null,
         string $reason = '',
-        ?string $offDate = null
+        ?string $offDate = null,
+        ?int $userId = null
     ): ShiftExchange {
         abort_unless(in_array($type, ['change_shift', 'change_off_day'], true), 422, 'Tipe permohonan harus ganti shift atau ganti libur.');
 
         if (! Access::admin() && ! Access::manager()) {
-            abort_unless($requester->id === auth()->id(), 403, 'Akses tidak sah untuk mengajukan pergantian atas nama karyawan lain.');
+            abort_unless($actor->id === auth()->id(), 403, 'Akses tidak sah untuk mengajukan pergantian atas nama karyawan lain.');
+        }
+
+        // Tentukan pemohon aktual (requester)
+        // Jika aktor adalah manajer/admin dan terdapat shift asal, pemohon adalah pemilik shift asal
+        // Atau jika user_id diberikan secara eksplisit oleh manajer/admin
+        $requester = $actor;
+        if (Access::admin() || Access::manager() || in_array($actor->role, ['admin', 'manager'], true)) {
+            if ($requesterShift && $requesterShift->user) {
+                $requester = $requesterShift->user;
+            } elseif ($userId) {
+                $requester = User::find($userId) ?? $actor;
+            }
         }
 
         abort_unless($targetShift->user_id === null, 422, 'Jadwal yang dipilih bukan merupakan jadwal kosong.');

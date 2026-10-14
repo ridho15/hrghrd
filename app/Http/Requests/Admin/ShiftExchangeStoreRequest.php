@@ -8,13 +8,14 @@ class ShiftExchangeStoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check();
+        return auth()->check() && \App\Support\Access::manager();
     }
 
     public function rules(): array
     {
         return [
             'type'               => 'required|in:replacement,swap,change_shift,change_off_day',
+            'user_id'            => 'nullable|integer|exists:users,id',
             'replacement_id'     => 'required_if:type,replacement|nullable|integer|exists:users,id',
             'target_shift_id'    => 'required_if:type,swap,change_shift,change_off_day|nullable|integer|exists:shifts,id',
             'requester_shift_id' => 'nullable|integer|exists:shifts,id',

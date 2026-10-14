@@ -8,7 +8,7 @@ class ShiftExchangeOpenSlotRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check();
+        return auth()->check() && \App\Support\Access::manager();
     }
 
     public function rules(): array
@@ -17,6 +17,7 @@ class ShiftExchangeOpenSlotRequest extends FormRequest
             'type'               => 'required|in:change_shift,change_off_day',
             'target_shift_id'    => 'required|integer|exists:shifts,id',
             'requester_shift_id' => 'required_if:type,change_shift|nullable|integer|exists:shifts,id',
+            'user_id'            => 'nullable|integer|exists:users,id',
             'off_date'           => 'nullable|date',
             'reason'             => 'required|string|min:5|max:500',
         ];
