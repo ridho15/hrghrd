@@ -19,6 +19,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'schedule_type',
         'branch_id',
         'position_id',
         'hired_at',
@@ -125,6 +126,16 @@ class User extends Authenticatable
     public function isEmployee(): bool
     {
         return $this->role === 'employee';
+    }
+
+    public function isOfficeSchedule(): bool
+    {
+        return ($this->schedule_type ?? 'shift') === 'office_hours';
+    }
+
+    public function isShiftSchedule(): bool
+    {
+        return ($this->schedule_type ?? 'shift') !== 'office_hours';
     }
 
     public function scopeActive($query)

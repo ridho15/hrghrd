@@ -20,6 +20,9 @@ final class Rules
         'leave_notice_days' => '7',
         'sick_paid_days_per_case' => '2', 'daily_divisor' => 'calendar',
         'hourly_divisor' => '24',
+        'office_start_time' => '09:00',
+        'office_end_time' => '18:00',
+        'office_work_days' => '1,2,3,4,5',
     ];
 
     public static function get(string $key): string

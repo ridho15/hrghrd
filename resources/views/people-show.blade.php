@@ -109,7 +109,7 @@
                         <span>&middot;</span>
                         <span class="text-emerald-700 font-semibold">{{ $person->branch?->name ?? 'Kantor Pusat / Semua Cabang' }}</span>
                     </p>
-                    <div class="flex items-center gap-2 mt-2">
+                    <div class="flex items-center gap-2 mt-2 flex-wrap">
                         @php
                             $roleBadge = [
                                 'admin' => ['label' => 'Super Admin', 'class' => 'bg-purple-50 text-purple-700 border-purple-200'],
@@ -120,6 +120,17 @@
                         <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold border {{ $roleBadge['class'] }}">
                             {{ $roleBadge['label'] }}
                         </span>
+                        @if($person->isOfficeSchedule())
+                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold border bg-indigo-50 text-indigo-700 border-indigo-200 inline-flex items-center gap-1" title="Jadwal Jam Kantor Reguler (Senin–Jumat 09:00–18:00 WIB)">
+                                <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                Jam Kantor (Senin–Jumat)
+                            </span>
+                        @else
+                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200 inline-flex items-center gap-1" title="Jadwal Shift Operasional (Rolling)">
+                                <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Shift Operasional
+                            </span>
+                        @endif
                         <span class="text-xs text-slate-400">ID Karyawan #{{ $person->id }}</span>
                     </div>
                 </div>
@@ -144,6 +155,7 @@
                         <input type="hidden" name="name" value="{{ $person->name }}">
                         <input type="hidden" name="email" value="{{ $person->email }}">
                         <input type="hidden" name="role" value="{{ $person->role }}">
+                        <input type="hidden" name="schedule_type" value="{{ $person->schedule_type ?? 'shift' }}">
                         <input type="hidden" name="branch_id" value="{{ $person->branch_id }}">
                         <input type="hidden" name="position_id" value="{{ $person->position_id }}">
                         <input type="hidden" name="hired_at" value="{{ $person->hired_at }}">

@@ -118,6 +118,7 @@
 
                             $typeMeta = match($r->type) {
                                 'sick' => ['label' => 'Izin Sakit', 'class' => 'bg-purple-50 text-purple-700 border-purple-200'],
+                                'unpaid_leave' => ['label' => 'Cuti Unpaid', 'class' => 'bg-slate-100 text-slate-700 border-slate-300'],
                                 'day_off' => ['label' => 'Hari Libur', 'class' => 'bg-amber-50 text-amber-800 border-amber-200'],
                                 'leave_exchange' => ['label' => 'Ganti Cuti', 'class' => 'bg-sky-50 text-sky-700 border-sky-200'],
                                 default => ['label' => 'Cuti Tahunan', 'class' => 'bg-blue-50 text-blue-700 border-blue-200'],
@@ -281,6 +282,7 @@
 
                     $typeMeta = match($r->type) {
                         'sick' => ['label' => 'Izin Sakit', 'class' => 'bg-purple-50 text-purple-700 border-purple-200'],
+                        'unpaid_leave' => ['label' => 'Cuti Unpaid', 'class' => 'bg-slate-100 text-slate-700 border-slate-300'],
                         'day_off' => ['label' => 'Hari Libur', 'class' => 'bg-amber-50 text-amber-800 border-amber-200'],
                         'leave_exchange' => ['label' => 'Ganti Cuti', 'class' => 'bg-sky-50 text-sky-700 border-sky-200'],
                         default => ['label' => 'Cuti Tahunan', 'class' => 'bg-blue-50 text-blue-700 border-blue-200'],

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Access;
 use App\Support\Audit;
 use App\Support\Period;
+use App\Support\Rules;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -191,5 +192,65 @@ class ShiftService
             'skipped_count' => $skippedCount,
             'shifts'        => $createdShifts,
         ];
+    }
+
+    /**
+     * Memastikan shift reguler jam kantor tersedia untuk karyawan non-shift hari ini.
+     * Otomatis men-generate shift standar (approved) jika belum ada.
+     */
+    public function ensureOfficeShiftToday(User $user, ?Carbon $now = null): ?Shift
+    {
+        if (! $user->isOfficeSchedule() || ! $user->branch_id || ! $user->active) {
+            return null;
+        }
+
+        $now ??= now('Asia/Jakarta');
+        $todayDate = $now->toDateString();
+        $dayOfWeek = (string) $now->dayOfWeekIso; // 1 = Monday .. 7 = Sunday
+        $workDays = explode(',', (string) (Rules::get('office_work_days') ?: '1,2,3,4,5'));
+
+        if (! in_array($dayOfWeek, $workDays, true)) {
+            return null;
+        }
+
+        try {
+            Period::writable($user->branch_id, $todayDate);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        $existing = Shift::with(['branch', 'attendance', 'exceptions.reviewer'])
+            ->where('user_id', $user->id)
+            ->whereDate('start_at', $todayDate)
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        $startTime = Rules::get('office_start_time') ?: '09:00';
+        $endTime = Rules::get('office_end_time') ?: '18:00';
+
+        $startAt = Carbon::parse($todayDate . ' ' . $startTime, 'Asia/Jakarta');
+        $endAt = Carbon::parse($todayDate . ' ' . $endTime, 'Asia/Jakarta');
+        if ($endAt->lte($startAt)) {
+            $endAt->addDay();
+        }
+
+        $shift = Shift::create([
+            'user_id'     => $user->id,
+            'branch_id'   => $user->branch_id,
+            'position_id' => $user->position_id,
+            'start_at'    => $startAt,
+            'end_at'      => $endAt,
+            'status'      => 'approved',
+            'version'     => 1,
+            'approved_by' => null,
+            'approved_at' => $now,
+        ]);
+
+        Audit::record('shift', $shift->id, 'auto_office_schedule', "Jadwal kerja kantor reguler otomatis digenerate untuk {$user->name}");
+
+        return $shift->load(['branch', 'attendance', 'exceptions.reviewer']);
     }
 }

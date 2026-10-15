@@ -312,6 +312,10 @@ class AttendanceController extends Controller
         $challenge = (string) random_int(100, 999);
         session(['attendance_challenge' => $challenge]);
 
+        if ($user->isOfficeSchedule()) {
+            app(\App\Services\ShiftService::class)->ensureOfficeShiftToday($user, $today);
+        }
+
         $shifts = Shift::with(['branch', 'attendance', 'exceptions.reviewer'])
             ->where('user_id', $user->id)
             ->whereDate('start_at', $todayDate)

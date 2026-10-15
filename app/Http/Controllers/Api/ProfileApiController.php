@@ -65,6 +65,10 @@ class ProfileApiController extends Controller
         $now = now('Asia/Jakarta');
         $todayDate = $now->toDateString();
 
+        if ($user->isOfficeSchedule()) {
+            app(\App\Services\ShiftService::class)->ensureOfficeShiftToday($user, $now);
+        }
+
         // Cari shift hari ini atau shift aktif
         $shift = Shift::with(['branch', 'attendance', 'exceptions'])
             ->where('user_id', $user->id)

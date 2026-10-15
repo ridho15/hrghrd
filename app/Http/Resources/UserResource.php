@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'username'             => $this->username,
             'email'                => $this->email,
             'role'                 => $this->role,
+            'schedule_type'        => $this->schedule_type ?? 'shift',
             'active'               => $this->active,
             'must_change_password' => (bool) ($this->must_change_password || ($this->password ? Hash::check('12345678', $this->password) : false)),
             'hired_at'             => $this->hired_at?->toDateString(),

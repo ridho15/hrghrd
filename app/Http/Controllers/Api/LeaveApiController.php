@@ -109,6 +109,13 @@ class LeaveApiController extends Controller
                 'impacts_quota'        => true,
             ],
             [
+                'key'                  => 'unpaid_leave',
+                'label'                => 'Cuti Tidak Berbayar (Unpaid Leave)',
+                'description'          => 'Izin tanpa gaji untuk keperluan mendesak. Tidak memotong kuota tahunan, memotong upah harian saat payroll.',
+                'requires_certificate' => false,
+                'impacts_quota'        => false,
+            ],
+            [
                 'key'                  => 'sick',
                 'label'                => 'Izin Sakit',
                 'description'          => 'Wajib melampirkan surat keterangan dokter resmi (PDF/JPG maks 5 MB).',
@@ -158,7 +165,7 @@ class LeaveApiController extends Controller
         $data = $request->validate([
             'user_id'           => ['nullable', 'integer', 'exists:users,id'],
             'original_leave_id' => ['nullable', 'required_if:type,leave_exchange', 'integer', 'exists:leave_requests,id'],
-            'type'              => ['required', 'in:leave,sick,day_off,leave_exchange'],
+            'type'              => ['required', 'in:leave,unpaid_leave,sick,day_off,leave_exchange'],
             'start_date'        => ['required', 'date', 'date_format:Y-m-d'],
             'end_date'          => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:start_date'],
             'reason'            => ['required', 'string', 'min:10', 'max:500'],

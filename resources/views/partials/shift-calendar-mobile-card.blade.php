@@ -104,7 +104,21 @@
         </div>
 
         <div class="flex items-center gap-1.5">
-            @if((in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id()) && ! $shiftItem->attendance)
+            @if($shiftItem->isOpenSlot)
+                @php
+                    $canClaimOpenSlotMobile = in_array(auth()->user()->role, ['admin', 'manager']) || (! $shiftItem->position_id || $shiftItem->position_id === auth()->user()->position_id);
+                @endphp
+                @if($canClaimOpenSlotMobile)
+                    <button
+                        type="button"
+                        data-open-modal="modal-claim-open-slot-{{ $shiftItem->id }}"
+                        class="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold border border-amber-700 transition-colors cursor-pointer shadow-2xs"
+                        title="Ajukan Ambil Jadwal Ini"
+                    >
+                        Ambil
+                    </button>
+                @endif
+            @elseif((in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id()) && ! $shiftItem->attendance)
                 <button
                     type="button"
                     data-open-modal="modal-exchange-shift-{{ $shiftItem->id }}"

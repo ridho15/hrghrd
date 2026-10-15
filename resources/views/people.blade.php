@@ -257,9 +257,16 @@
                                         'employee' => ['label' => 'Karyawan', 'class' => 'bg-slate-100 text-slate-700 border-slate-200'],
                                     ][$p->role] ?? ['label' => $p->role, 'class' => 'bg-slate-100 text-slate-700 border-slate-200'];
                                 @endphp
-                                <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold border {{ $roleBadge['class'] }}">
-                                    {{ $roleBadge['label'] }}
-                                </span>
+                                <div class="flex flex-col items-start gap-1">
+                                    <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold border {{ $roleBadge['class'] }}">
+                                        {{ $roleBadge['label'] }}
+                                    </span>
+                                    @if($p->isOfficeSchedule())
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200" title="Jadwal Jam Kantor Reguler (Senin–Jumat 09:00–18:00 WIB)">
+                                            Jam Kantor
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
 
                             {{-- Gaji Pokok --}}

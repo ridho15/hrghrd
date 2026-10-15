@@ -206,6 +206,17 @@ class ShiftExchangeService
 
         Period::writable($targetShift->branch_id, $targetShift->start_at->toDateString());
 
+        abort_if($targetShift->start_at->isPast(), 422, 'Tidak dapat mengambil jadwal kosong yang sudah lewat.');
+
+        // Cek konflik cuti: Pastikan pemohon tidak sedang cuti/izin yang sudah disetujui di tanggal target
+        $targetDateStr = $targetShift->start_at->toDateString();
+        $hasLeaveConflict = \App\Models\LeaveRequest::where('user_id', $requester->id)
+            ->where('status', 'approved')
+            ->where('start_date', '<=', $targetDateStr)
+            ->where('end_date', '>=', $targetDateStr)
+            ->exists();
+        abort_if($hasLeaveConflict, 422, 'Anda memiliki pengajuan cuti/izin aktif yang sudah disetujui pada tanggal tersebut.');
+
         // Overlap check: Pastikan jadwal target tidak bentrok dengan jadwal shift lain milik pemohon
         $conflict = Shift::where('user_id', $requester->id)
             ->when($requesterShift, fn ($q, $rs) => $q->where('id', '!=', $rs->id))

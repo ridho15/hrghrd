@@ -29,7 +29,7 @@ class LeaveStoreRequest extends FormRequest
         return [
             'user_id'           => 'nullable|exists:users,id',
             'original_leave_id' => 'required_if:type,leave_exchange|nullable|exists:leave_requests,id',
-            'type'              => 'required|in:leave,sick,day_off,leave_exchange',
+            'type'              => 'required|in:leave,unpaid_leave,sick,day_off,leave_exchange',
             'start_date'        => 'required|date',
             'end_date'          => 'required|date|after_or_equal:start_date',
             'reason'            => 'required|string|min:10|max:1000',
@@ -72,6 +72,10 @@ class LeaveStoreRequest extends FormRequest
                             $validator->errors()->add('end_date', $msg);
                         }
                     }
+                } elseif ($type === 'unpaid_leave') {
+                    if ($start->lt(now('Asia/Jakarta')->startOfDay())) {
+                        $validator->errors()->add('start_date', 'Cuti tidak berbayar tidak dapat diajukan untuk tanggal yang telah lewat.');
+                    }
                 } elseif ($type === 'sick') {
                     $minSickDate = now('Asia/Jakarta')->subDays(3)->startOfDay();
                     if ($start->lt($minSickDate)) {
@@ -95,7 +99,7 @@ class LeaveStoreRequest extends FormRequest
     {
         return [
             'type.required' => 'Jenis pengajuan perizinan/libur wajib dipilih.',
-            'type.in' => 'Jenis pengajuan harus berupa cuti, sakit, hari libur, atau pergantian cuti.',
+            'type.in' => 'Jenis pengajuan harus berupa cuti tahunan, cuti tidak berbayar, sakit, hari libur, atau pergantian cuti.',
             'original_leave_id.required_if' => 'Permohonan cuti awal yang ingin diganti wajib dipilih.',
             'start_date.required' => 'Tanggal mulai izin wajib diisi.',
             'end_date.required' => 'Tanggal selesai izin wajib diisi.',

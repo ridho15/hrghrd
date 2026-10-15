@@ -113,7 +113,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                         Tingkat Peran Akun <span class="text-rose-500">*</span>
@@ -126,6 +126,22 @@
                         <option value="manager" @selected(old('role') === 'manager')>Manager Cabang</option>
                         <option value="admin" @selected(old('role') === 'admin')>Super Admin</option>
                     </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Skema Jadwal Kerja <span class="text-rose-500">*</span>
+                    </label>
+                    <select 
+                        name="schedule_type" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 text-sm font-semibold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 cursor-pointer"
+                    >
+                        <option value="shift" @selected(old('schedule_type', 'shift') === 'shift')>Shift Operasional (Rolling)</option>
+                        <option value="office_hours" @selected(old('schedule_type') === 'office_hours')>Jam Kantor (Senin–Jumat)</option>
+                    </select>
+                    @error('schedule_type')
+                        <p class="text-xs font-semibold text-rose-600 mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div>

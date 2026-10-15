@@ -87,10 +87,16 @@ class LeaveRequest extends Model
     {
         return match ($this->type) {
             'sick' => 'Izin Sakit',
+            'unpaid_leave' => 'Cuti Tidak Berbayar (Unpaid Leave)',
             'day_off' => 'Pengajuan Hari Libur',
             'leave_exchange' => 'Pergantian Cuti',
             default => 'Cuti Tahunan / Izin',
         };
+    }
+
+    public function getIsUnpaidLeaveAttribute(): bool
+    {
+        return $this->type === 'unpaid_leave';
     }
 
     public function getIsDayOffAttribute(): bool

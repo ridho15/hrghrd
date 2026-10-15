@@ -16,7 +16,7 @@ class ShiftExchangeReviewRequest extends FormRequest
     {
         return [
             'decision' => 'required|in:approve,reject',
-            'note'     => 'nullable|string|max:500',
+            'note'     => 'required_if:decision,reject|nullable|string|max:500',
         ];
     }
 
@@ -25,6 +25,7 @@ class ShiftExchangeReviewRequest extends FormRequest
         return [
             'decision.required' => 'Keputusan manajerial (setujui/tolak) wajib dipilih.',
             'decision.in'       => 'Keputusan harus berupa approve atau reject.',
+            'note.required_if'  => 'Alasan penolakan wajib diisi agar karyawan memahami alasannya.',
             'note.max'          => 'Catatan maksimal 500 karakter.',
         ];
     }

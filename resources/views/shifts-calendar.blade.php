@@ -55,6 +55,11 @@
                     >
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                         <span>Roster Cabang</span>
+                        @if(isset($openSlots) && $openSlots->isNotEmpty())
+                            <span class="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-500 text-white shadow-2xs">
+                                {{ $openSlots->count() }}
+                            </span>
+                        @endif
                     </a>
                 </div>
             @endif
@@ -94,15 +99,13 @@
                 <span>Tabel Jadwal Shift</span>
             </a>
         @endif
-        @if(in_array(auth()->user()->role, ['admin', 'manager']))
-            <a
-                href="{{ route('shifts.exchanges') }}"
-                class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium transition-colors shrink-0"
-            >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                <span>Permohonan Tukar Shift</span>
-            </a>
-        @endif
+        <a
+            href="{{ route('shifts.exchanges') }}"
+            class="inline-flex items-center gap-2 px-3.5 sm:px-4 py-3 border-b-2 border-transparent text-slate-500 hover:text-slate-800 font-medium transition-colors shrink-0"
+        >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+            <span>Permohonan Tukar Shift</span>
+        </a>
         @if(in_array(auth()->user()->role, ['admin', 'manager']))
             <a
                 href="{{ route('attendance.review') }}"
@@ -115,7 +118,7 @@
     </div>
 
     {{-- Banner Jadwal Kosong & Akses Pengajuan Ganti Shift / Ganti Libur --}}
-    @if(in_array(auth()->user()->role, ['admin', 'manager']) && isset($openSlots) && $openSlots->isNotEmpty())
+    @if(isset($openSlots) && $openSlots->isNotEmpty())
         <div class="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-amber-50/70 to-emerald-50/50 border border-amber-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex items-start gap-3">
                 <div class="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
@@ -387,7 +390,7 @@
             @endif
         </div>
         <div class="text-[11px] text-slate-400">
-            * {{ $mode === 'attendance' ? 'Klik kartu untuk melihat forensik presensi & rincian' : 'Klik kartu shift untuk rincian & menugaskan staf pengganti' }}
+            * {{ $mode === 'attendance' ? 'Klik kartu untuk melihat forensik presensi & rincian' : 'Klik kartu shift untuk rincian & menugaskan staf pengganti · Kotak bergaris oranye (Slot Kosong) siap diajukan untuk ganti hari libur resmi.' }}
         </div>
     </div>
 
@@ -887,7 +890,10 @@
 
                     <div class="flex items-center gap-2">
                         @if($shiftItem->isOpenSlot)
-                            @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                            @php
+                                $canClaimOpenSlot = in_array(auth()->user()->role, ['admin', 'manager']) || (! $shiftItem->position_id || $shiftItem->position_id === auth()->user()->position_id);
+                            @endphp
+                            @if($canClaimOpenSlot)
                                 <button
                                     type="button"
                                     data-close-modal
@@ -939,7 +945,7 @@
         @endif
 
         {{-- 2B. Modal Formulir Pengajuan Ambil Khusus Slot Kosong Ini --}}
-        @if($shiftItem->isOpenSlot && in_array(auth()->user()->role, ['admin', 'manager']))
+        @if($shiftItem->isOpenSlot && (in_array(auth()->user()->role, ['admin', 'manager']) || (! $shiftItem->position_id || $shiftItem->position_id === auth()->user()->position_id)))
             <div
                 id="modal-claim-open-slot-{{ $shiftItem->id }}"
                 data-modal-container
@@ -1075,7 +1081,7 @@
     @endforeach
 
     {{-- 4. Modal Formulir Pengajuan Ganti Shift / Libur ke Jadwal Kosong --}}
-    @if(in_array(auth()->user()->role, ['admin', 'manager']))
+    @if(isset($openSlots) && $openSlots->isNotEmpty())
     <div
         id="modal-general-open-slot"
         data-modal-container

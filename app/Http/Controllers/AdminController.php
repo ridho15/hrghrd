@@ -303,7 +303,7 @@ class AdminController extends Controller
         }
         unset($data['reset_device']);
 
-        $trackedFields = ['name', 'email', 'branch_id', 'position_id', 'role', 'base_salary', 'bank_name', 'bank_account_number', 'bank_account_name', 'active'];
+        $trackedFields = ['name', 'email', 'branch_id', 'position_id', 'role', 'schedule_type', 'base_salary', 'bank_name', 'bank_account_number', 'bank_account_name', 'active'];
         $before = $person->only($trackedFields);
         $person->update($data);
         $after = $person->fresh()->only($trackedFields);
@@ -857,15 +857,19 @@ class AdminController extends Controller
             }
         }
 
-        $service->requestOpenSlotExchange(
-            auth()->user(),
-            $data['type'],
-            $targetShift,
-            $reqShift,
-            $data['reason'],
-            $data['target_date'] ?? null,
-            ! empty($data['user_id']) ? (int) $data['user_id'] : null
-        );
+        try {
+            $service->requestOpenSlotExchange(
+                auth()->user(),
+                $data['type'],
+                $targetShift,
+                $reqShift,
+                $data['reason'],
+                $data['target_date'] ?? null,
+                ! empty($data['user_id']) ? (int) $data['user_id'] : null
+            );
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         $msg = ($data['type'] === 'change_shift' ? 'Permohonan ganti shift ke jadwal kosong' : 'Permohonan ganti libur ke jadwal kosong') . ' berhasil diajukan dan menunggu persetujuan Super Admin / HRD.';
 

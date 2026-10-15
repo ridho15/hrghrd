@@ -23,6 +23,11 @@ class DashboardController extends Controller
         $challenge = (string) random_int(100, 999);
         session(['attendance_challenge' => $challenge]);
 
+        // Pastikan shift kantor reguler ter-provisioning jika pengguna adalah staf non-shift/kantor
+        if ($user->isOfficeSchedule()) {
+            app(\App\Services\ShiftService::class)->ensureOfficeShiftToday($user, $today);
+        }
+
         // Shift pribadi pengguna (khusus jadwal per hari / tanggal sekarang saja)
         $shifts = Shift::with(['branch', 'attendance', 'exceptions.reviewer'])
             ->where('user_id', $user->id)

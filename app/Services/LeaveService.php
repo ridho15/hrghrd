@@ -155,6 +155,8 @@ class LeaveService
                         $isPaid = true;
                     } elseif (in_array($leave->type, ['leave', 'leave_exchange'], true)) {
                         $isPaid = in_array($dayDate, $paidDates, true);
+                    } elseif ($leave->type === 'unpaid_leave') {
+                        $isPaid = false;
                     }
                 }
                 $day->update(['status' => $isApproved ? 'approved' : 'rejected', 'paid' => $isPaid]);

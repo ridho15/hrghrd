@@ -49,6 +49,7 @@
                         @php
                             $typeBadge = match($leave->type) {
                                 'sick' => ['label' => 'Izin Sakit', 'class' => 'bg-purple-50 text-purple-700 border-purple-200'],
+                                'unpaid_leave' => ['label' => 'Cuti Tidak Berbayar (Unpaid)', 'class' => 'bg-slate-100 text-slate-700 border-slate-300'],
                                 'day_off' => ['label' => 'Hari Libur (Day Off)', 'class' => 'bg-amber-50 text-amber-800 border-amber-200'],
                                 'leave_exchange' => ['label' => 'Pergantian Cuti', 'class' => 'bg-sky-50 text-sky-700 border-sky-200'],
                                 default => ['label' => 'Cuti Tahunan / Izin', 'class' => 'bg-blue-50 text-blue-700 border-blue-200'],
@@ -443,6 +444,10 @@
                                             >
                                             <span class="text-[11px]">Dibayar (Paid)</span>
                                         </label>
+                                    @elseif($leave->type === 'unpaid_leave')
+                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                            Tanpa Gaji (Unpaid)
+                                        </span>
                                     @endif
                                 </div>
                             @endforeach

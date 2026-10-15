@@ -767,4 +767,223 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $resMgr->assertJsonPath('data.annual_leave_quota', 12);
         $this->assertNotNull($resMgr->json('data.remaining_leave_days'));
     }
+
+    /**
+     * 17. Pengajuan Cuti Tanpa Gaji (unpaid_leave) berhasil diajukan & disetujui meski kuota cuti 0.
+     */
+    public function test_employee_can_submit_and_approve_unpaid_leave_even_with_zero_quota(): void
+    {
+        $branch = $this->createBranch();
+        $employee = $this->createUser([
+            'role'               => 'employee',
+            'branch_id'          => $branch->id,
+            'annual_leave_quota' => 0, // Kuota habis / 0
+        ]);
+        $manager = $this->createUser([
+            'role'      => 'manager',
+            'branch_id' => $branch->id,
+        ]);
+
+        $startDate = Carbon::now('Asia/Jakarta')->addDays(2)->toDateString();
+        $endDate = Carbon::now('Asia/Jakarta')->addDays(3)->toDateString();
+
+        // Karyawan mengajukan unpaid_leave secara mandiri
+        $this->actingAs($employee, 'sanctum');
+        $res = $this->postJson('/api/v1/leave', [
+            'type'       => 'unpaid_leave',
+            'start_date' => $startDate,
+            'end_date'   => $endDate,
+            'reason'     => 'Keperluan keluarga mendesak tanpa gaji',
+        ]);
+
+        $res->assertStatus(201);
+        $leaveId = $res->json('data.id');
+
+        $this->assertDatabaseHas('leave_requests', [
+            'id'      => $leaveId,
+            'user_id' => $employee->id,
+            'type'    => 'unpaid_leave',
+            'status'  => 'pending',
+        ]);
+
+        // Manajer meninjau dan menyetujui
+        $this->actingAs($manager, 'sanctum');
+        $resReview = $this->postJson("/api/v1/leave/{$leaveId}/review", [
+            'approved_dates' => [$startDate, $endDate],
+            'review_note'    => 'Disetujui sebagai cuti tanpa gaji resmi.',
+        ]);
+
+        $resReview->assertOk();
+
+        // Pastikan seluruh hari berstatus approved dan paid = false (unpaid)
+        $this->assertDatabaseHas('leave_days', [
+            'leave_request_id' => $leaveId,
+            'date'             => $startDate,
+            'status'           => 'approved',
+            'paid'             => false,
+        ]);
+        $this->assertDatabaseHas('leave_days', [
+            'leave_request_id' => $leaveId,
+            'date'             => $endDate,
+            'status'           => 'approved',
+            'paid'             => false,
+        ]);
+    }
+
+    /**
+     * 18. Karyawan Khusus (office_hours): Shift kantor otomatis ter-generate di hari kerja (Senin–Jumat) saat buka dashboard.
+     */
+    public function test_office_hours_employee_auto_provisions_shift_on_weekday_web_dashboard(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-14 08:50:00', 'Asia/Jakarta')); // Rabu (Weekday)
+
+        $branch = $this->createBranch();
+        $employeeOffice = $this->createUser([
+            'role'          => 'employee',
+            'branch_id'     => $branch->id,
+            'schedule_type' => 'office_hours',
+        ]);
+
+        $this->actingAs($employeeOffice);
+
+        // Karyawan belum memiliki shift manual apapun di database
+        $this->assertDatabaseMissing('shifts', [
+            'user_id' => $employeeOffice->id,
+        ]);
+
+        // Saat karyawan membuka halaman dashboard utama
+        $response = $this->get('/');
+        $response->assertOk();
+
+        // Shift kantor otomatis ter-generate dan berstatus approved
+        $this->assertDatabaseHas('shifts', [
+            'user_id'   => $employeeOffice->id,
+            'branch_id' => $branch->id,
+            'status'    => 'approved',
+        ]);
+
+        $shift = Shift::where('user_id', $employeeOffice->id)->first();
+        $this->assertNotNull($shift);
+        $this->assertSame('2026-10-14 09:00:00', $shift->start_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-10-14 18:00:00', $shift->end_at->format('Y-m-d H:i:s'));
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * 19. Karyawan Khusus (office_hours): Tidak ada auto-provisioning shift di hari libur kantor (Sabtu/Minggu).
+     */
+    public function test_office_hours_employee_does_not_provision_on_weekend(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-18 10:00:00', 'Asia/Jakarta')); // Minggu (Weekend)
+
+        $branch = $this->createBranch();
+        $employeeOffice = $this->createUser([
+            'role'          => 'employee',
+            'branch_id'     => $branch->id,
+            'schedule_type' => 'office_hours',
+        ]);
+
+        $this->actingAs($employeeOffice);
+
+        $shift = (new \App\Services\ShiftService())->ensureOfficeShiftToday($employeeOffice);
+        $this->assertNull($shift);
+
+        $this->assertDatabaseMissing('shifts', [
+            'user_id' => $employeeOffice->id,
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * 20. Mobile API: Karyawan office_hours dapat check-in tanpa mengirim shift_id karena otomatis di-resolve.
+     */
+    public function test_office_hours_employee_can_checkin_via_api_without_explicit_shift_id(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-14 08:55:00', 'Asia/Jakarta')); // Rabu
+
+        $branch = $this->createBranch([
+            'latitude'  => -6.175392,
+            'longitude' => 106.827153,
+            'radius_m'  => 100,
+        ]);
+        $employeeOffice = $this->createUser([
+            'role'          => 'employee',
+            'branch_id'     => $branch->id,
+            'schedule_type' => 'office_hours',
+        ]);
+
+        $slot = intdiv(now()->timestamp, \App\Services\AttendanceService::QR_INTERVAL_SECONDS);
+        $validQr = \App\Services\AttendanceService::qr($branch, $slot);
+
+        $this->actingAs($employeeOffice, 'sanctum');
+
+        $res = $this->postJson('/api/v1/attendance/checkin', [
+            'qr_code'   => $validQr,
+            'latitude'  => -6.175392,
+            'longitude' => 106.827153,
+            'accuracy'  => 15,
+        ]);
+
+        $res->assertStatus(201);
+        $res->assertJsonPath('success', true);
+
+        // Record attendance berhasil dibuat untuk auto-provisioned office shift
+        $this->assertDatabaseHas('attendances', [
+            'user_id' => $employeeOffice->id,
+            'status'  => 'present',
+        ]);
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * 21. Manajemen Karyawan (People): Admin dapat mengatur dan memperbarui schedule_type.
+     */
+    public function test_admin_can_set_and_update_schedule_type_via_people_management(): void
+    {
+        $admin = $this->createUser(['role' => 'admin']);
+        $branch = $this->createBranch();
+        $pos = $this->createPosition();
+
+        $this->actingAs($admin);
+
+        // 1. Tambah karyawan baru dengan schedule_type = office_hours
+        $resStore = $this->post('/people', [
+            'name'          => 'Staf Kantor Pusat',
+            'email'         => 'stafkantor@example.com',
+            'password'      => 'Password123!',
+            'role'          => 'employee',
+            'schedule_type' => 'office_hours',
+            'branch_id'     => $branch->id,
+            'position_id'   => $pos->id,
+            'base_salary'   => 4500000,
+            'hired_at'      => '2026-01-01',
+        ]);
+
+        $resStore->assertRedirect();
+        $user = User::where('email', 'stafkantor@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertSame('office_hours', $user->schedule_type);
+        $this->assertTrue($user->isOfficeSchedule());
+
+        // 2. Update menjadi schedule_type = shift
+        $resUpdate = $this->post("/people/{$user->id}", [
+            'name'          => $user->name,
+            'email'         => $user->email,
+            'role'          => 'employee',
+            'active'        => 1,
+            'schedule_type' => 'shift',
+            'branch_id'     => $branch->id,
+            'position_id'   => $pos->id,
+            'base_salary'   => 4500000,
+            'hired_at'      => '2026-01-01',
+        ]);
+
+        $resUpdate->assertRedirect();
+        $this->assertSame('shift', $user->fresh()->schedule_type);
+        $this->assertTrue($user->fresh()->isShiftSchedule());
+    }
 }
+

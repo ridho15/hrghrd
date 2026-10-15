@@ -139,6 +139,7 @@
                         class="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all cursor-pointer @error('type') border-rose-300 bg-rose-50/50 @enderror"
                     >
                         <option value="leave" @selected(old('type') === 'leave')>Cuti Tahunan / Izin Biasa</option>
+                        <option value="unpaid_leave" @selected(old('type') === 'unpaid_leave')>Cuti Tidak Berbayar (Unpaid Leave)</option>
                         <option value="sick" @selected(old('type') === 'sick')>Izin Sakit (Wajib Surat Dokter)</option>
                         @if(\App\Support\Access::manager())
                             <option value="day_off" @selected(old('type') === 'day_off')>Pengajuan Hari Libur (Day Off)</option>

@@ -30,6 +30,15 @@ class AttendanceApiController extends Controller
      */
     public function checkIn(Request $request, AttendanceService $service)
     {
+        $user = $request->user();
+
+        if (! $request->filled('shift_id') && $user->isOfficeSchedule()) {
+            $officeShift = app(\App\Services\ShiftService::class)->ensureOfficeShiftToday($user);
+            if ($officeShift) {
+                $request->merge(['shift_id' => $officeShift->id]);
+            }
+        }
+
         $data = $request->validate([
             'shift_id'     => ['required', 'integer', 'exists:shifts,id'],
             'qr_code'      => ['required', 'string'],
@@ -40,8 +49,6 @@ class AttendanceApiController extends Controller
             'device_token' => ['nullable', 'string'],
             'device_hash'  => ['nullable', 'string'],
         ]);
-
-        $user = $request->user();
 
         // Siapkan device token
         $deviceToken = (string) (
@@ -105,6 +112,19 @@ class AttendanceApiController extends Controller
      */
     public function checkOut(Request $request, AttendanceService $service)
     {
+        $user = $request->user();
+
+        if (! $request->filled('shift_id') && $user->isOfficeSchedule()) {
+            $activeAtt = Attendance::where('user_id', $user->id)
+                ->whereNotNull('checkin_at')
+                ->whereNull('checkout_at')
+                ->latest('id')
+                ->first();
+            if ($activeAtt) {
+                $request->merge(['shift_id' => $activeAtt->shift_id]);
+            }
+        }
+
         $data = $request->validate([
             'shift_id'     => ['required', 'integer', 'exists:shifts,id'],
             'qr_code'      => ['required', 'string'],
@@ -115,8 +135,6 @@ class AttendanceApiController extends Controller
             'device_token' => ['nullable', 'string'],
             'device_hash'  => ['nullable', 'string'],
         ]);
-
-        $user = $request->user();
 
         $deviceToken = (string) (
             $data['device_token']
