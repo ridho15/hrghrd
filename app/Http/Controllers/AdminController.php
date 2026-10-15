@@ -714,18 +714,26 @@ class AdminController extends Controller
             ->orderBy('start_at')
             ->get();
 
+        $candidateShifts = Shift::with(['user.position', 'position', 'branch'])
+            ->whereBetween('start_at', [$gridStart->toDateTimeString(), $gridEnd->toDateTimeString()])
+            ->when($userBranchId, fn ($q) => $q->where('branch_id', $userBranchId))
+            ->whereNotNull('user_id')
+            ->where('status', 'approved')
+            ->doesntHave('attendance')
+            ->orderBy('start_at')
+            ->get();
+
         return view('shifts-calendar', compact(
             'branches', 'people', 'shifts', 'groupedShifts',
             'currentMonth', 'monthStr', 'prevMonth', 'nextMonth',
             'gridStart', 'gridEnd', 'selectedBranchId',
             'mode', 'attendanceStatus', 'attendanceSummaryByDate', 'monthSummary', 'selectedDate',
-            'selectedUserId', 'scope', 'isEmployee', 'openSlots'
+            'selectedUserId', 'scope', 'isEmployee', 'openSlots', 'candidateShifts'
         ));
     }
 
     public function shiftExchanges(Request $request)
     {
-        abort_unless(Access::manager(), 403, 'Akses terbatas untuk Super Admin & Manager.');
         $user = auth()->user();
 
         $query = ShiftExchange::with([
@@ -756,9 +764,12 @@ class AdminController extends Controller
 
     public function shiftExchangeStore(ShiftExchangeStoreRequest $request, int $id, ShiftExchangeService $service)
     {
-        abort_unless(Access::manager(), 403, 'Fitur permohonan tukar shift saat ini dikelola terpusat oleh Super Admin / HRD.');
-
         $shift = Shift::with('branch')->findOrFail($id);
+
+        if (! Access::admin() && ! Access::manager()) {
+            abort_unless($shift->user_id === auth()->id(), 403, 'Anda hanya dapat mengajukan permohonan untuk shift milik Anda sendiri.');
+        }
+
         $data = $request->validated();
 
         if ($data['type'] === 'replacement') {
@@ -788,11 +799,15 @@ class AdminController extends Controller
 
     public function shiftExchangeOpenSlotStore(ShiftExchangeStoreRequest $request, ShiftExchangeService $service)
     {
-        abort_unless(Access::manager(), 403, 'Fitur permohonan tukar shift saat ini dikelola terpusat oleh Super Admin / HRD.');
-
         $data = $request->validated();
         $targetShift = Shift::with(['position', 'branch'])->findOrFail((int) $data['target_shift_id']);
         $reqShift = ! empty($data['requester_shift_id']) ? Shift::findOrFail((int) $data['requester_shift_id']) : null;
+
+        if (! Access::admin() && ! Access::manager()) {
+            if ($reqShift) {
+                abort_unless($reqShift->user_id === auth()->id(), 403, 'Shift asal harus milik Anda sendiri.');
+            }
+        }
 
         $service->requestOpenSlotExchange(
             auth()->user(),

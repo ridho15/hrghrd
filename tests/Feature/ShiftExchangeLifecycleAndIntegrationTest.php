@@ -18,8 +18,8 @@ class ShiftExchangeLifecycleAndIntegrationTest extends TestCase
     {
         $branch = $this->createBranch();
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $empA = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan A']);
-        $empB = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan B']);
+        $empA = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan A', 'active' => true]);
+        $empB = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan B', 'active' => true]);
 
         $shift = $this->createShift($empA, $branch, [
             'start_at' => '2026-10-25 08:00:00',
@@ -27,28 +27,28 @@ class ShiftExchangeLifecycleAndIntegrationTest extends TestCase
             'version' => 1,
         ]);
 
-        // 1. Karyawan dilarang mengajukan pertukaran mandiri (403)
+        // 1. Karyawan mengajukan permohonan penggantian mandiri (Opsi A: A ingin libur, B menggantikan)
         $this->actingAs($empA);
         $resEmp = $this->post("/shifts/{$shift->id}/exchange", [
             'type' => 'replacement',
             'replacement_id' => $empB->id,
             'reason' => 'Perlu menghadiri wisuda keluarga',
         ]);
-        $resEmp->assertForbidden();
-
-        // 1b. Manajer mengajukan permohonan penggantian terpusat
-        $this->actingAs($manager);
-        $resReq = $this->post("/shifts/{$shift->id}/exchange", [
-            'type' => 'replacement',
-            'replacement_id' => $empB->id,
-            'reason' => 'Perlu menghadiri wisuda keluarga',
-        ]);
-        $resReq->assertRedirect(route('shifts.exchanges'));
+        $resEmp->assertRedirect(route('shifts.exchanges'));
 
         $exchange = ShiftExchange::where('requester_shift_id', $shift->id)->first();
         $this->assertNotNull($exchange);
         $this->assertSame('pending_peer', $exchange->status);
         $this->assertSame($empA->id, $shift->fresh()->user_id);
+
+        // 1b. Manajer tidak dapat mem-bypass sebelum rekan menyetujui (Strict Gate)
+        $this->actingAs($manager);
+        $resBypass = $this->post("/shifts/exchanges/{$exchange->id}/review", [
+            'decision' => 'approve',
+            'note' => 'Coba bypass persetujuan rekan',
+        ]);
+        $resBypass->assertStatus(422);
+        $this->assertSame('pending_peer', $exchange->fresh()->status);
 
         // 2. Karyawan B menyetujui (Peer Accept)
         $this->actingAs($empB);
@@ -85,8 +85,8 @@ class ShiftExchangeLifecycleAndIntegrationTest extends TestCase
     {
         $branch = $this->createBranch();
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $empA = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan A']);
-        $empB = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan B']);
+        $empA = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan A', 'active' => true]);
+        $empB = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan B', 'active' => true]);
 
         $shiftA = $this->createShift($empA, $branch, [
             'start_at' => '2026-10-20 08:00:00',
@@ -100,26 +100,19 @@ class ShiftExchangeLifecycleAndIntegrationTest extends TestCase
             'version' => 1,
         ]);
 
-        // 1. Karyawan dilarang mengajukan swap mandiri (403)
+        // 1. Karyawan mengajukan swap mandiri (Opsi B: Tukar hari libur & shift dua arah)
         $this->actingAs($empA);
         $resEmp = $this->post("/shifts/{$shiftA->id}/exchange", [
             'type' => 'swap',
             'target_shift_id' => $shiftB->id,
             'reason' => 'Tukar shift hari Selasa dengan Kamis',
         ]);
-        $resEmp->assertForbidden();
-
-        // 1b. Manajer memproses swap dua arah
-        $this->actingAs($manager);
-        $this->post("/shifts/{$shiftA->id}/exchange", [
-            'type' => 'swap',
-            'target_shift_id' => $shiftB->id,
-            'reason' => 'Tukar shift hari Selasa dengan Kamis',
-        ]);
+        $resEmp->assertRedirect(route('shifts.exchanges'));
 
         $exchange = ShiftExchange::where('requester_shift_id', $shiftA->id)->first();
         $this->assertNotNull($exchange);
         $this->assertSame('swap', $exchange->type);
+        $this->assertSame('pending_peer', $exchange->status);
 
         // 2. Karyawan B menyetujui
         $this->actingAs($empB);
@@ -139,6 +132,45 @@ class ShiftExchangeLifecycleAndIntegrationTest extends TestCase
         $this->assertSame($empA->id, $shiftB->fresh()->user_id);
         $this->assertSame(2, $shiftA->fresh()->version);
         $this->assertSame(2, $shiftB->fresh()->version);
+    }
+
+    public function test_peer_acceptance_escalates_to_pending_manager_then_approved_by_super_admin(): void
+    {
+        $branch = $this->createBranch();
+        $superAdmin = $this->createUser(['role' => 'admin', 'branch_id' => $branch->id]);
+        $empA = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan A', 'active' => true]);
+        $empB = $this->createUser(['branch_id' => $branch->id, 'name' => 'Karyawan B', 'active' => true]);
+
+        $shift = $this->createShift($empA, $branch, [
+            'start_at' => '2026-10-28 08:00:00',
+            'end_at' => '2026-10-28 16:00:00',
+            'version' => 1,
+        ]);
+
+        $this->actingAs($empA);
+        $this->post("/shifts/{$shift->id}/exchange", [
+            'type' => 'replacement',
+            'replacement_id' => $empB->id,
+            'reason' => 'Izin ganti shift',
+        ]);
+
+        $exchange = ShiftExchange::where('requester_shift_id', $shift->id)->first();
+        $this->assertSame('pending_peer', $exchange->status);
+
+        // Rekan menyetujui
+        $this->actingAs($empB);
+        $this->post("/shifts/exchanges/{$exchange->id}/peer-respond", ['action' => 'accept']);
+        $this->assertSame('pending_manager', $exchange->fresh()->status);
+
+        // Super Admin / HRD pusat menyetujui
+        $this->actingAs($superAdmin);
+        $resAdmin = $this->post("/shifts/exchanges/{$exchange->id}/review", [
+            'decision' => 'approve',
+            'note' => 'Disetujui Super Admin',
+        ]);
+        $resAdmin->assertRedirect();
+        $this->assertSame('approved', $exchange->fresh()->status);
+        $this->assertSame($empB->id, $shift->fresh()->user_id);
     }
 
     public function test_direct_manager_reassignment_bypasses_peer_step_and_transfers_immediately(): void
@@ -293,5 +325,50 @@ class ShiftExchangeLifecycleAndIntegrationTest extends TestCase
 
         // A tidak terkena potongan kehadiran untuk shift tersebut karena shift tersebut sudah bukan miliknya
         $this->assertEmpty($payrollA['unpaid_dates']);
+    }
+
+    public function test_employee_can_fetch_colleagues_and_their_upcoming_shifts_via_api(): void
+    {
+        $branch = $this->createBranch();
+        $posKasir = \App\Models\Position::firstOrCreate(['name' => 'Kasir'], ['description' => 'Staff Kasir']);
+        $empA = $this->createUser(['branch_id' => $branch->id, 'position_id' => $posKasir->id, 'name' => 'Karyawan A', 'active' => true]);
+        $empB = $this->createUser(['branch_id' => $branch->id, 'position_id' => $posKasir->id, 'name' => 'Karyawan B', 'active' => true]);
+        $otherBranch = $this->createBranch();
+        $empOther = $this->createUser(['branch_id' => $otherBranch->id, 'name' => 'Karyawan Luar Cabang']);
+
+        $shiftB = $this->createShift($empB, $branch, [
+            'start_at' => now()->addDays(2)->setTime(8, 0)->format('Y-m-d H:i:s'),
+            'end_at' => now()->addDays(2)->setTime(16, 0)->format('Y-m-d H:i:s'),
+            'version' => 1,
+        ]);
+
+        $this->actingAs($empA);
+        $res = $this->getJson('/api/v1/shifts/colleagues');
+        $res->assertOk();
+        $res->assertJsonStructure([
+            'success',
+            'data' => [
+                '*' => [
+                    'id',
+                    'name',
+                    'email',
+                    'position_name',
+                    'shifts' => [
+                        '*' => [
+                            'id',
+                            'date',
+                            'start_at',
+                            'end_at',
+                            'duration_hours',
+                        ]
+                    ]
+                ]
+            ]
+        ]);
+
+        $colleagues = collect($res->json('data'));
+        $this->assertTrue($colleagues->contains('id', $empB->id));
+        $this->assertFalse($colleagues->contains('id', $empA->id));
+        $this->assertFalse($colleagues->contains('id', $empOther->id));
     }
 }

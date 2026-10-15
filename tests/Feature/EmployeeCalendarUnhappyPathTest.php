@@ -214,7 +214,7 @@ class EmployeeCalendarUnhappyPathTest extends TestCase
             'reason'         => 'Ingin menukar padahal sudah check-in',
         ]);
 
-        $response->assertStatus(403);
+        $response->assertStatus(409);
 
         $manager = $this->createUser(['branch_id' => $branch->id, 'role' => 'manager']);
         $this->actingAs($manager);
@@ -247,7 +247,7 @@ class EmployeeCalendarUnhappyPathTest extends TestCase
             'reason'         => 'Menukar dengan diri sendiri',
         ]);
 
-        $response->assertStatus(403);
+        $response->assertStatus(422);
 
         $manager = $this->createUser(['branch_id' => $branch->id, 'role' => 'manager']);
         $this->actingAs($manager);
@@ -283,7 +283,7 @@ class EmployeeCalendarUnhappyPathTest extends TestCase
             'reason'         => 'Menukar ke cabang lain yang berbeda',
         ]);
 
-        $response->assertStatus(403);
+        $response->assertStatus(422);
 
         $manager = $this->createUser(['branch_id' => $branchA->id, 'role' => 'manager']);
         $this->actingAs($manager);
@@ -324,7 +324,7 @@ class EmployeeCalendarUnhappyPathTest extends TestCase
             'reason'         => 'Menukar ke rekan yang jamnya tumpang tindih',
         ]);
 
-        $response->assertStatus(403);
+        $response->assertStatus(409);
 
         $manager = $this->createUser(['branch_id' => $branch->id, 'role' => 'manager']);
         $this->actingAs($manager);

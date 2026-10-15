@@ -55,6 +55,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::get('/', [ShiftApiController::class, 'index']);
         Route::get('/calendar', [ShiftApiController::class, 'calendar']);
         Route::get('/open-slots', [ShiftApiController::class, 'openSlots']);
+        Route::get('/colleagues', [ShiftApiController::class, 'colleagues']);
         Route::get('/exchanges', [ShiftApiController::class, 'exchanges']);
         Route::post('/exchanges/open-slot', [ShiftApiController::class, 'exchangeOpenSlot']);
         Route::post('/exchanges/{id}/peer-respond', [ShiftApiController::class, 'exchangePeerRespond']);

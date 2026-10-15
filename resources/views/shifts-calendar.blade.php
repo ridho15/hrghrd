@@ -896,12 +896,23 @@
                                 </button>
                             @endif
                         @elseif(! $shiftItem->attendance()->exists())
+                            @if(in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id())
+                                <button
+                                    type="button"
+                                    data-close-modal
+                                    data-open-modal="modal-exchange-shift-{{ $shiftItem->id }}"
+                                    class="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                                >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                                    <span>Ajukan Tukar / Ganti Shift</span>
+                                </button>
+                            @endif
                             @if(in_array(auth()->user()->role, ['admin', 'manager']))
                                 <button
                                     type="button"
                                     data-close-modal
                                     data-open-modal="modal-reassign-shift-{{ $shiftItem->id }}"
-                                    class="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                                    class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                                 >
                                     <span>Tugaskan Pengganti</span>
                                 </button>
@@ -913,7 +924,7 @@
         </div>
 
         {{-- 2. Modal Formulir Permohonan Pergantian / Pertukaran Shift Milik Karyawan --}}
-        @if(! $shiftItem->isOpenSlot && ! $shiftItem->attendance()->exists() && in_array(auth()->user()->role, ['admin', 'manager']))
+        @if(! $shiftItem->isOpenSlot && ! $shiftItem->attendance()->exists() && (in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id()))
             <div
                 id="modal-exchange-shift-{{ $shiftItem->id }}"
                 data-modal-container
@@ -937,11 +948,11 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
                                     <input type="radio" name="type" value="replacement" checked class="text-emerald-600 focus:ring-emerald-500" onchange="toggleExchangeBoxes('{{ $shiftItem->id }}', 'replacement')">
-                                    <span>Penggantian Rekan (Searah)</span>
+                                    <span>Penggantian Rekan (Searah / Saya Libur)</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
                                     <input type="radio" name="type" value="swap" class="text-emerald-600 focus:ring-emerald-500" onchange="toggleExchangeBoxes('{{ $shiftItem->id }}', 'swap')">
-                                    <span>Tukar Rekan (Dua Arah)</span>
+                                    <span>Pertukaran Shift & Hari Libur (2 Arah)</span>
                                 </label>
                                 <label class="flex items-center gap-2 p-2.5 rounded-xl border border-amber-200 bg-amber-50/40 cursor-pointer hover:bg-amber-50 text-xs font-bold text-amber-900">
                                     <input type="radio" name="type" value="change_shift" class="text-amber-600 focus:ring-amber-500" onchange="toggleExchangeBoxes('{{ $shiftItem->id }}', 'change_shift')">
@@ -970,7 +981,7 @@
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Jadwal Shift Rekan yang Ingin Ditukar</label>
                             <select name="target_shift_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
                                 <option value="">-- Pilih Jadwal Shift Rekan --</option>
-                                @foreach($shifts->where('user_id', '!=', $shiftItem->user_id)->whereNotNull('user_id') as $otherShift)
+                                @foreach(($candidateShifts ?? $shifts)->where('user_id', '!=', $shiftItem->user_id)->whereNotNull('user_id') as $otherShift)
                                     <option value="{{ $otherShift->id }}">
                                         {{ $otherShift->user?->name }} · {{ \Carbon\Carbon::parse($otherShift->start_at)->format('d M') }} ({{ \Carbon\Carbon::parse($otherShift->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($otherShift->end_at)->format('H:i') }})
                                     </option>

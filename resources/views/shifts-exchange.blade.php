@@ -283,8 +283,8 @@
                                         </form>
                                     @endif
 
-                                    {{-- Persetujuan Manajer/Admin --}}
-                                    @if($isManager && in_array($exc->status, ['pending_manager', 'pending_peer']))
+                                    {{-- Persetujuan Manajer / Super Admin --}}
+                                    @if($isManager && $exc->status === 'pending_manager')
                                         <form method="post" action="{{ route('shifts.exchanges.review', $exc->id) }}" class="inline">
                                             @csrf
                                             <input type="hidden" name="decision" value="approve">
@@ -308,6 +308,10 @@
                                                 Tolak
                                             </button>
                                         </form>
+                                    @elseif($isManager && $exc->status === 'pending_peer')
+                                        <span class="text-[11px] font-medium text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-md inline-block">
+                                            Menunggu Konfirmasi Rekan
+                                        </span>
                                     @endif
                                 </div>
                             </td>

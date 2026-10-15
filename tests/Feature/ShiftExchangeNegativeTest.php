@@ -33,13 +33,13 @@ class ShiftExchangeNegativeTest extends TestCase
             'end_at' => '2026-10-15 20:00:00',
         ]);
 
-        // Karyawan dilarang submit pertukaran mandiri (403)
+        // Karyawan diizinkan submit untuk shift miliknya, namun ditolak karena jadwal bentrok (409)
         $response = $this->post("/shifts/{$shiftA->id}/exchange", [
             'type' => 'replacement',
             'replacement_id' => $empB->id,
             'reason' => 'Saya berhalangan hadir urusan keluarga',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(409);
 
         // Manajer yang memproses ditolak karena jadwal bentrok (409)
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
@@ -87,7 +87,7 @@ class ShiftExchangeNegativeTest extends TestCase
             'target_shift_id' => $shiftB->id,
             'reason' => 'Ingin bertukar hari kerja',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(409);
 
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
         $this->actingAs($manager);
@@ -124,7 +124,7 @@ class ShiftExchangeNegativeTest extends TestCase
             'replacement_id' => $empB->id,
             'reason' => 'Pergantian jadwal yang sudah check-in',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(409);
 
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
         $this->actingAs($manager);
@@ -162,7 +162,7 @@ class ShiftExchangeNegativeTest extends TestCase
             'replacement_id' => $empB->id,
             'reason' => 'Mencoba ganti shift dengan tiket kendala aktif',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(409);
 
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
         $this->actingAs($manager);
@@ -199,7 +199,7 @@ class ShiftExchangeNegativeTest extends TestCase
             'replacement_id' => $empB->id,
             'reason' => 'Pergantian di bulan yang payroll-nya terkunci',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(409);
 
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
         $this->actingAs($manager);
@@ -229,7 +229,7 @@ class ShiftExchangeNegativeTest extends TestCase
             'replacement_id' => $empB->id,
             'reason' => 'Mencoba memilih rekan yang sudah non-aktif',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(422);
 
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
         $this->actingAs($manager);
@@ -261,7 +261,7 @@ class ShiftExchangeNegativeTest extends TestCase
             'replacement_id' => $empB->id,
             'reason' => 'Pertukaran lintas cabang tidak sah',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(422);
 
         $managerA = $this->createUser(['role' => 'manager', 'branch_id' => $branchA->id]);
         $this->actingAs($managerA);
@@ -290,7 +290,7 @@ class ShiftExchangeNegativeTest extends TestCase
             'replacement_id' => $empA->id,
             'reason' => 'Mencoba menukar dengan diri sendiri',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(422);
 
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
         $this->actingAs($manager);
@@ -464,13 +464,13 @@ class ShiftExchangeNegativeTest extends TestCase
             'status' => 'pending_peer',
         ]);
 
-        // Request 2 untuk shift yang sama: karyawan dilarang (403)
+        // Request 2 untuk shift yang sama: ditolak karena ada pengajuan aktif (409)
         $response = $this->post("/shifts/{$shiftA->id}/exchange", [
             'type' => 'replacement',
             'replacement_id' => $empC->id,
             'reason' => 'Pengajuan kedua sebelum pengajuan pertama selesai',
         ]);
-        $response->assertStatus(403);
+        $response->assertStatus(409);
 
         // Manajer yang memproses ditolak karena ada pengajuan aktif (409)
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
@@ -481,5 +481,33 @@ class ShiftExchangeNegativeTest extends TestCase
             'reason' => 'Pengajuan kedua sebelum pengajuan pertama selesai',
         ]);
         $resMgr->assertStatus(409);
+    }
+
+    public function test_manager_cannot_review_exchange_while_pending_peer(): void
+    {
+        $branch = $this->createBranch();
+        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
+        $empA = $this->createUser(['branch_id' => $branch->id]);
+        $empB = $this->createUser(['branch_id' => $branch->id]);
+
+        $shiftA = $this->createShift($empA, $branch, ['start_at' => '2026-10-25 08:00:00', 'end_at' => '2026-10-25 16:00:00']);
+
+        $exchange = ShiftExchange::create([
+            'type' => 'replacement',
+            'branch_id' => $branch->id,
+            'requester_id' => $empA->id,
+            'requester_shift_id' => $shiftA->id,
+            'replacement_id' => $empB->id,
+            'reason' => 'Izin keluarga',
+            'status' => 'pending_peer',
+        ]);
+
+        $this->actingAs($manager);
+        $response = $this->post("/shifts/exchanges/{$exchange->id}/review", [
+            'decision' => 'approve',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertSame('pending_peer', $exchange->fresh()->status);
     }
 }

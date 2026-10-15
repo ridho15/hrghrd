@@ -311,6 +311,10 @@ class ShiftExchangeService
 
         abort_if(in_array($exchange->status, ['approved', 'rejected', 'cancelled'], true), 409, 'Permohonan ini telah diselesaikan sebelumnya.');
 
+        if (in_array($exchange->type, ['replacement', 'swap'], true)) {
+            abort_unless($exchange->status === 'pending_manager', 422, 'Permohonan harus disetujui oleh rekan pengganti terlebih dahulu sebelum dapat diproses manajemen.');
+        }
+
         if (! $approve) {
             $exchange->update([
                 'status'      => 'rejected',

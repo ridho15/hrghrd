@@ -598,20 +598,9 @@ class OpenSlotShiftExchangeTest extends TestCase
             'end_at'   => Carbon::now('Asia/Jakarta')->addDays(4)->setTime(17, 0)->toDateTimeString(),
         ]);
 
-        // Submit via Web Route oleh karyawan dilarang (403)
+        // Submit via Web Route langsung oleh karyawan
         $this->actingAs($employee);
-        $resWebEmp = $this->post('/shifts/exchanges/open-slot', [
-            'type'            => 'change_off_day',
-            'target_shift_id' => $openSlot->id,
-            'target_date'     => Carbon::now('Asia/Jakarta')->addDays(1)->toDateString(),
-            'reason'          => 'Permohonan ganti libur untuk ambil jadwal kosong dapur',
-        ]);
-        $resWebEmp->assertForbidden();
-
-        // Submit via Web Route oleh Super Admin / HRD
-        $this->actingAs($superAdmin);
         $resWebStore = $this->post('/shifts/exchanges/open-slot', [
-            'user_id'         => $employee->id,
             'type'            => 'change_off_day',
             'target_shift_id' => $openSlot->id,
             'target_date'     => Carbon::now('Asia/Jakarta')->addDays(1)->toDateString(),

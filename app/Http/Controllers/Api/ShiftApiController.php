@@ -399,6 +399,68 @@ class ShiftApiController extends Controller
     }
 
     /**
+     * Ambil Daftar Rekan Kerja Se-Cabang beserta Jadwal Shift Mendatang
+     *
+     * Endpoint untuk karyawan mobile memilih rekan kerja dan jadwal yang ingin ditukar.
+     */
+    public function colleagues(Request $request)
+    {
+        $user = $request->user();
+        if (! $user->branch_id) {
+            return response()->json([
+                'success' => true,
+                'data'    => [],
+            ]);
+        }
+
+        $now = now('Asia/Jakarta');
+        $end = $now->copy()->addDays(35)->endOfDay();
+
+        $colleagues = User::with(['position'])
+            ->where('branch_id', $user->branch_id)
+            ->where('id', '!=', $user->id)
+            ->where('active', true)
+            ->whereIn('role', ['employee', 'manager'])
+            ->with(['shifts' => function ($q) use ($now, $end) {
+                $q->whereBetween('start_at', [$now->toDateTimeString(), $end->toDateTimeString()])
+                    ->where('status', 'approved')
+                    ->whereDoesntHave('attendance')
+                    ->whereDoesntHave('exceptions')
+                    ->whereDoesntHave('exchanges', function ($sq) {
+                        $sq->whereIn('status', ['pending_peer', 'pending_manager']);
+                    })
+                    ->orderBy('start_at');
+            }])
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar rekan kerja berhasil dimuat.',
+            'data'    => $colleagues->map(function ($c) {
+                return [
+                    'id'            => $c->id,
+                    'name'          => $c->name,
+                    'email'         => $c->email,
+                    'position_id'   => $c->position_id,
+                    'position_name' => $c->position?->name,
+                    'shifts'        => $c->shifts->map(function ($s) {
+                        return [
+                            'id'             => $s->id,
+                            'date'           => $s->start_at->toDateString(),
+                            'start_at'       => $s->start_at->toIso8601String(),
+                            'end_at'         => $s->end_at->toIso8601String(),
+                            'start_time'     => $s->start_at->format('H:i'),
+                            'end_time'       => $s->end_at->format('H:i'),
+                            'duration_hours' => round($s->end_at->diffInMinutes($s->start_at) / 60, 1),
+                        ];
+                    })->values(),
+                ];
+            })->values(),
+        ]);
+    }
+
+    /**
      * Ambil Daftar Jadwal Kosong (Open Slots) untuk Level Setingkat
      *
      * Mengambil daftar jadwal kosong pada cabang pengguna yang sesuai dengan level/jabatannya.
@@ -440,16 +502,18 @@ class ShiftApiController extends Controller
      */
     public function exchangeOpenSlot(ShiftExchangeOpenSlotRequest $request, ShiftExchangeService $service)
     {
-        if (! Access::manager()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Fitur pengajuan tukar shift mandiri dinonaktifkan sementara. Pengaturan jadwal shift dan libur dikelola terpusat oleh Super Admin / HRD.',
-            ], 403);
-        }
-
         $data = $request->validated();
         $targetShift = Shift::with(['branch', 'position'])->findOrFail((int) $data['target_shift_id']);
         $reqShift = ! empty($data['requester_shift_id']) ? Shift::findOrFail((int) $data['requester_shift_id']) : null;
+
+        if (! Access::admin() && ! Access::manager()) {
+            if ($reqShift && $reqShift->user_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya dapat mengajukan permohonan untuk shift milik Anda sendiri.',
+                ], 403);
+            }
+        }
 
         $exchange = $service->requestOpenSlotExchange(
             $request->user(),
