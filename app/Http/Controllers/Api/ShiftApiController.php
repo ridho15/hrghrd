@@ -539,8 +539,10 @@ class ShiftApiController extends Controller
     /**
      * Daftar Permohonan Pergantian Shift
      */
-    public function exchanges(Request $request)
+    public function exchanges(Request $request, ShiftExchangeService $service)
     {
+        $service->expireOutdatedPeerRequests();
+
         $user = $request->user();
         $query = ShiftExchange::with([
             'requester.position', 'replacement.position',
@@ -643,6 +645,23 @@ class ShiftApiController extends Controller
         return response()->json([
             'success' => true,
             'message' => $isApprove ? 'Permohonan pergantian shift berhasil disetujui manajerial.' : 'Permohonan pergantian shift ditolak.',
+            'data'    => $exchange->fresh()->load(['requester', 'replacement', 'requesterShift', 'targetShift']),
+        ]);
+    }
+
+    /**
+     * Batalkan Permohonan oleh Pemohon Mandiri (Self-Cancel)
+     */
+    public function exchangeCancel(Request $request, int $id, ShiftExchangeService $service)
+    {
+        $exchange = ShiftExchange::findOrFail($id);
+        $reason = $request->input('reason');
+
+        $exchange = $service->cancelByRequester($exchange, $request->user(), $reason);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Permohonan pertukaran shift berhasil dibatalkan.',
             'data'    => $exchange->fresh()->load(['requester', 'replacement', 'requesterShift', 'targetShift']),
         ]);
     }

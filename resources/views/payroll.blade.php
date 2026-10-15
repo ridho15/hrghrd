@@ -331,7 +331,12 @@
                             <td class="py-4 px-4 whitespace-nowrap tabular-nums">
                                 @if($d['overtime_pay'] > 0)
                                     <span class="font-bold text-emerald-700 block">+ Rp{{ number_format($d['overtime_pay'], 0, ',', '.') }}</span>
-                                    <span class="text-[11px] text-emerald-600 font-medium">{{ $d['overtime_minutes'] }} Menit</span>
+                                    <span class="text-[11px] text-emerald-600 font-medium">
+                                        {{ $d['overtime_minutes'] }} Menit
+                                        @if(($d['overtime_units'] ?? 0) > 0 && ($d['overtime_scheme'] ?? '') === 'fixed_amount')
+                                            &middot; {{ $d['overtime_units'] }} Unit
+                                        @endif
+                                    </span>
                                 @else
                                     <span class="text-slate-400">Rp0</span>
                                 @endif

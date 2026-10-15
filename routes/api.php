@@ -60,6 +60,7 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/exchanges/open-slot', [ShiftApiController::class, 'exchangeOpenSlot']);
         Route::post('/exchanges/{id}/peer-respond', [ShiftApiController::class, 'exchangePeerRespond']);
         Route::post('/exchanges/{id}/review', [ShiftApiController::class, 'exchangeReview']);
+        Route::post('/exchanges/{id}/cancel', [ShiftApiController::class, 'exchangeCancel']);
         Route::post('/{id}/exchange', [ShiftApiController::class, 'exchangeStore']);
         Route::post('/{id}/reassign', [ShiftApiController::class, 'directReassign']);
         Route::get('/{id}', [ShiftApiController::class, 'show']);

@@ -239,16 +239,18 @@
                     <button
                         type="button"
                         id="btn-mobile-view-cal"
-                        class="px-3 py-1 rounded-md font-bold transition-all bg-white text-emerald-800 shadow-2xs cursor-pointer"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md font-bold transition-all bg-white text-emerald-800 shadow-2xs cursor-pointer"
                     >
-                        📅 Kalender Mini
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span>Kalender Mini</span>
                     </button>
                     <button
                         type="button"
                         id="btn-mobile-view-list"
-                        class="px-3 py-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md font-semibold text-slate-600 hover:text-slate-900 transition-all cursor-pointer"
                     >
-                        📋 List Agenda
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                        <span>List Agenda</span>
                     </button>
                 </div>
             </div>
@@ -319,11 +321,11 @@
                             class="w-full sm:w-auto h-8 px-2.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 cursor-pointer shadow-2xs"
                         >
                             <option value="">Semua Status Presensi</option>
-                            <option value="present" @selected($attendanceStatus === 'present')>🟢 Hadir Tepat Waktu</option>
-                            <option value="late" @selected($attendanceStatus === 'late')>🟡 Terlambat</option>
-                            <option value="absent" @selected($attendanceStatus === 'absent')>🔴 Alfa / Belum Absen</option>
-                            <option value="on_duty" @selected($attendanceStatus === 'on_duty')>🔵 Sedang Bertugas</option>
-                            <option value="pending_exception" @selected($attendanceStatus === 'pending_exception')>🟣 Pengecualian Pending</option>
+                            <option value="present" @selected($attendanceStatus === 'present')>Hadir Tepat Waktu</option>
+                            <option value="late" @selected($attendanceStatus === 'late')>Terlambat</option>
+                            <option value="absent" @selected($attendanceStatus === 'absent')>Alfa / Belum Absen</option>
+                            <option value="on_duty" @selected($attendanceStatus === 'on_duty')>Sedang Bertugas</option>
+                            <option value="pending_exception" @selected($attendanceStatus === 'pending_exception')>Pengecualian Pending</option>
                         </select>
                     @endif
 
@@ -515,9 +517,10 @@
                 @foreach($groupedShifts as $listDateStr => $dayListShifts)
                     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 space-y-3">
                         <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                            <span class="text-xs font-black text-slate-900">
-                                📅 {{ \Carbon\Carbon::parse($listDateStr)->translatedFormat('l, d M Y') }}
-                            </span>
+                            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span>{{ \Carbon\Carbon::parse($listDateStr)->translatedFormat('l, d M Y') }}</span>
+                            </div>
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
                                 {{ $dayListShifts->count() }} Shift
                             </span>
@@ -925,115 +928,14 @@
 
         {{-- 2. Modal Formulir Permohonan Pergantian / Pertukaran Shift Milik Karyawan --}}
         @if(! $shiftItem->isOpenSlot && ! $shiftItem->attendance()->exists() && (in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id()))
-            <div
-                id="modal-exchange-shift-{{ $shiftItem->id }}"
-                data-modal-container
-                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
-            >
-                <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4 max-h-[90vh] overflow-y-auto">
-                    <div class="flex items-start justify-between pb-3 border-b border-slate-100">
-                        <div>
-                            <h3 class="text-lg font-black text-slate-900">Ajukan Pergantian / Tukar Shift</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Shift: {{ \Carbon\Carbon::parse($shiftItem->start_at)->translatedFormat('d M Y') }} ({{ $startTime }}-{{ $endTime }})</p>
-                        </div>
-                        <button type="button" data-close-modal class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-
-                    <form method="post" action="{{ route('shifts.exchange.store', $shiftItem->id) }}" class="space-y-4">
-                        @csrf
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilihan Jenis Pergantian</label>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
-                                    <input type="radio" name="type" value="replacement" checked class="text-emerald-600 focus:ring-emerald-500" onchange="toggleExchangeBoxes('{{ $shiftItem->id }}', 'replacement')">
-                                    <span>Penggantian Rekan (Searah / Saya Libur)</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
-                                    <input type="radio" name="type" value="swap" class="text-emerald-600 focus:ring-emerald-500" onchange="toggleExchangeBoxes('{{ $shiftItem->id }}', 'swap')">
-                                    <span>Pertukaran Shift & Hari Libur (2 Arah)</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-amber-200 bg-amber-50/40 cursor-pointer hover:bg-amber-50 text-xs font-bold text-amber-900">
-                                    <input type="radio" name="type" value="change_shift" class="text-amber-600 focus:ring-amber-500" onchange="toggleExchangeBoxes('{{ $shiftItem->id }}', 'change_shift')">
-                                    <span>Ganti ke Jadwal Kosong</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-indigo-200 bg-indigo-50/40 cursor-pointer hover:bg-indigo-50 text-xs font-bold text-indigo-900">
-                                    <input type="radio" name="type" value="change_off_day" class="text-indigo-600 focus:ring-indigo-500" onchange="toggleExchangeBoxes('{{ $shiftItem->id }}', 'change_off_day')">
-                                    <span>Ganti Libur ke Jadwal Kosong</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {{-- Box Penggantian Searah Rekan --}}
-                        <div id="exchange-rep-box-{{ $shiftItem->id }}">
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Karyawan Pengganti</label>
-                            <select name="replacement_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
-                                <option value="">-- Pilih Rekan Pengganti --</option>
-                                @foreach($people->where('id', '!=', $shiftItem->user_id) as $p)
-                                    <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->position?->name ?? 'Staf' }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        {{-- Box Tukar Dua Arah Rekan --}}
-                        <div id="exchange-swap-box-{{ $shiftItem->id }}" class="hidden">
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Jadwal Shift Rekan yang Ingin Ditukar</label>
-                            <select name="target_shift_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
-                                <option value="">-- Pilih Jadwal Shift Rekan --</option>
-                                @foreach(($candidateShifts ?? $shifts)->where('user_id', '!=', $shiftItem->user_id)->whereNotNull('user_id') as $otherShift)
-                                    <option value="{{ $otherShift->id }}">
-                                        {{ $otherShift->user?->name }} · {{ \Carbon\Carbon::parse($otherShift->start_at)->format('d M') }} ({{ \Carbon\Carbon::parse($otherShift->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($otherShift->end_at)->format('H:i') }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        {{-- Box Jadwal Kosong (Ganti Shift & Ganti Libur) --}}
-                        <div id="exchange-open-box-{{ $shiftItem->id }}" class="hidden">
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Jadwal Kosong Level Setingkat *</label>
-                            @if(isset($openSlots) && $openSlots->isNotEmpty())
-                                <select name="target_shift_id" class="w-full h-10 px-3 bg-white border border-amber-300 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600">
-                                    <option value="">-- Pilih Slot Jadwal Kosong --</option>
-                                    @foreach($openSlots as $slot)
-                                        <option value="{{ $slot->id }}">
-                                            {{ \Carbon\Carbon::parse($slot->start_at)->translatedFormat('l, d M Y') }} ({{ \Carbon\Carbon::parse($slot->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($slot->end_at)->format('H:i') }}) · Level: {{ $slot->positionName }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <p class="text-[11px] text-amber-800 mt-1">Jadwal kosong harus setingkat dengan posisi Anda dan langsung diteruskan ke Super Admin / HRD.</p>
-                            @else
-                                <div class="p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs">
-                                    Tidak ada jadwal kosong yang tersedia untuk level posisi Anda pada cabang ini.
-                                </div>
-                            @endif
-                        </div>
-
-                        <div id="exchange-off-date-box-{{ $shiftItem->id }}" class="hidden">
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Hari Libur yang Diganti</label>
-                            <input type="date" name="target_date" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600" value="{{ $shiftItem->start_at->toDateString() }}">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Alasan Permohonan *</label>
-                            <textarea
-                                name="reason"
-                                rows="3"
-                                required
-                                minlength="5"
-                                maxlength="500"
-                                placeholder="Jelaskan alasan pengalihan, pertukaran, atau pergantian jadwal kosong ini..."
-                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                            ></textarea>
-                        </div>
-
-                        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                            <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer">Batal</button>
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider cursor-pointer">Kirim Permohonan</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            @include('partials.shift-exchange-form', [
+                'modalId' => 'modal-exchange-shift-' . $shiftItem->id,
+                'shiftItem' => $shiftItem,
+                'isStandalone' => false,
+                'colleagues' => $people,
+                'candidateShifts' => $candidateShifts,
+                'openSlots' => $openSlots,
+            ])
         @endif
 
         {{-- 2B. Modal Formulir Pengajuan Ambil Khusus Slot Kosong Ini --}}
@@ -1457,4 +1359,6 @@
     };
 </script>
 @endpush
+
+@include('partials.shift-exchange-modal-script')
 @endsection

@@ -18,7 +18,15 @@
             </p>
         </div>
 
-        <div class="flex items-center gap-2.5 shrink-0">
+        <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <button
+                type="button"
+                data-open-modal="modal-create-exchange"
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider shadow-xs hover:shadow transition-all cursor-pointer"
+            >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                <span>Ajukan Pergantian / Tukar Shift</span>
+            </button>
             <a
                 href="{{ route('shifts.calendar') }}"
                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-bold uppercase tracking-wider shadow-2xs transition-all"
@@ -86,6 +94,7 @@
                     <option value="pending_manager" @selected(request('status') === 'pending_manager')>Menunggu Manajer</option>
                     <option value="approved" @selected(request('status') === 'approved')>Disetujui</option>
                     <option value="rejected" @selected(request('status') === 'rejected')>Ditolak</option>
+                    <option value="cancelled" @selected(request('status') === 'cancelled')>Dibatalkan</option>
                 </select>
             </div>
         </x-table-toolbar>
@@ -242,6 +251,11 @@
                                         <span class="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
                                         <span>Menunggu Manajer</span>
                                     </span>
+                                @elseif($exc->status === 'cancelled')
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        <span>Dibatalkan</span>
+                                    </span>
                                 @else
                                     <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
                                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
@@ -335,5 +349,18 @@
             </div>
         @endif
     </div>
+
+    {{-- Modal Pengajuan Mandiri --}}
+    @include('partials.shift-exchange-form', [
+        'modalId' => 'modal-create-exchange',
+        'shiftItem' => null,
+        'isStandalone' => true,
+        'colleagues' => $colleagues,
+        'candidateShifts' => $candidateShifts,
+        'openSlots' => $openSlots,
+        'myUpcomingShifts' => $myUpcomingShifts,
+    ])
 </div>
+
+@include('partials.shift-exchange-modal-script')
 @endsection

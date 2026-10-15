@@ -481,4 +481,56 @@ class ShiftExchangeService
 
         return $exchange;
     }
+
+    /**
+     * Pembatalan mandiri oleh pemohon saat status masih pending_peer.
+     */
+    public function cancelByRequester(ShiftExchange $exchange, User $requester, ?string $reason = null): ShiftExchange
+    {
+        abort_unless($requester->id === $exchange->requester_id, 403, 'Hanya pemohon yang dapat membatalkan permohonan ini.');
+        abort_unless($exchange->status === 'pending_peer', 422, 'Permohonan hanya dapat dibatalkan saat masih menunggu konfirmasi rekan.');
+
+        $exchange->update([
+            'status'      => 'cancelled',
+            'review_note' => $reason ? "Dibatalkan oleh pemohon: {$reason}" : 'Dibatalkan oleh pemohon.',
+            'reviewed_at' => now(),
+        ]);
+
+        Audit::record('shift_exchange', $exchange->id, 'requester_cancel', $reason);
+
+        return $exchange->fresh();
+    }
+
+    /**
+     * Kadaluwarsa otomatis untuk permohonan pending_peer yang mendekati jam shift (< 6 jam sebelum start_at).
+     */
+    public function expireOutdatedPeerRequests(?Carbon $now = null): int
+    {
+        $current = $now ?: now('Asia/Jakarta');
+        $cutoff = $current->copy()->addHours(6);
+
+        $expiredExchanges = ShiftExchange::where('status', 'pending_peer')
+            ->where(function ($q) use ($cutoff) {
+                $q->whereHas('requesterShift', function ($sub) use ($cutoff) {
+                    $sub->where('start_at', '<=', $cutoff);
+                })->orWhereHas('targetShift', function ($sub) use ($cutoff) {
+                    $sub->where('start_at', '<=', $cutoff);
+                });
+            })
+            ->get();
+
+        $count = 0;
+        foreach ($expiredExchanges as $exchange) {
+            $exchange->update([
+                'status'      => 'cancelled',
+                'review_note' => 'Otomatis dibatalkan sistem: Rekan pengganti tidak merespon hingga batas waktu toleransi H-6 jam sebelum shift dimulai.',
+                'reviewed_at' => $current,
+            ]);
+
+            Audit::record('shift_exchange', $exchange->id, 'auto_expire', 'Batas waktu respon rekan terlampaui (< 6 jam sebelum shift)');
+            $count++;
+        }
+
+        return $count;
+    }
 }

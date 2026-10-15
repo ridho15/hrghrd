@@ -143,7 +143,13 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <span class="text-slate-800 font-medium block">Upah Lembur Resmi</span>
-                            <span class="text-[10px] text-slate-400">{{ $detail['overtime_minutes'] }} Menit lembur terverifikasi</span>
+                            <span class="text-[10px] text-slate-400">
+                                @if(!empty($detail['overtime_scheme']) && $detail['overtime_scheme'] === 'fixed_amount')
+                                    {{ $detail['overtime_units'] ?? 0 }} Unit ({{ $detail['overtime_minutes'] }} Menit @ {{ $detail['overtime_unit_minutes'] ?? 60 }} mnt) &times; Rp{{ number_format($detail['overtime_rate_per_unit'] ?? 0, 0, ',', '.') }}
+                                @else
+                                    {{ $detail['overtime_minutes'] }} Menit lembur terverifikasi
+                                @endif
+                            </span>
                         </div>
                         <strong class="text-emerald-800 tabular-nums font-bold">+ Rp{{ number_format($detail['overtime_pay'], 0, ',', '.') }}</strong>
                     </div>

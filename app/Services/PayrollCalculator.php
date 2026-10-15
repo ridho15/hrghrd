@@ -64,20 +64,26 @@ final class PayrollCalculator
 
         $lateSources = []; $overtimeSources = [];
         $totalWeightedHours = 0.0;
+        $totalOvertimeUnits = 0;
+        $totalOvertimePay = 0;
+
         foreach ($attendances as $attendance) {
             if (! in_array($attendance->status, ['absent', 'early_checkout', 'rejected'], true) && $attendance->late_units > 0) {
                 $lateSources[] = ['attendance_id'=>$attendance->id,'units'=>$attendance->late_units];
             }
             $cappedOvertime = min(Rules::int('overtime_max_daily_minutes'), (int) $attendance->overtime_minutes);
             if ($attendance->overtime_approved_by && $cappedOvertime > 0) {
-                $overtimeSources[] = ['attendance_id'=>$attendance->id,'minutes'=>$cappedOvertime];
-                $hours = $cappedOvertime / 60;
-                // Statutory tiered overtime (PP 35/2021): 1.5x hour 1, 2.0x subsequent hours
-                if ($hours <= 1.0) {
-                    $totalWeightedHours += $hours * 1.5;
-                } else {
-                    $totalWeightedHours += (1.0 * 1.5) + (($hours - 1.0) * 2.0);
-                }
+                $calc = Rules::calculateOvertimePay($cappedOvertime, (float) $employee->base_salary);
+                $overtimeSources[] = [
+                    'attendance_id' => $attendance->id,
+                    'minutes'       => $cappedOvertime,
+                    'units'         => $calc['units'],
+                    'pay'           => $calc['pay'],
+                    'description'   => $calc['description'],
+                ];
+                $totalOvertimeUnits += $calc['units'];
+                $totalOvertimePay += $calc['pay'];
+                $totalWeightedHours += $calc['weighted_hours'];
             }
         }
         $lateUnits = array_sum(array_column($lateSources,'units'));
@@ -97,13 +103,19 @@ final class PayrollCalculator
         $base = ($employedDays === $days) ? (int) $employee->base_salary : (int) round($daily * $employedDays);
         $unpaid = (int) round($daily * count($unpaidDates));
         $late = $lateUnits * Rules::int('late_penalty_per_unit');
-        $overtime = (int) round($hourly * $totalWeightedHours);
+        $overtime = $totalOvertimePay;
+
         return [
             'monthly_salary'=>(int)$employee->base_salary, 'calendar_days'=>$days, 'daily_divisor'=>$dailyDivisor,
             'employed_days'=>$employedDays, 'daily_rate'=>round($daily,2), 'hourly_rate'=>round($hourly,2),
             'prorated_base'=>$base, 'unpaid_dates'=>$unpaidDates, 'unpaid_deduction'=>$unpaid,
             'late_units'=>$lateUnits, 'late_sources'=>$lateSources, 'late_deduction'=>$late,
-            'overtime_minutes'=>$overtimeMinutes, 'overtime_sources'=>$overtimeSources, 'overtime_pay'=>$overtime,
+            'overtime_minutes'=>$overtimeMinutes, 'overtime_sources'=>$overtimeSources,
+            'overtime_units'=>$totalOvertimeUnits, 'overtime_pay'=>$overtime,
+            'overtime_scheme'=>Rules::get('overtime_rate_scheme'),
+            'overtime_basis'=>Rules::get('overtime_calculation_basis'),
+            'overtime_unit_minutes'=>Rules::int('overtime_unit_minutes'),
+            'overtime_rate_per_unit'=>Rules::int('overtime_rate_per_unit'),
             'adjustments'=>$adjustments, 'manual_total'=>$manual,
             'bonus_total'=>$bonusTotal, 'kasbon_total'=>$kasbonTotal,
             'total_shifts'=>$shifts->count(), 'present_shifts'=>$attendances->where('status', 'present')->count(),

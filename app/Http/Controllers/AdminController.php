@@ -759,7 +759,55 @@ class AdminController extends Controller
         $exchanges = $query->paginate(10)->withQueryString();
         $branches = Branch::orderBy('name')->get();
 
-        return view('shifts-exchange', compact('exchanges', 'branches'));
+        $userBranchId = Access::admin()
+            ? ($request->filled('branch_id') ? (int) $request->query('branch_id') : ($user->branch_id ? (int) $user->branch_id : null))
+            : (int) $user->branch_id;
+
+        $myUpcomingShifts = Shift::with(['branch', 'position'])
+            ->where('user_id', $user->id)
+            ->where('start_at', '>=', now('Asia/Jakarta')->subHours(2))
+            ->where('status', 'approved')
+            ->doesntHave('attendance')
+            ->orderBy('start_at')
+            ->get();
+
+        $colleagues = User::active()
+            ->whereIn('role', ['employee', 'manager'])
+            ->when($userBranchId, fn ($q) => $q->where('branch_id', $userBranchId))
+            ->where('id', '!=', $user->id)
+            ->orderBy('name')
+            ->get();
+
+        $candidateShifts = Shift::with(['user.position', 'position', 'branch'])
+            ->where('start_at', '>=', now('Asia/Jakarta')->subHours(2))
+            ->where('start_at', '<=', now('Asia/Jakarta')->addDays(45))
+            ->when($userBranchId, fn ($q) => $q->where('branch_id', $userBranchId))
+            ->whereNotNull('user_id')
+            ->where('user_id', '!=', $user->id)
+            ->where('status', 'approved')
+            ->doesntHave('attendance')
+            ->orderBy('start_at')
+            ->get();
+
+        $openSlots = $user->branch_id
+            ? app(ShiftExchangeService::class)->getAvailableOpenSlots($user)
+            : Shift::with(['branch', 'position'])
+                ->whereNull('user_id')
+                ->where('end_at', '>', now('Asia/Jakarta'))
+                ->when($userBranchId, fn ($q) => $q->where('branch_id', $userBranchId))
+                ->whereDoesntHave('exchanges', fn ($q) => $q->whereIn('status', ['pending_peer', 'pending_manager']))
+                ->orderBy('start_at')
+                ->take(30)
+                ->get();
+
+        return view('shifts-exchange', compact(
+            'exchanges',
+            'branches',
+            'myUpcomingShifts',
+            'colleagues',
+            'candidateShifts',
+            'openSlots'
+        ));
     }
 
     public function shiftExchangeStore(ShiftExchangeStoreRequest $request, int $id, ShiftExchangeService $service)
@@ -900,7 +948,15 @@ class AdminController extends Controller
             ->take(30)
             ->get();
 
-        return view('shifts-show', compact('shift', 'people', 'candidateShifts'));
+        $openSlots = Shift::with(['branch', 'position'])
+            ->whereNull('user_id')
+            ->where('branch_id', $shift->branch_id)
+            ->where('end_at', '>', now('Asia/Jakarta'))
+            ->orderBy('start_at')
+            ->take(20)
+            ->get();
+
+        return view('shifts-show', compact('shift', 'people', 'candidateShifts', 'openSlots'));
     }
 
     public function shiftEdit(int $id)

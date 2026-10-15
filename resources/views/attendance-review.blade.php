@@ -29,7 +29,7 @@
         </div>
     </div>
 
-    {{-- Tab Switcher Bar: [ 📅 Kalender Presensi ] & [ 📋 Tabel & Log Presensi ] --}}
+    {{-- Tab Switcher Bar: [ Kalender Presensi ] & [ Tabel & Log Presensi ] --}}
     <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl max-w-fit border border-slate-200/80">
         <button
             type="button"

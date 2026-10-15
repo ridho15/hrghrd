@@ -460,80 +460,14 @@
 
     {{-- Modal Formulir Permohonan Pergantian / Pertukaran Shift --}}
     @if(!$shift->attendance)
-        <div
-            id="modal-exchange-shift"
-            data-modal-container
-            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
-        >
-            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4">
-                <div class="flex items-start justify-between pb-3 border-b border-slate-100">
-                    <div>
-                        <h3 class="text-lg font-black text-slate-900">Ajukan Pergantian / Tukar Shift</h3>
-                        <p class="text-xs text-slate-500 mt-0.5">Shift: {{ \Carbon\Carbon::parse($shift->start_at)->translatedFormat('d M Y') }} ({{ \Carbon\Carbon::parse($shift->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($shift->end_at)->format('H:i') }})</p>
-                    </div>
-                    <button type="button" data-close-modal class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-
-                <form method="post" action="{{ route('shifts.exchange.store', $shift->id) }}" class="space-y-4">
-                    @csrf
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tipe Pergantian</label>
-                        <div class="grid grid-cols-2 gap-2">
-                            <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
-                                <input type="radio" name="type" value="replacement" checked class="text-emerald-600 focus:ring-emerald-500" onchange="document.getElementById('show-swap-box').classList.add('hidden'); document.getElementById('show-rep-box').classList.remove('hidden');">
-                                <span>Penggantian Searah</span>
-                            </label>
-                            <label class="flex items-center gap-2 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
-                                <input type="radio" name="type" value="swap" class="text-emerald-600 focus:ring-emerald-500" onchange="document.getElementById('show-swap-box').classList.remove('hidden'); document.getElementById('show-rep-box').classList.add('hidden');">
-                                <span>Tukar Shift Dua Arah</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div id="show-rep-box">
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Karyawan Pengganti</label>
-                        <select name="replacement_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
-                            <option value="">-- Pilih Rekan Pengganti --</option>
-                            @foreach($people as $p)
-                                <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->position?->name ?? 'Staf' }})</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div id="show-swap-box" class="hidden">
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Pilih Jadwal Shift Rekan yang Ingin Ditukar</label>
-                        <select name="target_shift_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
-                            <option value="">-- Pilih Jadwal Shift Rekan --</option>
-                            @foreach($candidateShifts as $cs)
-                                <option value="{{ $cs->id }}">
-                                    {{ $cs->user?->name }} · {{ \Carbon\Carbon::parse($cs->start_at)->format('d M') }} ({{ \Carbon\Carbon::parse($cs->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($cs->end_at)->format('H:i') }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Alasan Permohonan</label>
-                        <textarea
-                            name="reason"
-                            rows="3"
-                            required
-                            minlength="5"
-                            maxlength="500"
-                            placeholder="Jelaskan alasan pengalihan atau pertukaran shift..."
-                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                        ></textarea>
-                    </div>
-
-                    <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                        <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">Batal</button>
-                        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider">Kirim Permohonan</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        @include('partials.shift-exchange-form', [
+            'modalId' => 'modal-exchange-shift',
+            'shiftItem' => $shift,
+            'isStandalone' => false,
+            'colleagues' => $people,
+            'candidateShifts' => $candidateShifts,
+            'openSlots' => $openSlots,
+        ])
 
         {{-- Modal Formulir Penugasan Langsung oleh Manajer --}}
         @if(in_array(auth()->user()->role, ['admin', 'manager']))
@@ -588,4 +522,6 @@
         @endif
     @endif
 </div>
+
+@include('partials.shift-exchange-modal-script')
 @endsection
