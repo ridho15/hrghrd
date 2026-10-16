@@ -133,9 +133,14 @@ class User extends Authenticatable
         return ($this->schedule_type ?? 'shift') === 'office_hours';
     }
 
+    public function isFlexibleSchedule(): bool
+    {
+        return ($this->schedule_type ?? 'shift') === 'flexible';
+    }
+
     public function isShiftSchedule(): bool
     {
-        return ($this->schedule_type ?? 'shift') !== 'office_hours';
+        return !in_array($this->schedule_type ?? 'shift', ['office_hours', 'flexible'], true);
     }
 
     public function scopeActive($query)

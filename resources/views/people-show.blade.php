@@ -125,6 +125,11 @@
                                 <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
                                 Jam Kantor (Senin–Jumat)
                             </span>
+                        @elseif($person->isFlexibleSchedule())
+                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold border bg-teal-50 text-teal-700 border-teal-200 inline-flex items-center gap-1" title="Skema Jam Bebas / Penugasan Khusus (Presensi Dinamis Tanpa Jam Tetap)">
+                                <svg class="w-3.5 h-3.5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Jam Bebas (Penugasan)
+                            </span>
                         @else
                             <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200 inline-flex items-center gap-1" title="Jadwal Shift Operasional (Rolling)">
                                 <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>

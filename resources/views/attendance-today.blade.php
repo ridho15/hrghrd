@@ -54,24 +54,138 @@
         </div>
 
         @if($shifts->isEmpty())
-            <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-xs">
-                <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            @if($user->isFlexibleSchedule())
+                {{-- Panel Presensi Dinamis untuk Karyawan Jam Bebas / Penugasan Khusus --}}
+                <div class="bg-white rounded-2xl border border-teal-200/80 shadow-xs overflow-hidden">
+                    <div class="p-5 sm:p-6 bg-teal-50/50 border-b border-teal-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm shrink-0 border border-teal-200">
+                                <svg class="w-6 h-6 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <h3 class="text-base font-bold text-slate-900 m-0">Skema Jam Bebas / Penugasan Khusus</h3>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-300">Presensi Dinamis</span>
+                                </div>
+                                <p class="text-xs text-slate-600 m-0">
+                                    Cabang Penugasan: <strong class="text-slate-800">{{ $user->branch?->name ?? 'Cabang Penugasan' }}</strong> ({{ $user->branch?->code ?? '-' }}). Jam kerja akan dihitung otomatis saat Anda melakukan Check-in.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-5 sm:p-6 space-y-4">
+                        <div class="max-w-2xl">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                <h4 class="text-sm font-bold text-slate-900 m-0">
+                                    Presensi Masuk (Check-in On-Demand)
+                                </h4>
+                            </div>
+                            <p class="text-xs text-slate-500 mb-5 leading-relaxed">
+                                Pastikan Anda berada di area cabang <strong>{{ $user->branch?->name }}</strong> dan arahkan kamera ke layar QR Kiosk cabang untuk memulai penugasan hari ini.
+                            </p>
+
+                            <form method="post" action="{{ route('attendance.act', 0) }}" class="space-y-4 attendance-form"
+                                data-shift-branch-code="{{ $user->branch?->code }}"
+                                data-shift-branch-name="{{ $user->branch?->name }}">
+                                @csrf
+                                <input type="hidden" name="action" value="in">
+                                <input type="hidden" name="latitude">
+                                <input type="hidden" name="longitude">
+                                <input type="hidden" name="accuracy">
+                                <input type="hidden" name="challenge" value="{{ session('attendance_challenge') }}">
+
+                                {{-- Area Pindai QR Kamera (Alur Utama) --}}
+                                <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div>
+                                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider block">Verifikasi QR Code Cabang</span>
+                                            <p class="text-[11px] text-slate-500 m-0">Arahkan kamera ke layar QR Kiosk cabang <strong>{{ $user->branch?->name }} ({{ $user->branch?->code }})</strong>.</p>
+                                        </div>
+                                        <button type="button" data-scan-qr class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-300 shadow-2xs transition-colors cursor-pointer shrink-0">
+                                            <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            <span>Buka Kamera Pemindai</span>
+                                        </button>
+                                    </div>
+
+                                    <video class="qr-scanner w-full max-h-56 rounded-xl border border-slate-300 bg-black object-cover" playsinline hidden></video>
+
+                                    {{-- Indikator Kode QR Terverifikasi Sesuai Cabang --}}
+                                    <div class="qr-detected-badge hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2 text-xs">
+                                        <span class="text-emerald-800 font-bold flex items-center gap-1.5">
+                                            <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                            <span>QR Cabang Terverifikasi:</span>
+                                            <code class="qr-detected-code font-mono font-black text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300"></code>
+                                        </span>
+                                        <span class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider bg-emerald-100/80 px-2 py-0.5 rounded-full shrink-0">Siap Kirim</span>
+                                    </div>
+
+                                    {{-- Indikator Peringatan QR Tidak Sesuai Cabang --}}
+                                    <div class="qr-mismatch-badge hidden p-3 bg-rose-50 border border-rose-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-rose-900">
+                                        <span class="font-bold flex items-center gap-1.5">
+                                            <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                            <span class="qr-mismatch-message">QR yang dipindai tidak sesuai dengan cabang penugasan Anda.</span>
+                                        </span>
+                                        <span class="text-[10px] text-rose-700 font-bold uppercase tracking-wider bg-rose-100/80 px-2 py-0.5 rounded-full self-start sm:self-auto shrink-0">Cabang Berbeda</span>
+                                    </div>
+
+                                    {{-- Fallback Manual 8 Digit --}}
+                                    <details class="text-xs text-slate-500 pt-1 border-t border-slate-200/60">
+                                        <summary class="cursor-pointer hover:text-slate-700 font-medium list-none flex items-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                            <span>Kamera tidak bisa memindai? Masukkan 8 Digit Angka Kode Cabang manual</span>
+                                        </summary>
+                                        <div class="mt-2.5 pt-2 flex flex-col sm:flex-row sm:items-center gap-2">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Kode Cabang 8 Karakter (Angka Saja)</label>
+                                                <input 
+                                                    name="qr_code" 
+                                                    maxlength="8" 
+                                                    minlength="8" 
+                                                    inputmode="numeric"
+                                                    pattern="[0-9]*"
+                                                    placeholder="Contoh: 84920173" 
+                                                    class="w-full sm:w-60 px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono font-bold tracking-widest focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 text-xs"
+                                                >
+                                            </div>
+                                            <span class="text-[11px] text-slate-400 sm:mt-5">Ketik 8 angka dari layar kiosk cabang</span>
+                                        </div>
+                                    </details>
+                                </div>
+
+                                {{-- Submit Button --}}
+                                <div class="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <button class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-sm transition-colors cursor-pointer">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                                        <span>Check In Sekarang</span>
+                                    </button>
+                                    <small class="form-status text-xs font-semibold text-emerald-700" aria-live="polite"></small>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                <h3 class="text-sm font-bold text-slate-800 mb-1">Tidak Ada Jadwal Shift Hari Ini</h3>
-                <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                    Anda tidak memiliki jadwal tugas yang diagendakan untuk hari ini ({{ $today->translatedFormat('l, d F Y') }}). Jika Anda memiliki jadwal kerja, hubungi Admin atau Manager operasional cabang Anda.
-                </p>
-                <div class="mt-4 flex items-center justify-center gap-2 flex-wrap">
-                    <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <span>Buka Kalender Kerja & Riwayat Presensi</span>
-                    </a>
-                    <a href="{{ route('home') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">
-                        Kembali ke Beranda
-                    </a>
+            @else
+                <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-xs">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h3 class="text-sm font-bold text-slate-800 mb-1">Tidak Ada Jadwal Shift Hari Ini</h3>
+                    <p class="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                        Anda tidak memiliki jadwal tugas yang diagendakan untuk hari ini ({{ $today->translatedFormat('l, d F Y') }}). Jika Anda memiliki jadwal kerja, hubungi Admin atau Manager operasional cabang Anda.
+                    </p>
+                    <div class="mt-4 flex items-center justify-center gap-2 flex-wrap">
+                        <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold transition-colors shadow-2xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span>Buka Kalender Kerja & Riwayat Presensi</span>
+                        </a>
+                        <a href="{{ route('home') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors">
+                            Kembali ke Beranda
+                        </a>
+                    </div>
                 </div>
-            </div>
+            @endif
         @else
             @foreach($shifts as $shift)
                 @php

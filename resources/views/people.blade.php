@@ -265,6 +265,10 @@
                                         <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200" title="Jadwal Jam Kantor Reguler (Senin–Jumat 09:00–18:00 WIB)">
                                             Jam Kantor
                                         </span>
+                                    @elseif($p->isFlexibleSchedule())
+                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-teal-50 text-teal-700 border border-teal-200" title="Skema Jam Bebas / Penugasan Khusus (Presensi Dinamis)">
+                                            Jam Bebas
+                                        </span>
                                     @endif
                                 </div>
                             </td>

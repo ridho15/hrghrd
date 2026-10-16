@@ -32,10 +32,17 @@ class AttendanceApiController extends Controller
     {
         $user = $request->user();
 
-        if (! $request->filled('shift_id') && $user->isOfficeSchedule()) {
-            $officeShift = app(\App\Services\ShiftService::class)->ensureOfficeShiftToday($user);
-            if ($officeShift) {
-                $request->merge(['shift_id' => $officeShift->id]);
+        if (! $request->filled('shift_id')) {
+            if ($user->isFlexibleSchedule()) {
+                $flexibleShift = app(\App\Services\ShiftService::class)->ensureFlexibleShiftOnCheckin($user);
+                if ($flexibleShift) {
+                    $request->merge(['shift_id' => $flexibleShift->id]);
+                }
+            } elseif ($user->isOfficeSchedule()) {
+                $officeShift = app(\App\Services\ShiftService::class)->ensureOfficeShiftToday($user);
+                if ($officeShift) {
+                    $request->merge(['shift_id' => $officeShift->id]);
+                }
             }
         }
 
@@ -114,7 +121,7 @@ class AttendanceApiController extends Controller
     {
         $user = $request->user();
 
-        if (! $request->filled('shift_id') && $user->isOfficeSchedule()) {
+        if (! $request->filled('shift_id') && ($user->isOfficeSchedule() || $user->isFlexibleSchedule())) {
             $activeAtt = Attendance::where('user_id', $user->id)
                 ->whereNotNull('checkin_at')
                 ->whereNull('checkout_at')

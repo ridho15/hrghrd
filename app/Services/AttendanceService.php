@@ -132,28 +132,38 @@ final class AttendanceService
                 $end = Carbon::parse($shift->end_at, 'Asia/Jakarta');
                 $attendance = Attendance::where('shift_id', $shiftId)->first();
 
+                $isFlexible = $user->isFlexibleSchedule();
+
                 if ($action === 'in') {
                     if ($attendance) {
                         $this->reject($user->id, $shiftId, $action, 'Check-in sudah tercatat', $evidence, $now);
                     }
-                    if ($now->lt($start->copy()->subMinutes(Rules::int('checkin_early_minutes')))) {
-                        $this->reject($user->id, $shiftId, $action, 'Terlalu awal', $evidence, $now);
-                    }
-                    if ($now->gt($end)) {
-                        $this->reject($user->id, $shiftId, $action, 'Shift telah selesai', $evidence, $now);
-                    }
+                    if (! $isFlexible) {
+                        if ($now->lt($start->copy()->subMinutes(Rules::int('checkin_early_minutes')))) {
+                            $this->reject($user->id, $shiftId, $action, 'Terlalu awal', $evidence, $now);
+                        }
+                        if ($now->gt($end)) {
+                            $this->reject($user->id, $shiftId, $action, 'Shift telah selesai', $evidence, $now);
+                        }
 
-                    $late = max(0, (int) $start->diffInMinutes($now, false));
-                    if ($late > Rules::int('late_reject_minutes')) {
-                        $this->reject($user->id, $shiftId, $action, 'Batas waktu keterlambatan check-in telah terlewat (' . $late . ' menit). Silakan ajukan form pengecualian presensi', $evidence, $now);
+                        $late = max(0, (int) $start->diffInMinutes($now, false));
+                        if ($late > Rules::int('late_reject_minutes')) {
+                            $this->reject($user->id, $shiftId, $action, 'Batas waktu keterlambatan check-in telah terlewat (' . $late . ' menit). Silakan ajukan form pengecualian presensi', $evidence, $now);
+                        }
                     }
                 } else {
                     if (! $attendance || ! $attendance->checkin_at || $attendance->checkout_at) {
                         $this->reject($user->id, $shiftId, $action, 'Check-out tidak sah atau ganda', $evidence, $now);
                     }
-                    if ($now->lt(Carbon::parse($attendance->checkin_at, 'Asia/Jakarta')) ||
-                        $now->gt($end->copy()->addHours(Rules::int('checkout_late_hours')))) {
-                        $this->reject($user->id, $shiftId, $action, 'Di luar jendela check-out', $evidence, $now);
+                    if (! $isFlexible) {
+                        if ($now->lt(Carbon::parse($attendance->checkin_at, 'Asia/Jakarta')) ||
+                            $now->gt($end->copy()->addHours(Rules::int('checkout_late_hours')))) {
+                            $this->reject($user->id, $shiftId, $action, 'Di luar jendela check-out', $evidence, $now);
+                        }
+                    } else {
+                        if ($now->lt(Carbon::parse($attendance->checkin_at, 'Asia/Jakarta'))) {
+                            $this->reject($user->id, $shiftId, $action, 'Waktu check-out mendahului waktu check-in', $evidence, $now);
+                        }
                     }
                 }
 
@@ -162,8 +172,8 @@ final class AttendanceService
                 }
 
                 if ($action === 'in') {
-                    $late = max(0, (int) $start->diffInMinutes($now, false));
-                    $units = Rules::lateUnits($late);
+                    $late = $isFlexible ? 0 : max(0, (int) $start->diffInMinutes($now, false));
+                    $units = $isFlexible ? 0 : Rules::lateUnits($late);
                     $prior = AttendanceAttempt::where('user_id', $user->id)->where('result', 'accepted')
                         ->where('server_at', '>=', $now->copy()->subHour())->where('shift_id', '!=', $shiftId)->exists();
 
@@ -178,11 +188,16 @@ final class AttendanceService
                         'flags' => $prior ? ['Beberapa absensi dalam satu jam'] : [],
                     ]);
                 } else {
+                    // Untuk karyawan jam bebas (flexible), perbarui end_at pada shift dinamis sesuai jam checkout aktual
+                    if ($isFlexible) {
+                        $shift->update(['end_at' => $now]);
+                    }
+
                     $durationMinutes = (int) Carbon::parse($attendance->checkin_at, 'Asia/Jakarta')->diffInMinutes($now);
                     $flags = $attendance->flags ?? [];
                     $status = $attendance->status;
 
-                    if ($durationMinutes < Rules::int('min_work_duration_minutes')) {
+                    if (! $isFlexible && $durationMinutes < Rules::int('min_work_duration_minutes')) {
                         $flags[] = 'Durasi kerja sangat singkat (< ' . Rules::int('min_work_duration_minutes') . ' menit): ' . $durationMinutes . ' menit';
                         $status = 'early_checkout';
                     }
@@ -190,8 +205,8 @@ final class AttendanceService
                     $extra = max(0, (int) $end->diffInMinutes($now, false));
                     $rawOvertime = max(0, $extra - Rules::int('overtime_threshold_minutes'));
                     $maxDailyOvertime = Rules::int('overtime_max_daily_minutes');
-                    $overtime = min($maxDailyOvertime, $rawOvertime);
-                    if ($rawOvertime > $maxDailyOvertime) {
+                    $overtime = $isFlexible ? 0 : min($maxDailyOvertime, $rawOvertime);
+                    if (! $isFlexible && $rawOvertime > $maxDailyOvertime) {
                         $flags[] = 'Lembur melebihi batas legal harian (' . $maxDailyOvertime . ' menit / 4 jam), dibatasi ke ' . $maxDailyOvertime . ' menit';
                     }
 
@@ -225,6 +240,10 @@ final class AttendanceService
                 'device_matches' => ! $user->device_hash || hash_equals($user->device_hash, hash('sha256', $deviceToken)),
                 'ip' => request()->ip(),
             ], now('Asia/Jakarta'));
+
+            if ($user->isFlexibleSchedule() && $action === 'in' && $shift && ! $shift->attendance()->exists()) {
+                $shift->delete();
+            }
 
             throw $e;
         }

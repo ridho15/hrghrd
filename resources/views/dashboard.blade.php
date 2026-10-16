@@ -705,15 +705,29 @@
                         </div>
                     </div>
                 @empty
-                    <div class="text-center py-10 px-4 rounded-xl border border-dashed border-slate-200">
-                        <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p class="text-xs sm:text-sm font-semibold text-slate-500 m-0">Belum ada shift terjadwal untuk akun Anda hari ini.</p>
-                        <p class="text-xs text-slate-400 mt-1">Jadwal kerja akan tampil setelah ditetapkan oleh manajer cabang.</p>
-                        <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center gap-1.5 mt-3.5 px-3.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors shadow-2xs">
-                            <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                            <span>Lihat Kalender Kerja Bulanan &rarr;</span>
-                        </a>
-                    </div>
+                    @if(auth()->user()->isFlexibleSchedule())
+                        <div class="text-center py-8 px-4 rounded-xl border border-teal-200 bg-teal-50/40">
+                            <div class="w-10 h-10 rounded-full bg-teal-100 text-teal-700 mx-auto flex items-center justify-center mb-2">
+                                <svg class="w-5 h-5 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <h4 class="text-sm font-bold text-slate-900 m-0">Skema Jam Bebas (Flexible) Aktif</h4>
+                            <p class="text-xs text-slate-600 mt-1 max-w-sm mx-auto">Anda tidak memiliki jadwal shift statis. Buka halaman Presensi Hari Ini untuk melakukan check-in saat bertugas.</p>
+                            <a href="{{ route('attendance.today') }}" class="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition-colors shadow-2xs">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span>Buka Presensi Hari Ini &rarr;</span>
+                            </a>
+                        </div>
+                    @else
+                        <div class="text-center py-10 px-4 rounded-xl border border-dashed border-slate-200">
+                            <svg class="w-10 h-10 text-slate-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <p class="text-xs sm:text-sm font-semibold text-slate-500 m-0">Belum ada shift terjadwal untuk akun Anda hari ini.</p>
+                            <p class="text-xs text-slate-400 mt-1">Jadwal kerja akan tampil setelah ditetapkan oleh manajer cabang.</p>
+                            <a href="{{ route('shifts.calendar') }}" class="inline-flex items-center gap-1.5 mt-3.5 px-3.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition-colors shadow-2xs">
+                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <span>Lihat Kalender Kerja Bulanan &rarr;</span>
+                            </a>
+                        </div>
+                    @endif
                 @endforelse
             </div>
         </section>

@@ -253,4 +253,61 @@ class ShiftService
 
         return $shift->load(['branch', 'attendance', 'exceptions.reviewer']);
     }
+
+    /**
+     * Memastikan shift dinamis tersedia untuk karyawan jam bebas (flexible) saat melakukan check-in.
+     * Shift dibuat instan on-the-fly pada jam kedatangan aktual tanpa batasan hari kerja atau jam kaku.
+     */
+    public function ensureFlexibleShiftOnCheckin(User $user, ?Carbon $now = null): ?Shift
+    {
+        if (! $user->isFlexibleSchedule() || ! $user->branch_id || ! $user->active) {
+            return null;
+        }
+
+        $now ??= now('Asia/Jakarta');
+        $todayDate = $now->toDateString();
+
+        try {
+            Period::writable($user->branch_id, $todayDate);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        // Cek apakah ada shift aktif yang sedang berjalan (sudah check-in tapi belum check-out)
+        $activeShift = Shift::with(['branch', 'attendance', 'exceptions.reviewer'])
+            ->where('user_id', $user->id)
+            ->where(function ($q) use ($now, $todayDate) {
+                $q->whereDate('start_at', $todayDate)
+                  ->orWhere('start_at', '>=', $now->copy()->subHours(24));
+            })
+            ->whereHas('attendance', function ($q) {
+                $q->whereNull('checkout_at');
+            })
+            ->latest('id')
+            ->first();
+
+        if ($activeShift) {
+            return $activeShift;
+        }
+
+        // Buat shift dinamis on-the-fly dengan start_at = jam checkin aktual
+        $startAt = $now->copy();
+        $endAt = $now->copy()->addHours(16);
+
+        $shift = Shift::create([
+            'user_id'     => $user->id,
+            'branch_id'   => $user->branch_id,
+            'position_id' => $user->position_id,
+            'start_at'    => $startAt,
+            'end_at'      => $endAt,
+            'status'      => 'approved',
+            'version'     => 1,
+            'approved_by' => null,
+            'approved_at' => $now,
+        ]);
+
+        Audit::record('shift', $shift->id, 'auto_flexible_schedule', "Jadwal kerja dinamis (on-demand) otomatis dibuat pada saat check-in untuk {$user->name}");
+
+        return $shift->load(['branch', 'attendance', 'exceptions.reviewer']);
+    }
 }

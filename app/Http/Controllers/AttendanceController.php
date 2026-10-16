@@ -24,9 +24,27 @@ class AttendanceController extends Controller
 {
     public function act(AttendanceActRequest $request, int $shiftId, AttendanceService $service)
     {
+        $user = $request->user();
         $data = $request->validated();
         $data['qr_code'] = strtoupper(trim($data['qr_code'] ?? ''));
-        $service->act($request->user(), $shiftId, $data['action'], $data, (string) $request->cookie('hrd_device'));
+
+        if ($shiftId === 0 && $user->isFlexibleSchedule()) {
+            if (($data['action'] ?? 'in') === 'in') {
+                $shift = app(\App\Services\ShiftService::class)->ensureFlexibleShiftOnCheckin($user);
+                $shiftId = $shift?->id ?? 0;
+            } else {
+                $activeAtt = Attendance::where('user_id', $user->id)
+                    ->whereNotNull('checkin_at')
+                    ->whereNull('checkout_at')
+                    ->latest('id')
+                    ->first();
+                if ($activeAtt) {
+                    $shiftId = $activeAtt->shift_id;
+                }
+            }
+        }
+
+        $service->act($user, $shiftId, $data['action'], $data, (string) $request->cookie('hrd_device'));
 
         return back()->with('ok', $data['action'] === 'in' ? 'Check-in tercatat.' : 'Check-out tercatat.');
     }

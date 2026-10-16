@@ -138,6 +138,7 @@
                     >
                         <option value="shift" @selected(old('schedule_type', 'shift') === 'shift')>Shift Operasional (Rolling)</option>
                         <option value="office_hours" @selected(old('schedule_type') === 'office_hours')>Jam Kantor (Senin–Jumat)</option>
+                        <option value="flexible" @selected(old('schedule_type') === 'flexible')>Jam Bebas / Penugasan Khusus (Flexible)</option>
                     </select>
                     @error('schedule_type')
                         <p class="text-xs font-semibold text-rose-600 mt-1">{{ $message }}</p>

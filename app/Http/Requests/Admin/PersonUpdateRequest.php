@@ -43,7 +43,7 @@ class PersonUpdateRequest extends FormRequest
             'username' => 'nullable|string|max:60|unique:users,username,' . $id,
             'email' => 'required|email|unique:users,email,' . $id,
             'role' => 'required|in:admin,manager,employee',
-            'schedule_type' => 'nullable|in:shift,office_hours',
+            'schedule_type' => 'nullable|in:shift,office_hours,flexible',
             'branch_id' => 'nullable|required_unless:role,admin|exists:branches,id',
             'position_id' => 'nullable|exists:positions,id',
             'bank_name' => 'nullable|string|max:60',
