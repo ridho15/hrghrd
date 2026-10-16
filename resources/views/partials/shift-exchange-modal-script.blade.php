@@ -441,9 +441,12 @@
         }
     });
 
+    // Expose initModal for dynamic modal support
+    window.initShiftExchangeModal = initModal;
+
     // Backward-compatibility bridge
     window.toggleExchangeBoxes = function(shiftId, type) {
-        const modal = document.getElementById('modal-exchange-shift-' + shiftId);
+        const modal = document.getElementById('modal-exchange-shift-' + shiftId) || document.getElementById('modal-exchange-shift-dynamic');
         if (modal) {
             const radio = modal.querySelector(`.radio-method[value="${type}"]`);
             if (radio) {

@@ -552,7 +552,7 @@ class AdminController extends Controller
             ? ($request->filled('branch_id') ? (int) $request->query('branch_id') : null)
             : (int) auth()->user()->branch_id;
 
-        $people = User::active()->whereIn('role', ['employee', 'manager'])
+        $people = User::with('position')->active()->whereIn('role', ['employee', 'manager'])
             ->when(! Access::admin(), fn ($q) => $q->where('branch_id', auth()->user()->branch_id))
             ->when(Access::admin() && $selectedBranchId, fn ($q) => $q->where('branch_id', $selectedBranchId))
             ->orderBy('name')->get();
@@ -673,6 +673,72 @@ class AdminController extends Controller
             $monthSummary['total_exceptions'] += $pendingExceptionCount;
         }
 
+        // Lightweight dictionary untuk single dynamic modal rendering (< 60 KB vs 20 MB HTML)
+        $shiftsMap = $shifts->mapWithKeys(function ($s) use ($isEmployee) {
+            $att = $s->attendance;
+            $startHour = (int) $s->start_at->format('H');
+            $isShift1 = $startHour < 12;
+            $isPast = Carbon::parse($s->end_at, 'Asia/Jakarta')->isPast();
+            $canClaim = $s->isOpenSlot && (Access::admin() || Access::manager() || (! $s->position_id || $s->position_id === auth()->user()?->position_id));
+            $canExchange = ! $s->isOpenSlot && ! $att && (Access::admin() || Access::manager() || $s->user_id === auth()->id());
+            $canReassign = ! $s->isOpenSlot && ! $att && (Access::admin() || Access::manager());
+
+            return [$s->id => [
+                'id'                 => $s->id,
+                'isOpenSlot'         => (bool) $s->isOpenSlot,
+                'positionName'       => (string) ($s->positionName ?? ($s->position?->name ?? 'Staf')),
+                'userName'           => (string) ($s->user?->name ?? 'Karyawan'),
+                'userEmail'          => (string) ($s->user?->email ?? ''),
+                'userId'             => $s->user_id,
+                'branchName'         => (string) ($s->branch?->name ?? '-'),
+                'branchCode'         => (string) ($s->branch?->code ?? '-'),
+                'isShift1'           => $isShift1,
+                'shiftTypeLabel'     => $isShift1 ? 'Shift 1 (Pagi)' : 'Shift 2 (Siang)',
+                'shiftDateFormatted' => \Carbon\Carbon::parse($s->start_at)->translatedFormat('l, d F Y'),
+                'shiftTimeFormatted' => $s->start_at->format('H:i') . ' - ' . $s->end_at->format('H:i') . ' WIB',
+                'startTime'          => $s->start_at->format('H:i'),
+                'endTime'            => $s->end_at->format('H:i'),
+                'isApproved'         => $s->status === 'approved',
+                'statusLabel'        => $s->status === 'approved' ? 'Shift Disetujui' : 'Draf Shift',
+                'hasAttendance'      => $att !== null,
+                'attendanceStatus'   => $att ? strtoupper($att->status) : null,
+                'checkinAt'          => $att?->checkin_at ? \Carbon\Carbon::parse($att->checkin_at)->format('H:i:s') : null,
+                'checkoutAt'         => $att?->checkout_at ? \Carbon\Carbon::parse($att->checkout_at)->format('H:i:s') : null,
+                'lateUnits'          => (int) ($att?->late_units ?? 0),
+                'lateMinutes'        => (int) (($att?->late_units ?? 0) * 15),
+                'lateFee'            => number_format(($att?->late_units ?? 0) * 10000, 0, ',', '.'),
+                'isPast'             => $isPast,
+                'canExchange'        => $canExchange,
+                'canReassign'        => $canReassign,
+                'canClaim'           => $canClaim,
+                'showUrl'            => route('shifts.show', $s->id),
+            ]];
+        });
+
+        $mobileShiftsByDate = [];
+        foreach ($groupedShifts as $dStr => $dayList) {
+            $mobileShiftsByDate[$dStr] = $dayList->map(function ($s) {
+                $att = $s->attendance;
+                $startHour = (int) $s->start_at->format('H');
+                $isShift1 = $startHour < 12;
+                return [
+                    'id'           => $s->id,
+                    'start_at'     => $s->start_at->toDateTimeString(),
+                    'end_at'       => $s->end_at->toDateTimeString(),
+                    'user'         => $s->user ? ['name' => $s->user->name, 'position' => $s->user->position ? ['name' => $s->user->position->name] : null] : null,
+                    'branch'       => $s->branch ? ['name' => $s->branch->name] : null,
+                    'attendance'   => $att ? [
+                        'status'      => $att->status,
+                        'checkin_at'  => $att->checkin_at ? (string) $att->checkin_at : null,
+                        'checkout_at' => $att->checkout_at ? (string) $att->checkout_at : null,
+                    ] : null,
+                    'status'       => $s->status,
+                    'isOpenSlot'   => (bool) $s->isOpenSlot,
+                    'positionName' => $s->positionName,
+                ];
+            })->values()->all();
+        }
+
         if ($request->wantsJson()) {
             return response()->json([
                 'success'                    => true,
@@ -724,7 +790,7 @@ class AdminController extends Controller
             ->get();
 
         return view('shifts-calendar', compact(
-            'branches', 'people', 'shifts', 'groupedShifts',
+            'branches', 'people', 'shifts', 'groupedShifts', 'shiftsMap', 'mobileShiftsByDate',
             'currentMonth', 'monthStr', 'prevMonth', 'nextMonth',
             'gridStart', 'gridEnd', 'selectedBranchId',
             'mode', 'attendanceStatus', 'attendanceSummaryByDate', 'monthSummary', 'selectedDate',

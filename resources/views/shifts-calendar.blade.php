@@ -755,330 +755,212 @@
     </div>
 
     {{-- ========================================================================= --}}
-    {{-- MODAL GLOBAL CONTAINER: DETAIL SHIFT, TUKAR SHIFT, TUGASKAN PENGGANTI     --}}
+    {{-- MODAL GLOBAL CONTAINER: SINGLE REUSABLE DYNAMIC MODALS (ZERO DOM BLOAT)   --}}
     {{-- ========================================================================= --}}
-    @foreach($shifts as $shiftItem)
-        @php
-            $startTime = \Carbon\Carbon::parse($shiftItem->start_at)->format('H:i');
-            $endTime = \Carbon\Carbon::parse($shiftItem->end_at)->format('H:i');
-            $startHour = (int) \Carbon\Carbon::parse($shiftItem->start_at)->format('H');
-            $isShift1 = $startHour < 12;
-            $shiftTypeLabel = $isShift1 ? 'Shift 1 (Pagi)' : 'Shift 2 (Siang)';
-            $isApproved = $shiftItem->status === 'approved';
-            $att = $shiftItem->attendance;
-        @endphp
 
-        {{-- 1. Modal Detail Lengkap Shift & Presensi --}}
-        <div
-            id="modal-shift-{{ $shiftItem->id }}"
-            data-modal-container
-            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
-        >
-            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4 max-h-[90vh] overflow-y-auto">
-                <div class="flex items-start justify-between pb-3 border-b border-slate-100">
-                    <div>
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold {{ $isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                                <span>{{ $isApproved ? 'Shift Disetujui' : 'Draf Shift' }}</span>
-                            </span>
-                            @if($att)
-                                <span class="px-2 py-0.5 rounded text-xs font-bold {{ $att->status === 'present' ? 'bg-emerald-100 text-emerald-800' : ($att->status === 'late' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') }}">
-                                    Presensi: {{ strtoupper($att->status) }}
-                                </span>
-                            @endif
-                        </div>
-                        <h3 class="text-lg font-black text-slate-900 mt-1">Detail Jadwal Shift</h3>
+    {{-- 1. Modal Detail Lengkap Shift Dinamis (Reusable Single Modal) --}}
+    <div
+        id="modal-shift-detail"
+        data-modal-container
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
+    >
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+                <div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span id="dtl-shift-status-badge" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
+                            Shift Disetujui
+                        </span>
+                        <span id="dtl-shift-att-badge" class="px-2 py-0.5 rounded text-xs font-bold hidden">
+                            Presensi: -
+                        </span>
                     </div>
+                    <h3 class="text-lg font-black text-slate-900 mt-1">Detail Jadwal Shift</h3>
+                </div>
+                <button
+                    type="button"
+                    data-close-modal
+                    class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer"
+                >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs sm:text-sm">
+                {{-- Profil Karyawan & Cabang --}}
+                <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                    <div id="dtl-shift-user-box">
+                        <span class="text-slate-400 text-xs block">Karyawan Bertugas:</span>
+                        <span id="dtl-shift-user-name" class="font-bold text-slate-900 block mt-0.5">-</span>
+                        <span id="dtl-shift-user-email" class="text-xs text-slate-500 font-mono">-</span>
+                    </div>
+                    <div id="dtl-shift-openslot-box" class="hidden">
+                        <span class="text-amber-700 text-xs font-bold block">Status Jadwal:</span>
+                        <span class="font-extrabold text-amber-900 block mt-0.5">Slot Kosong (Belum Ditugaskan)</span>
+                        <span id="dtl-shift-pos-level" class="text-xs text-emerald-700 font-mono font-bold">Level Jabatan: Staf</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 text-xs block">Lokasi Cabang:</span>
+                        <span id="dtl-shift-branch-name" class="font-bold text-slate-900 block mt-0.5">-</span>
+                        <span id="dtl-shift-branch-code" class="text-xs text-slate-500 font-mono">-</span>
+                    </div>
+                </div>
+
+                {{-- Waktu Kerja Rencana --}}
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Tipe Shift:</span>
+                        <span id="dtl-shift-type-label" class="font-bold text-sky-700">
+                            Shift 1 (Pagi)
+                        </span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Tanggal Shift:</span>
+                        <span id="dtl-shift-date" class="font-bold text-slate-900">-</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Jam Kerja:</span>
+                        <span id="dtl-shift-time" class="font-bold text-slate-900 font-mono">- WIB</span>
+                    </div>
+                </div>
+
+                {{-- Data Realisasi Presensi (Audit Box) --}}
+                <div id="dtl-shift-att-card" class="p-3 rounded-xl border bg-slate-50 border-slate-200 space-y-1.5">
+                    <span class="text-xs font-bold text-slate-900 block uppercase tracking-wider">Waktu Kehadiran:</span>
+                    <div id="dtl-shift-att-info" class="space-y-1.5 hidden">
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-600">Jam Check-in:</span>
+                            <span id="dtl-shift-checkin" class="font-mono font-bold text-slate-900">-</span>
+                        </div>
+                        <div class="flex justify-between text-xs">
+                            <span class="text-slate-600">Jam Check-out:</span>
+                            <span id="dtl-shift-checkout" class="font-mono font-bold text-slate-900">-</span>
+                        </div>
+                        <div id="dtl-shift-late-box" class="flex justify-between text-xs text-amber-800 font-semibold hidden">
+                            <span>Keterlambatan:</span>
+                            <span id="dtl-shift-late-text">-</span>
+                        </div>
+                    </div>
+                    <p id="dtl-shift-att-empty" class="text-xs text-slate-500 m-0">
+                        Shift belum berlangsung atau karyawan belum melakukan scan presensi.
+                    </p>
+                </div>
+            </div>
+
+            {{-- Tombol Aksi Cepat Modal --}}
+            <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                    <a
+                        id="dtl-shift-show-link"
+                        href="#"
+                        class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors inline-flex items-center gap-1.5"
+                    >
+                        <span>Lihat Roster Lengkap</span>
+                    </a>
+                @else
                     <button
                         type="button"
                         data-close-modal
-                        class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer"
+                        class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                     >
+                        <span>Tutup</span>
+                    </button>
+                @endif
+
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        id="dtl-btn-claim-open-slot"
+                        class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs hidden"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        <span>Ajukan Ambil Jadwal Ini</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        id="dtl-btn-exchange-shift"
+                        class="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs hidden"
+                    >
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        <span>Ajukan Tukar / Ganti Shift</span>
+                    </button>
+
+                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                        <button
+                            type="button"
+                            id="dtl-btn-reassign-shift"
+                            class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer hidden"
+                        >
+                            <span>Tugaskan Pengganti</span>
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- 2. Modal Formulir Permohonan Pergantian / Pertukaran Shift Dinamis (Reusable Single Modal) --}}
+    @include('partials.shift-exchange-form', [
+        'modalId' => 'modal-exchange-shift-dynamic',
+        'shiftItem' => null,
+        'isStandalone' => false,
+        'colleagues' => $people,
+        'candidateShifts' => $candidateShifts,
+        'openSlots' => $openSlots,
+    ])
+
+    {{-- 3. Modal Penugasan Langsung oleh Manajer Dinamis (Reusable Single Modal) --}}
+    @if(in_array(auth()->user()->role, ['admin', 'manager']))
+        <div
+            id="modal-reassign-shift-dynamic"
+            data-modal-container
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
+        >
+            <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4">
+                <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="text-lg font-black text-slate-900">Tugaskan Pengganti Langsung</h3>
+                        <p id="reassign-modal-subtitle" class="text-xs text-slate-500 mt-0.5">Penugasan manajerial langsung tanpa alur pengajuan staf.</p>
+                    </div>
+                    <button type="button" data-close-modal class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
 
-                <div class="space-y-3 text-xs sm:text-sm">
-                    {{-- Profil Karyawan & Cabang --}}
-                    <div class="grid grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        @if($shiftItem->isOpenSlot)
-                            <div>
-                                <span class="text-amber-700 text-xs font-bold block">Status Jadwal:</span>
-                                <span class="font-extrabold text-amber-900 block mt-0.5">Slot Kosong (Belum Ditugaskan)</span>
-                                <span class="text-xs text-emerald-700 font-mono font-bold">Level Jabatan: {{ $shiftItem->positionName }}</span>
-                            </div>
-                        @else
-                            <div>
-                                <span class="text-slate-400 text-xs block">Karyawan Bertugas:</span>
-                                <span class="font-bold text-slate-900 block mt-0.5">{{ $shiftItem->user?->name }}</span>
-                                <span class="text-xs text-slate-500 font-mono">{{ $shiftItem->user?->email }}</span>
-                            </div>
-                        @endif
-                        <div>
-                            <span class="text-slate-400 text-xs block">Lokasi Cabang:</span>
-                            <span class="font-bold text-slate-900 block mt-0.5">{{ $shiftItem->branch?->name }}</span>
-                            <span class="text-xs text-slate-500 font-mono">Kode: {{ $shiftItem->branch?->code }}</span>
-                        </div>
+                <form id="reassign-shift-form" method="post" action="#" class="space-y-4">
+                    @csrf
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Karyawan Pengganti</label>
+                        <select id="reassign-select-replacement" name="replacement_id" required class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                            <option value="">-- Pilih Staf Pengganti --</option>
+                            @foreach($people as $p)
+                                <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->position?->name ?? 'Staf' }})</option>
+                            @endforeach
+                        </select>
                     </div>
 
-                    {{-- Waktu Kerja Rencana --}}
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
-                        <div class="flex justify-between">
-                            <span class="text-slate-500">Tipe Shift:</span>
-                            <span class="font-bold {{ $isShift1 ? 'text-sky-700' : 'text-amber-700' }}">
-                                {{ $shiftTypeLabel }}
-                            </span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-500">Tanggal Shift:</span>
-                            <span class="font-bold text-slate-900">{{ \Carbon\Carbon::parse($shiftItem->start_at)->translatedFormat('l, d F Y') }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-slate-500">Jam Kerja:</span>
-                            <span class="font-bold text-slate-900 font-mono">{{ $startTime }} – {{ $endTime }} WIB</span>
-                        </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Alasan Penugasan</label>
+                        <textarea
+                            name="reason"
+                            rows="3"
+                            required
+                            minlength="5"
+                            maxlength="500"
+                            placeholder="Misal: Karyawan berhalangan sakit mendadak, digantikan oleh staf pengganti..."
+                            class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
+                        ></textarea>
                     </div>
 
-                    {{-- Data Realisasi Presensi (Audit Box) --}}
-                    <div class="p-3 rounded-xl border {{ $att ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200' }} space-y-1.5">
-                        <span class="text-xs font-bold text-slate-900 block uppercase tracking-wider">Waktu Kehadiran:</span>
-                        @if($att)
-                            <div class="flex justify-between text-xs">
-                                <span class="text-slate-600">Jam Check-in:</span>
-                                <span class="font-mono font-bold text-slate-900">
-                                    {{ $att->checkin_at ? \Carbon\Carbon::parse($att->checkin_at)->format('H:i:s') : 'Belum Check-in' }}
-                                </span>
-                            </div>
-                            <div class="flex justify-between text-xs">
-                                <span class="text-slate-600">Jam Check-out:</span>
-                                <span class="font-mono font-bold text-slate-900">
-                                    {{ $att->checkout_at ? \Carbon\Carbon::parse($att->checkout_at)->format('H:i:s') : 'Belum Check-out' }}
-                                </span>
-                            </div>
-                            @if($att->late_units > 0)
-                                <div class="flex justify-between text-xs text-amber-800 font-semibold">
-                                    <span>Keterlambatan:</span>
-                                    <span>{{ $att->late_units }} Unit ({{ $att->late_units * 15 }} Menit) &middot; Denda Rp{{ number_format($att->late_units * 10000, 0, ',', '.') }}</span>
-                                </div>
-                            @endif
-                        @else
-                            <p class="text-xs text-slate-500 m-0">
-                                {{ $shiftItem->isOpenSlot ? 'Slot jadwal kosong ini dapat diajukan oleh staf level setingkat dengan persetujuan Super Admin / HRD.' : (\Carbon\Carbon::parse($shiftItem->end_at)->isPast() ? 'Karyawan tidak hadir / mangkir pada jadwal ini.' : 'Shift belum berlangsung atau karyawan belum melakukan scan presensi.') }}
-                            </p>
-                        @endif
+                    <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                        <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer">Batal</button>
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider cursor-pointer">Tugaskan Sekarang</button>
                     </div>
-                </div>
-
-                {{-- Tombol Aksi Cepat Modal --}}
-                <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
-                    @if(in_array(auth()->user()->role, ['admin', 'manager']))
-                        <a
-                            href="{{ route('shifts.show', $shiftItem->id) }}"
-                            class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors inline-flex items-center gap-1.5"
-                        >
-                            <span>Lihat Roster Lengkap</span>
-                        </a>
-                    @else
-                        <button
-                            type="button"
-                            data-close-modal
-                            class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                        >
-                            <span>Tutup</span>
-                        </button>
-                    @endif
-
-                    <div class="flex items-center gap-2">
-                        @if($shiftItem->isOpenSlot)
-                            @php
-                                $canClaimOpenSlot = in_array(auth()->user()->role, ['admin', 'manager']) || (! $shiftItem->position_id || $shiftItem->position_id === auth()->user()->position_id);
-                            @endphp
-                            @if($canClaimOpenSlot)
-                                <button
-                                    type="button"
-                                    data-close-modal
-                                    data-open-modal="modal-claim-open-slot-{{ $shiftItem->id }}"
-                                    class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                >
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                                    <span>Ajukan Ambil Jadwal Ini</span>
-                                </button>
-                            @endif
-                        @elseif(! $shiftItem->attendance()->exists())
-                            @if(in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id())
-                                <button
-                                    type="button"
-                                    data-close-modal
-                                    data-open-modal="modal-exchange-shift-{{ $shiftItem->id }}"
-                                    class="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
-                                >
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                                    <span>Ajukan Tukar / Ganti Shift</span>
-                                </button>
-                            @endif
-                            @if(in_array(auth()->user()->role, ['admin', 'manager']))
-                                <button
-                                    type="button"
-                                    data-close-modal
-                                    data-open-modal="modal-reassign-shift-{{ $shiftItem->id }}"
-                                    class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                                >
-                                    <span>Tugaskan Pengganti</span>
-                                </button>
-                            @endif
-                        @endif
-                    </div>
-                </div>
+                </form>
             </div>
         </div>
-
-        {{-- 2. Modal Formulir Permohonan Pergantian / Pertukaran Shift Milik Karyawan --}}
-        @if(! $shiftItem->isOpenSlot && ! $shiftItem->attendance()->exists() && (in_array(auth()->user()->role, ['admin', 'manager']) || $shiftItem->user_id === auth()->id()))
-            @include('partials.shift-exchange-form', [
-                'modalId' => 'modal-exchange-shift-' . $shiftItem->id,
-                'shiftItem' => $shiftItem,
-                'isStandalone' => false,
-                'colleagues' => $people,
-                'candidateShifts' => $candidateShifts,
-                'openSlots' => $openSlots,
-            ])
-        @endif
-
-        {{-- 2B. Modal Formulir Pengajuan Ambil Khusus Slot Kosong Ini --}}
-        @if($shiftItem->isOpenSlot && (in_array(auth()->user()->role, ['admin', 'manager']) || (! $shiftItem->position_id || $shiftItem->position_id === auth()->user()->position_id)))
-            <div
-                id="modal-claim-open-slot-{{ $shiftItem->id }}"
-                data-modal-container
-                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
-            >
-                <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4 max-h-[90vh] overflow-y-auto">
-                    <div class="flex items-start justify-between pb-3 border-b border-slate-100">
-                        <div>
-                            <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[11px] font-bold border border-amber-200 mb-1">
-                                <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                                <span>Level Setingkat: {{ $shiftItem->positionName }}</span>
-                            </div>
-                            <h3 class="text-lg font-black text-slate-900">Ajukan Ambil Jadwal Kosong</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">{{ \Carbon\Carbon::parse($shiftItem->start_at)->translatedFormat('l, d M Y') }} ({{ $startTime }}-{{ $endTime }})</p>
-                        </div>
-                        <button type="button" data-close-modal class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-
-                    <form method="post" action="{{ route('shifts.exchanges.open-slot') }}" class="space-y-4">
-                        @csrf
-                        <input type="hidden" name="target_shift_id" value="{{ $shiftItem->id }}">
-
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tipe Pengajuan</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
-                                    <input type="radio" name="type" value="change_shift" checked class="text-emerald-600 focus:ring-emerald-500" onchange="document.getElementById('claim-req-shift-box-{{ $shiftItem->id }}').classList.remove('hidden'); document.getElementById('claim-target-date-box-{{ $shiftItem->id }}').classList.add('hidden');">
-                                    <span>Ganti Shift Kerja</span>
-                                </label>
-                                <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 text-xs font-bold text-slate-800">
-                                    <input type="radio" name="type" value="change_off_day" class="text-emerald-600 focus:ring-emerald-500" onchange="document.getElementById('claim-req-shift-box-{{ $shiftItem->id }}').classList.add('hidden'); document.getElementById('claim-target-date-box-{{ $shiftItem->id }}').classList.remove('hidden');">
-                                    <span>Ganti Hari Libur</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div id="claim-req-shift-box-{{ $shiftItem->id }}">
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Shift Asal Anda (Yang Mau Diliburkan) *</label>
-                            @php
-                                $myShiftsList = $shifts->where('user_id', auth()->id())->where('end_at', '>', now('Asia/Jakarta'));
-                            @endphp
-                            <select name="requester_shift_id" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
-                                <option value="">-- Pilih Shift Kerja Anda --</option>
-                                @foreach($myShiftsList as $ms)
-                                    <option value="{{ $ms->id }}">
-                                        {{ \Carbon\Carbon::parse($ms->start_at)->translatedFormat('l, d M Y') }} ({{ \Carbon\Carbon::parse($ms->start_at)->format('H:i') }}-{{ \Carbon\Carbon::parse($ms->end_at)->format('H:i') }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="text-[11px] text-slate-500 mt-1">Shift asal Anda akan otomatis dialihkan menjadi hari libur jika disetujui.</p>
-                        </div>
-
-                        <div id="claim-target-date-box-{{ $shiftItem->id }}" class="hidden">
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Hari Libur yang Diganti</label>
-                            <input type="date" name="target_date" class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600" value="{{ now('Asia/Jakarta')->toDateString() }}">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Alasan Permohonan *</label>
-                            <textarea
-                                name="reason"
-                                rows="3"
-                                required
-                                minlength="5"
-                                maxlength="500"
-                                placeholder="Jelaskan alasan pengajuan pergantian shift/libur ke jadwal kosong ini..."
-                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                            ></textarea>
-                        </div>
-
-                        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                            <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 cursor-pointer">Batal</button>
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold uppercase tracking-wider cursor-pointer shadow-xs">Ajukan ke Super Admin / HRD</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        @endif
-
-        {{-- 3. Modal Penugasan Langsung oleh Manajer --}}
-        @if(! $shiftItem->isOpenSlot && in_array(auth()->user()->role, ['admin', 'manager']))
-            <div
-                id="modal-reassign-shift-{{ $shiftItem->id }}"
-                data-modal-container
-                class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden"
-            >
-                <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left space-y-4">
-                    <div class="flex items-start justify-between pb-3 border-b border-slate-100">
-                        <div>
-                            <h3 class="text-lg font-black text-slate-900">Tugaskan Pengganti Langsung</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Penugasan manajerial langsung tanpa alur pengajuan staf.</p>
-                        </div>
-                        <button type="button" data-close-modal class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 cursor-pointer">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
-                    </div>
-
-                    <form method="post" action="{{ route('shifts.reassign', $shiftItem->id) }}" class="space-y-4">
-                        @csrf
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Karyawan Pengganti</label>
-                            <select name="replacement_id" required class="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
-                                <option value="">-- Pilih Staf Pengganti --</option>
-                                @foreach($people->where('id', '!=', $shiftItem->user_id) as $p)
-                                    <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->position?->name ?? 'Staf' }})</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Alasan Penugasan</label>
-                            <textarea
-                                name="reason"
-                                rows="3"
-                                required
-                                minlength="5"
-                                maxlength="500"
-                                placeholder="Misal: Karyawan berhalangan sakit mendadak, digantikan oleh staf pengganti..."
-                                class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600"
-                            ></textarea>
-                        </div>
-
-                        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                            <button type="button" data-close-modal class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50">Batal</button>
-                            <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider">Tugaskan Sekarang</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        @endif
-    @endforeach
+    @endif
 
     {{-- 4. Modal Formulir Pengajuan Ganti Shift / Libur ke Jadwal Kosong --}}
     @if(isset($openSlots) && $openSlots->isNotEmpty())
@@ -1184,25 +1066,330 @@
 {{-- Skrip Interaktivitas Kalender Mobile & Switcher Tampilan --}}
 @push('scripts')
 <script>
-    // Helper Switcher Box Modal Exchange
+    // Lightweight Dictionary data shifts
+    window.shiftsMap = @json($shiftsMap ?? []);
+    const shiftDataByDate = @json($mobileShiftsByDate ?? []);
+    window.currentActiveShiftId = null;
+
+    // Helper Switcher Box Modal Exchange (Backward Compatibility)
     window.toggleExchangeBoxes = function(shiftId, type) {
-        const repBox = document.getElementById('exchange-rep-box-' + shiftId);
-        const swapBox = document.getElementById('exchange-swap-box-' + shiftId);
-        const openBox = document.getElementById('exchange-open-box-' + shiftId);
-        const offBox = document.getElementById('exchange-off-date-box-' + shiftId);
-
-        if (repBox) repBox.classList.add('hidden');
-        if (swapBox) swapBox.classList.add('hidden');
-        if (openBox) openBox.classList.add('hidden');
-        if (offBox) offBox.classList.add('hidden');
-
-        if (type === 'replacement' && repBox) repBox.classList.remove('hidden');
-        if (type === 'swap' && swapBox) swapBox.classList.remove('hidden');
-        if ((type === 'change_shift' || type === 'change_off_day') && openBox) openBox.classList.remove('hidden');
-        if (type === 'change_off_day' && offBox) offBox.classList.remove('hidden');
+        const modal = document.getElementById('modal-exchange-shift-' + shiftId) || document.getElementById('modal-exchange-shift-dynamic');
+        if (modal) {
+            const radio = modal.querySelector(`.radio-method[value="${type}"]`);
+            if (radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change'));
+            }
+        }
     };
 
-    // 1. Toggle Filter Drawer di Mobile
+    // 1. Modal Detail Dinamis
+    window.openShiftDetailModal = function(shiftId) {
+        const s = (window.shiftsMap || {})[shiftId];
+        if (!s) return;
+        window.currentActiveShiftId = s.id;
+
+        const modal = document.getElementById('modal-shift-detail');
+        if (!modal) return;
+
+        // 1. Status Badge
+        const statusBadge = document.getElementById('dtl-shift-status-badge');
+        if (statusBadge) {
+            statusBadge.textContent = s.statusLabel;
+            statusBadge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-bold ' +
+                (s.isApproved ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800');
+        }
+
+        const attBadge = document.getElementById('dtl-shift-att-badge');
+        if (attBadge) {
+            if (s.attendanceStatus) {
+                attBadge.textContent = 'Presensi: ' + s.attendanceStatus;
+                attBadge.classList.remove('hidden');
+                let attClass = 'bg-emerald-100 text-emerald-800';
+                if (s.attendanceStatus === 'LATE' || s.attendanceStatus === 'EARLY_CHECKOUT') {
+                    attClass = 'bg-amber-100 text-amber-800';
+                } else if (s.attendanceStatus === 'ABSENT') {
+                    attClass = 'bg-rose-100 text-rose-800';
+                }
+                attBadge.className = 'px-2 py-0.5 rounded text-xs font-bold ' + attClass;
+            } else {
+                attBadge.classList.add('hidden');
+            }
+        }
+
+        // 2. Profil Karyawan vs Slot Kosong
+        const userBox = document.getElementById('dtl-shift-user-box');
+        const openBox = document.getElementById('dtl-shift-openslot-box');
+        if (s.isOpenSlot) {
+            if (userBox) userBox.classList.add('hidden');
+            if (openBox) {
+                openBox.classList.remove('hidden');
+                const posLevel = document.getElementById('dtl-shift-pos-level');
+                if (posLevel) posLevel.textContent = 'Level Jabatan: ' + s.positionName;
+            }
+        } else {
+            if (openBox) openBox.classList.add('hidden');
+            if (userBox) {
+                userBox.classList.remove('hidden');
+                const uName = document.getElementById('dtl-shift-user-name');
+                const uEmail = document.getElementById('dtl-shift-user-email');
+                if (uName) uName.textContent = s.userName;
+                if (uEmail) uEmail.textContent = s.userEmail;
+            }
+        }
+
+        // Cabang
+        const bName = document.getElementById('dtl-shift-branch-name');
+        const bCode = document.getElementById('dtl-shift-branch-code');
+        if (bName) bName.textContent = s.branchName;
+        if (bCode) bCode.textContent = 'Kode: ' + s.branchCode;
+
+        // 3. Waktu Rencana
+        const typeLabel = document.getElementById('dtl-shift-type-label');
+        if (typeLabel) {
+            typeLabel.textContent = s.shiftTypeLabel;
+            typeLabel.className = 'font-bold ' + (s.isShift1 ? 'text-sky-700' : 'text-amber-700');
+        }
+        const shiftDate = document.getElementById('dtl-shift-date');
+        if (shiftDate) shiftDate.textContent = s.shiftDateFormatted;
+        const shiftTime = document.getElementById('dtl-shift-time');
+        if (shiftTime) shiftTime.textContent = s.startTime + ' – ' + s.endTime + ' WIB';
+
+        // 4. Data Realisasi Presensi
+        const attCard = document.getElementById('dtl-shift-att-card');
+        const attInfo = document.getElementById('dtl-shift-att-info');
+        const attEmpty = document.getElementById('dtl-shift-att-empty');
+        const checkinEl = document.getElementById('dtl-shift-checkin');
+        const checkoutEl = document.getElementById('dtl-shift-checkout');
+        const lateBox = document.getElementById('dtl-shift-late-box');
+        const lateText = document.getElementById('dtl-shift-late-text');
+
+        if (s.hasAttendance) {
+            if (attCard) attCard.className = 'p-3 rounded-xl border bg-emerald-50/40 border-emerald-200 space-y-1.5';
+            if (attInfo) attInfo.classList.remove('hidden');
+            if (attEmpty) attEmpty.classList.add('hidden');
+            if (checkinEl) checkinEl.textContent = s.checkinAt || 'Belum Check-in';
+            if (checkoutEl) checkoutEl.textContent = s.checkoutAt || 'Belum Check-out';
+
+            if (s.lateUnits > 0) {
+                if (lateBox) lateBox.classList.remove('hidden');
+                if (lateText) lateText.textContent = `${s.lateUnits} Unit (${s.lateMinutes} Menit) · Denda Rp${s.lateFee}`;
+            } else {
+                if (lateBox) lateBox.classList.add('hidden');
+            }
+        } else {
+            if (attCard) attCard.className = 'p-3 rounded-xl border bg-slate-50 border-slate-200 space-y-1.5';
+            if (attInfo) attInfo.classList.add('hidden');
+            if (attEmpty) {
+                attEmpty.classList.remove('hidden');
+                if (s.isOpenSlot) {
+                    attEmpty.textContent = 'Slot jadwal kosong ini dapat diajukan oleh staf level setingkat dengan persetujuan Super Admin / HRD.';
+                } else if (s.isPast) {
+                    attEmpty.textContent = 'Karyawan tidak hadir / mangkir pada jadwal ini.';
+                } else {
+                    attEmpty.textContent = 'Shift belum berlangsung atau karyawan belum melakukan scan presensi.';
+                }
+            }
+        }
+
+        // 5. Tombol Aksi
+        const showLink = document.getElementById('dtl-shift-show-link');
+        if (showLink) showLink.href = s.showUrl;
+
+        const btnClaim = document.getElementById('dtl-btn-claim-open-slot');
+        if (btnClaim) {
+            btnClaim.classList.toggle('hidden', !s.canClaim);
+        }
+
+        const btnExchange = document.getElementById('dtl-btn-exchange-shift');
+        if (btnExchange) {
+            btnExchange.classList.toggle('hidden', !s.canExchange);
+        }
+
+        const btnReassign = document.getElementById('dtl-btn-reassign-shift');
+        if (btnReassign) {
+            btnReassign.classList.toggle('hidden', !s.canReassign);
+        }
+
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    // 2. Modal Tukar Shift Dinamis
+    window.openDynamicExchangeModal = function(shiftId) {
+        const s = (window.shiftsMap || {})[shiftId];
+        if (!s) return;
+
+        const modal = document.getElementById('modal-exchange-shift-dynamic');
+        if (!modal) return;
+
+        const form = modal.querySelector('.form-exchange-container');
+        if (form) {
+            form.action = '/shifts/' + s.id + '/exchange';
+        }
+
+        const dateEl = modal.querySelector('.shift-display-date');
+        if (dateEl) dateEl.textContent = s.shiftDateFormatted;
+
+        const timeEl = modal.querySelector('.shift-display-time');
+        if (timeEl) timeEl.textContent = s.shiftTimeFormatted;
+
+        const posEl = modal.querySelector('.shift-display-pos');
+        if (posEl) posEl.textContent = s.positionName;
+
+        const branchEl = modal.querySelector('.shift-display-branch');
+        if (branchEl) branchEl.textContent = s.branchName;
+
+        const previewMyShift = modal.querySelector('.preview-my-shift');
+        if (previewMyShift) previewMyShift.textContent = s.shiftDateFormatted + ' (' + s.shiftTimeFormatted + ')';
+
+        const infoCard = modal.querySelector('.info-shift-card');
+        if (infoCard) infoCard.classList.remove('hidden');
+
+        // Filter dropdown opsi rekan kerja (jangan tampilkan pemohon itu sendiri)
+        const selectRep = modal.querySelector('.select-replacement-user');
+        if (selectRep) {
+            Array.from(selectRep.options).forEach(opt => {
+                opt.hidden = (opt.value && parseInt(opt.value, 10) === s.userId);
+            });
+            selectRep.value = '';
+        }
+
+        const selectSwapColleague = modal.querySelector('.select-swap-colleague');
+        if (selectSwapColleague) {
+            Array.from(selectSwapColleague.options).forEach(opt => {
+                opt.hidden = (opt.value && parseInt(opt.value, 10) === s.userId);
+            });
+            selectSwapColleague.value = '';
+        }
+
+        const selectSwapShift = modal.querySelector('.select-swap-shift');
+        if (selectSwapShift) {
+            selectSwapShift.value = '';
+            selectSwapShift.disabled = true;
+        }
+
+        if (window.initShiftExchangeModal) {
+            window.initShiftExchangeModal(modal);
+        }
+
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    // 3. Modal Penugasan Pengganti Dinamis
+    window.openDynamicReassignModal = function(shiftId) {
+        const s = (window.shiftsMap || {})[shiftId];
+        if (!s) return;
+
+        const modal = document.getElementById('modal-reassign-shift-dynamic');
+        if (!modal) return;
+
+        const form = document.getElementById('reassign-shift-form');
+        if (form) {
+            form.action = '/shifts/' + s.id + '/reassign';
+        }
+
+        const subtitle = document.getElementById('reassign-modal-subtitle');
+        if (subtitle) {
+            subtitle.textContent = `Tugaskan pengganti untuk ${s.userName} (${s.shiftDateFormatted}, ${s.startTime}-${s.endTime} WIB)`;
+        }
+
+        const select = document.getElementById('reassign-select-replacement');
+        if (select) {
+            Array.from(select.options).forEach(opt => {
+                opt.hidden = (opt.value && parseInt(opt.value, 10) === s.userId);
+            });
+            select.value = '';
+        }
+
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    // 4. Modal Claim Open Slot Dinamis
+    window.openDynamicClaimSlotModal = function(shiftId) {
+        const s = (window.shiftsMap || {})[shiftId];
+        if (!s) return;
+
+        const modal = document.getElementById('modal-general-open-slot');
+        if (!modal) return;
+
+        const select = modal.querySelector('select[name="target_shift_id"]');
+        if (select) {
+            select.value = String(s.id);
+        }
+
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    };
+
+    // Event Listener Tombol di Modal Detail
+    document.getElementById('dtl-btn-claim-open-slot')?.addEventListener('click', () => {
+        const modal = document.getElementById('modal-shift-detail');
+        if (modal) modal.classList.add('hidden');
+        if (window.currentActiveShiftId) {
+            window.openDynamicClaimSlotModal(window.currentActiveShiftId);
+        }
+    });
+
+    document.getElementById('dtl-btn-exchange-shift')?.addEventListener('click', () => {
+        const modal = document.getElementById('modal-shift-detail');
+        if (modal) modal.classList.add('hidden');
+        if (window.currentActiveShiftId) {
+            window.openDynamicExchangeModal(window.currentActiveShiftId);
+        }
+    });
+
+    document.getElementById('dtl-btn-reassign-shift')?.addEventListener('click', () => {
+        const modal = document.getElementById('modal-shift-detail');
+        if (modal) modal.classList.add('hidden');
+        if (window.currentActiveShiftId) {
+            window.openDynamicReassignModal(window.currentActiveShiftId);
+        }
+    });
+
+    // Capture-phase Global Modal Open Interceptor (Kompatibel 100% dengan modal-shift-*, modal-exchange-shift-*, dll)
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-open-modal]');
+        if (!btn) return;
+
+        const targetId = btn.getAttribute('data-open-modal') || '';
+
+        if (targetId.startsWith('modal-shift-')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const shiftId = targetId.replace('modal-shift-', '');
+            window.openShiftDetailModal(shiftId);
+            return;
+        }
+
+        if (targetId.startsWith('modal-exchange-shift-')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const shiftId = targetId.replace('modal-exchange-shift-', '');
+            window.openDynamicExchangeModal(shiftId);
+            return;
+        }
+
+        if (targetId.startsWith('modal-claim-open-slot-')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const shiftId = targetId.replace('modal-claim-open-slot-', '');
+            window.openDynamicClaimSlotModal(shiftId);
+            return;
+        }
+
+        if (targetId.startsWith('modal-reassign-shift-')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const shiftId = targetId.replace('modal-reassign-shift-', '');
+            window.openDynamicReassignModal(shiftId);
+            return;
+        }
+    }, true);
+
+    // Toggle Filter Drawer di Mobile
     const btnToggleFilter = document.getElementById('btn-toggle-mobile-filter');
     const filterWrapper = document.getElementById('filter-wrapper');
     if (btnToggleFilter && filterWrapper) {
@@ -1211,7 +1398,7 @@
         });
     }
 
-    // 2. Switcher Antara Kalender Mini vs List Agenda di Mobile
+    // Switcher Antara Kalender Mini vs List Agenda di Mobile
     const btnCal = document.getElementById('btn-mobile-view-cal');
     const btnList = document.getElementById('btn-mobile-view-list');
     const secCal = document.getElementById('mobile-cal-section');
@@ -1236,9 +1423,6 @@
             btnCal.classList.add('text-slate-600');
         });
     }
-
-    // 3. Data Dictionary Shift Per Tanggal untuk Mobile Fast Tap Switching
-    const shiftDataByDate = @json($groupedShifts);
 
     // Fungsi Saat Mengetuk Tanggal di Kalender Mini Mobile
     window.selectMobileDate = function(dateStr) {
