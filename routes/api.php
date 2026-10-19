@@ -34,11 +34,20 @@ Route::middleware(['auth:sanctum', 'active'])->group(function () {
         Route::post('/refresh', [AuthApiController::class, 'refresh']);
     });
 
-    // Profile Karyawan
+    // Profile Karyawan & Onboarding / Dokumen
     Route::prefix('profile')->group(function () {
         Route::get('/', [ProfileApiController::class, 'profile']);
         Route::patch('/', [ProfileApiController::class, 'update']);
         Route::get('/today', [ProfileApiController::class, 'today']);
+        Route::get('/documents', [ProfileApiController::class, 'documents']);
+        Route::get('/documents/{id}', [ProfileApiController::class, 'documentDetail']);
+        Route::post('/documents/{id}/sign', [ProfileApiController::class, 'signDocument']);
+        Route::get('/team', [ProfileApiController::class, 'teamStructure']);
+        Route::get('/onboarding', [ProfileApiController::class, 'onboardingStatus']);
+        Route::post('/onboarding/sign-offer', [ProfileApiController::class, 'onboardingSignOffer']);
+        Route::post('/onboarding/sign-nda', [ProfileApiController::class, 'onboardingSignNda']);
+        Route::post('/onboarding/upload-ktp', [ProfileApiController::class, 'onboardingUploadKtp']);
+        Route::post('/onboarding/submit-liveness', [ProfileApiController::class, 'onboardingSubmitLiveness']);
     });
 
     // Presensi & QR

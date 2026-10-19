@@ -104,4 +104,50 @@ Route::middleware(['auth','active','must.change.password'])->group(function () {
     Route::post('/payroll/adjustment',[PayrollController::class,'adjustment'])->name('payroll.adjustment');
     Route::post('/payroll/reset',[PayrollController::class,'reset'])->name('payroll.reset');
     Route::get('/payroll/export',[PayrollController::class,'export'])->name('payroll.export');
+
+    // Onboarding Digital (HR Management)
+    Route::get('/onboarding', [\App\Http\Controllers\OnboardingController::class, 'index'])->name('onboarding.index');
+    Route::get('/onboarding/create', [\App\Http\Controllers\OnboardingController::class, 'create'])->name('onboarding.create');
+    Route::post('/onboarding', [\App\Http\Controllers\OnboardingController::class, 'store'])->name('onboarding.store');
+    Route::get('/onboarding/{id}', [\App\Http\Controllers\OnboardingController::class, 'show'])->name('onboarding.show');
+    Route::post('/onboarding/{id}/approve-offer', [\App\Http\Controllers\OnboardingController::class, 'approveOffer'])->name('onboarding.approve_offer');
+    Route::post('/onboarding/{id}/request-revision', [\App\Http\Controllers\OnboardingController::class, 'requestRevision'])->name('onboarding.request_revision');
+    Route::post('/onboarding/{id}/verify-final', [\App\Http\Controllers\OnboardingController::class, 'verifyFinal'])->name('onboarding.verify_final');
+    Route::post('/onboarding/{id}/cancel', [\App\Http\Controllers\OnboardingController::class, 'cancel'])->name('onboarding.cancel');
+    Route::post('/onboarding/{id}/resend-reminder', [\App\Http\Controllers\OnboardingController::class, 'resendReminder'])->name('onboarding.resend_reminder');
+    Route::get('/onboarding/{id}/file/{type}', [\App\Http\Controllers\OnboardingController::class, 'streamFile'])->name('onboarding.stream_file');
+
+    // Bagan Organisasi (Tree Hierarchy & Drag-and-Drop)
+    Route::get('/organization-tree', [\App\Http\Controllers\OrgChartController::class, 'index'])->name('org-chart.index');
+    Route::get('/api/organization-tree/data', [\App\Http\Controllers\OrgChartController::class, 'treeData'])->name('org-chart.data');
+    Route::post('/organization-tree/reassign', [\App\Http\Controllers\OrgChartController::class, 'reassign'])->name('org-chart.reassign');
+    Route::get('/organization-tree/history/{userId}', [\App\Http\Controllers\OrgChartController::class, 'history'])->name('org-chart.history');
+
+    // Master Settings: Dokumen & Tanda Tangan
+    Route::get('/settings/documents', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'index'])->name('master-settings.documents.index');
+    Route::get('/settings/documents/e-sign', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'esignSettings'])->name('master-settings.documents.esign');
+    Route::post('/settings/documents/e-sign', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'saveEsignSettings'])->name('master-settings.documents.esign.save');
+    Route::post('/settings/documents/preview', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'preview'])->name('master-settings.documents.preview');
+    Route::get('/settings/documents/{type}/edit', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'edit'])->name('master-settings.documents.edit');
+    Route::post('/settings/documents/{type}/draft', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'saveDraft'])->name('master-settings.documents.draft');
+    Route::post('/settings/documents/versions/{versionId}/submit-review', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'submitReview'])->name('master-settings.documents.submit_review');
+    Route::post('/settings/documents/versions/{versionId}/approve', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'approve'])->name('master-settings.documents.approve');
+    Route::post('/settings/documents/versions/{versionId}/publish', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'publish'])->name('master-settings.documents.publish');
+    Route::post('/settings/documents/versions/{versionId}/rollback', [\App\Http\Controllers\MasterSettingsDocumentController::class, 'rollback'])->name('master-settings.documents.rollback');
+
+    // Kontrak Kerja
+    Route::get('/contracts', [\App\Http\Controllers\EmploymentContractController::class, 'index'])->name('contracts.index');
+    Route::get('/contracts/create/{userId}', [\App\Http\Controllers\EmploymentContractController::class, 'create'])->name('contracts.create');
+    Route::post('/contracts', [\App\Http\Controllers\EmploymentContractController::class, 'store'])->name('contracts.store');
+    Route::get('/contracts/{id}', [\App\Http\Controllers\EmploymentContractController::class, 'show'])->name('contracts.show');
+    Route::post('/contracts/{id}/send-esign', [\App\Http\Controllers\EmploymentContractController::class, 'sendEsign'])->name('contracts.send_esign');
+});
+
+// Portal Onboarding Publik / Token Akses Aman Kandidat (Tanpa Login Akun)
+Route::prefix('onboarding/portal')->group(function () {
+    Route::get('/{token}', [\App\Http\Controllers\CandidatePortalController::class, 'portal'])->name('onboarding.portal');
+    Route::post('/{token}/sign-offer', [\App\Http\Controllers\CandidatePortalController::class, 'signOffer'])->middleware('throttle:15,1')->name('onboarding.portal.sign_offer');
+    Route::post('/{token}/sign-nda', [\App\Http\Controllers\CandidatePortalController::class, 'signNda'])->middleware('throttle:15,1')->name('onboarding.portal.sign_nda');
+    Route::post('/{token}/upload-ktp', [\App\Http\Controllers\CandidatePortalController::class, 'submitKtp'])->middleware('throttle:15,1')->name('onboarding.portal.upload_ktp');
+    Route::post('/{token}/submit-liveness', [\App\Http\Controllers\CandidatePortalController::class, 'submitLiveness'])->middleware('throttle:15,1')->name('onboarding.portal.submit_liveness');
 });

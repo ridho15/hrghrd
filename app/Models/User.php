@@ -19,6 +19,14 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'employment_status',
+        'entity_name',
+        'manager_id',
+        'unit',
+        'nik_encrypted',
+        'nik_masked',
+        'phone',
+        'address',
         'schedule_type',
         'branch_id',
         'position_id',
@@ -37,6 +45,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'nik_encrypted',
     ];
 
     protected function casts(): array
@@ -51,6 +60,51 @@ class User extends Authenticatable
             'active' => 'boolean',
             'must_change_password' => 'boolean',
         ];
+    }
+
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function subordinates(): HasMany
+    {
+        return $this->hasMany(User::class, 'manager_id');
+    }
+
+    public function onboardingCases(): HasMany
+    {
+        return $this->hasMany(OnboardingCase::class);
+    }
+
+    public function activeOnboardingCase()
+    {
+        return $this->hasOne(OnboardingCase::class)->latestOfMany();
+    }
+
+    public function documentInstances(): HasMany
+    {
+        return $this->hasMany(DocumentInstance::class);
+    }
+
+    public function identitySubmissions(): HasMany
+    {
+        return $this->hasMany(IdentitySubmission::class)->orderByDesc('id');
+    }
+
+    public function livenessChecks(): HasMany
+    {
+        return $this->hasMany(LivenessCheck::class)->orderByDesc('id');
+    }
+
+    public function orgAssignments(): HasMany
+    {
+        return $this->hasMany(OrgAssignment::class)->orderByDesc('effective_from');
     }
 
     public function branch(): BelongsTo
@@ -118,14 +172,43 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function isHR(): bool
+    {
+        return in_array($this->role, ['admin', 'hr'], true);
+    }
+
+    public function isApprover(): bool
+    {
+        return in_array($this->role, ['admin', 'hr', 'approver'], true);
+    }
+
+    public function isAuditor(): bool
+    {
+        return in_array($this->role, ['admin', 'auditor'], true);
+    }
+
     public function isManager(): bool
     {
-        return $this->role === 'manager';
+        return in_array($this->role, ['admin', 'hr', 'manager'], true);
     }
 
     public function isEmployee(): bool
     {
         return $this->role === 'employee';
+    }
+
+    public function isCandidate(): bool
+    {
+        return $this->role === 'candidate' || $this->employment_status === 'candidate';
+    }
+
+    public function getMaskedNik(): string
+    {
+        if ($this->nik_masked) {
+            return $this->nik_masked;
+        }
+
+        return 'Belum diisi';
     }
 
     public function isOfficeSchedule(): bool

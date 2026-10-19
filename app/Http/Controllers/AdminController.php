@@ -258,6 +258,12 @@ class AdminController extends Controller
         $person = User::with([
             'branch',
             'position',
+            'manager',
+            'subordinates',
+            'onboardingCases',
+            'documentInstances.signingRequests',
+            'identitySubmissions',
+            'livenessChecks',
             'shifts' => fn ($q) => $q->with(['branch', 'attendance'])->latest('start_at')->take(10),
             'leaveRequests' => fn ($q) => $q->latest('id')->take(10),
             'attendances' => fn ($q) => $q->with('shift.branch')->latest('checkin_at')->take(10),

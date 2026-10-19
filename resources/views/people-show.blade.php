@@ -220,7 +220,15 @@
             <strong class="text-xl font-extrabold text-slate-900 mt-1 block truncate">
                 {{ $person->position?->name ?? 'Belum Ada' }}
             </strong>
-            <span class="text-[11px] text-slate-400 mt-0.5 block">Struktur resmi</span>
+            <span class="text-[11px] text-slate-400 mt-0.5 block">Unit: {{ $person->unit ?: 'Operasional' }}</span>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Atasan Langsung (Bagan)</span>
+            <strong class="text-xl font-extrabold text-slate-900 mt-1 block truncate">
+                {{ $person->manager?->name ?? 'Pimpinan Puncak' }}
+            </strong>
+            <span class="text-[11px] text-slate-400 mt-0.5 block truncate">{{ $person->manager?->position?->name ?: 'Akar Organisasi' }}</span>
         </div>
 
         @if(\App\Support\Access::manager())
@@ -272,6 +280,151 @@
                 <span class="text-[11px] text-slate-500">Dapat login via username</span>
             </div>
         </div>
+    {{-- Dokumen Kepegawaian, Onboarding & Kontrak Kerja --}}
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+                <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </span>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight m-0">Dokumen Kepegawaian, Onboarding & E-Sign</h3>
+                    <p class="text-xs text-slate-500 m-0">Seluruh dokumen legal dan hasil verifikasi terhubung pada satu profil karyawan ini.</p>
+                </div>
+            </div>
+
+            @if(\App\Support\Access::hr())
+                <a href="{{ route('contracts.create', $person->id) }}" class="px-3.5 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Terbitkan Kontrak PKWT</span>
+                </a>
+            @endif
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {{-- Offering Letter Card --}}
+            @php
+                $userOffer = $person->documentInstances->where('type', 'offering_letter')->last();
+            @endphp
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Offering Letter</span>
+                    @if($userOffer && $userOffer->isSigned())
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Ditandatangani</span>
+                    @else
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">Belum Ada</span>
+                    @endif
+                </div>
+                <div class="text-xs font-extrabold text-slate-900 truncate">{{ $userOffer?->document_number ?: '-' }}</div>
+                <div class="text-[10px] text-slate-400 font-mono truncate">Hash: {{ $userOffer?->file_hash ? substr($userOffer->file_hash, 0, 14) . '...' : '-' }}</div>
+                @if($userOffer && $userOffer->onboarding_case_id)
+                    <a href="{{ route('onboarding.show', $userOffer->onboarding_case_id) }}" class="text-[11px] font-bold text-emerald-700 hover:underline block pt-1">
+                        Lihat Berkas & Audit &rarr;
+                    </a>
+                @endif
+            </div>
+
+            {{-- NDA Card --}}
+            @php
+                $userNda = $person->documentInstances->where('type', 'nda')->last();
+            @endphp
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-blue-700 uppercase tracking-wider">Dokumen NDA</span>
+                    @if($userNda && $userNda->isSigned())
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Ditandatangani</span>
+                    @else
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">Belum Ada</span>
+                    @endif
+                </div>
+                <div class="text-xs font-extrabold text-slate-900 truncate">{{ $userNda?->document_number ?: '-' }}</div>
+                <div class="text-[10px] text-slate-400 font-mono truncate">Hash: {{ $userNda?->file_hash ? substr($userNda->file_hash, 0, 14) . '...' : '-' }}</div>
+                @if($userNda && $userNda->onboarding_case_id)
+                    <a href="{{ route('onboarding.show', $userNda->onboarding_case_id) }}" class="text-[11px] font-bold text-blue-700 hover:underline block pt-1">
+                        Lihat Berkas & Audit &rarr;
+                    </a>
+                @endif
+            </div>
+
+            {{-- Dokumen KTP --}}
+            @php
+                $userKtp = $person->identitySubmissions->last();
+            @endphp
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-indigo-700 uppercase tracking-wider">KTP Terverifikasi</span>
+                    @if($userKtp && $userKtp->status === 'approved')
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Valid</span>
+                    @elseif($userKtp)
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Proses</span>
+                    @else
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">Belum Ada</span>
+                    @endif
+                </div>
+                <div class="text-xs font-mono font-bold text-slate-900">{{ $person->nik_masked ?: 'Belum Terdata' }}</div>
+                <div class="text-[10px] text-slate-500">Privat (Hanya HR/Auditor/Pemilik)</div>
+                @if($userKtp && $userKtp->onboarding_case_id && \App\Support\Access::canViewSensitiveDocuments($person->id))
+                    <a href="{{ route('onboarding.stream_file', ['id' => $userKtp->onboarding_case_id, 'type' => 'ktp']) }}" target="_blank" class="text-[11px] font-bold text-indigo-700 hover:underline block pt-1">
+                        Buka KTP Asli &rarr;
+                    </a>
+                @endif
+            </div>
+
+            {{-- Biometrik Liveness --}}
+            @php
+                $userLiveness = $person->livenessChecks->last();
+            @endphp
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-purple-700 uppercase tracking-wider">Biometrik Wajah</span>
+                    @if($userLiveness && $userLiveness->result === 'lulus')
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Lulus ({{ $userLiveness->liveness_score }})</span>
+                    @elseif($userLiveness)
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">{{ strtoupper($userLiveness->result) }}</span>
+                    @else
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">Belum Ada</span>
+                    @endif
+                </div>
+                <div class="text-xs font-bold text-slate-800">{{ $userLiveness?->provider ?: 'Anti-Spoof Engine' }}</div>
+                <div class="text-[10px] text-slate-500">Pemeriksaan Wajah Saja</div>
+                @if($userLiveness && $userLiveness->onboarding_case_id && \App\Support\Access::canViewSensitiveDocuments($person->id))
+                    <a href="{{ route('onboarding.stream_file', ['id' => $userLiveness->onboarding_case_id, 'type' => 'liveness']) }}" target="_blank" class="text-[11px] font-bold text-purple-700 hover:underline block pt-1">
+                        Buka Foto Wajah &rarr;
+                    </a>
+                @endif
+            </div>
+        </div>
+
+        {{-- Kontrak Kerja List --}}
+        @php
+            $contracts = $person->documentInstances->where('type', 'employment_contract');
+        @endphp
+        @if($contracts->isNotEmpty())
+            <div class="pt-3 border-t border-slate-100 space-y-2">
+                <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block">Kontrak Kerja Resmi (PKWT):</span>
+                <div class="space-y-1.5">
+                    @foreach($contracts as $cnt)
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-slate-900">{{ $cnt->document_number }}</span>
+                                <span class="text-slate-400">·</span>
+                                <span class="text-slate-600">Hash: {{ substr($cnt->file_hash, 0, 12) }}...</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                @if($cnt->isSigned())
+                                    <span class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">Ditandatangani</span>
+                                @else
+                                    <span class="text-[10px] font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded-full">{{ $cnt->status }}</span>
+                                @endif
+                                <a href="{{ route('contracts.show', $cnt->id) }}" class="font-bold text-emerald-700 hover:underline">
+                                    Buka Kontrak &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- Riwayat Transaksi Operasional --}}
