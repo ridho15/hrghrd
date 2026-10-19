@@ -74,10 +74,10 @@
         </div>
     </div>
 
-    {{-- Rendered Contract Body --}}
-    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 sm:p-10 space-y-6">
-        <div class="p-6 sm:p-8 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed font-mono whitespace-pre-wrap select-text shadow-inner">
-{{ $contract->rendered_content }}
+    {{-- Rendered Contract Body (Official Legal Paper Canvas) --}}
+    <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 sm:p-12 space-y-6">
+        <div class="document-legal-body">
+            {!! $contract->rendered_html !!}
         </div>
     </div>
 

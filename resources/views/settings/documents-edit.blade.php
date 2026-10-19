@@ -56,11 +56,42 @@
     {{-- Editor & Live Preview Tabs --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {{-- Left: Textarea Editor --}}
+        {{-- Left: Textarea Editor with Formatting Toolbar --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 class="text-sm font-extrabold text-slate-900 m-0">Naskah Dokumen Template (Markdown)</h3>
-                <span class="text-[11px] text-slate-400">Gunakan format naskah resmi Indonesia</span>
+                <h3 class="text-sm font-extrabold text-slate-900 m-0">Naskah Dokumen Template</h3>
+                <span class="text-[11px] text-slate-400">Gunakan toolbar untuk format cepat</span>
+            </div>
+
+            {{-- Formatting Toolbar --}}
+            <div class="p-2 bg-slate-100/80 rounded-xl border border-slate-200 flex flex-wrap items-center gap-1.5 text-xs">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Format:</span>
+                <button type="button" onclick="formatDoc('bold');" title="Tebal (Ctrl+B)" class="px-2 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 font-bold border border-slate-200 shadow-2xs cursor-pointer">
+                    B
+                </button>
+                <button type="button" onclick="formatDoc('italic');" title="Miring (Ctrl+I)" class="px-2.5 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 italic font-serif border border-slate-200 shadow-2xs cursor-pointer">
+                    I
+                </button>
+                <span class="w-px h-4 bg-slate-300 mx-0.5"></span>
+                <button type="button" onclick="formatDoc('h1');" title="Judul Utama (H1)" class="px-2 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 font-extrabold text-[11px] border border-slate-200 shadow-2xs cursor-pointer">
+                    H1
+                </button>
+                <button type="button" onclick="formatDoc('h2');" title="Sub-Judul (H2)" class="px-2 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 font-bold text-[11px] border border-slate-200 shadow-2xs cursor-pointer">
+                    H2
+                </button>
+                <button type="button" onclick="formatDoc('h3');" title="Pasal / Bab (H3)" class="px-2 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 font-bold text-[11px] border border-slate-200 shadow-2xs cursor-pointer">
+                    H3
+                </button>
+                <span class="w-px h-4 bg-slate-300 mx-0.5"></span>
+                <button type="button" onclick="formatDoc('bullet');" title="Daftar Poin (- )" class="px-2.5 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 text-[11px] font-bold border border-slate-200 shadow-2xs cursor-pointer inline-flex items-center gap-1">
+                    <span>•</span> List
+                </button>
+                <button type="button" onclick="formatDoc('number');" title="Daftar Nomor (1. )" class="px-2.5 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 text-[11px] font-bold border border-slate-200 shadow-2xs cursor-pointer inline-flex items-center gap-1">
+                    <span>1.</span> List
+                </button>
+                <button type="button" onclick="formatDoc('hr');" title="Garis Pembatas (---)" class="px-2.5 py-1 rounded bg-white hover:bg-slate-200 text-slate-800 text-[11px] font-bold border border-slate-200 shadow-2xs cursor-pointer">
+                    — Garis
+                </button>
             </div>
 
             <form id="template-form" method="POST" action="{{ route('master-settings.documents.draft', $template->type) }}" class="space-y-4">
@@ -93,11 +124,24 @@
         {{-- Right: Live Rendered Preview & Actions --}}
         <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4 flex flex-col justify-between">
             <div class="space-y-4">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-wrap gap-2">
                     <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
                         <h3 class="text-sm font-extrabold text-slate-900 m-0">Pratinjau Hasil Akhir (Live Preview)</h3>
                     </div>
+
+                    {{-- Tab Switcher --}}
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs">
+                        <button type="button" id="tab-btn-paper" onclick="switchPreviewMode('paper');"
+                            class="px-2.5 py-1 rounded-md font-bold transition-all bg-white text-emerald-800 shadow-2xs">
+                            📄 Lembar Dokumen Resmi
+                        </button>
+                        <button type="button" id="tab-btn-raw" onclick="switchPreviewMode('raw');"
+                            class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all">
+                            ⌨️ Teks Mentah (Markdown)
+                        </button>
+                    </div>
+
                     <span id="validation-indicator" class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                         Valid
                     </span>
@@ -106,9 +150,16 @@
                 {{-- Validation Errors Box --}}
                 <div id="preview-errors" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs space-y-1"></div>
 
-                {{-- Preview Box --}}
-                <div id="preview-container" class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed font-mono whitespace-pre-wrap max-h-[460px] overflow-y-auto custom-scrollbar select-text shadow-inner">
-                    Memuat pratinjau...
+                {{-- Official A4 Document Paper Canvas --}}
+                <div id="preview-paper-box" class="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm max-h-[460px] overflow-y-auto custom-scrollbar select-text">
+                    <div id="preview-html-container" class="document-legal-body">
+                        Memuat pratinjau lembar resmi...
+                    </div>
+                </div>
+
+                {{-- Raw Monospace Preview (Hidden by default) --}}
+                <div id="preview-raw-box" class="hidden p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed font-mono whitespace-pre-wrap max-h-[460px] overflow-y-auto custom-scrollbar select-text shadow-inner">
+                    <div id="preview-container">Memuat pratinjau mentah...</div>
                 </div>
             </div>
 
@@ -165,9 +216,86 @@
         refreshLivePreview();
     }
 
+    function formatDoc(type) {
+        const textarea = document.getElementById('template-editor');
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const selected = text.substring(start, end);
+
+        let replacement = '';
+        let newCursorPos = start;
+
+        switch (type) {
+            case 'bold':
+                replacement = `**${selected || 'teks tebal'}**`;
+                newCursorPos = selected ? end + 4 : start + 2;
+                break;
+            case 'italic':
+                replacement = `*${selected || 'teks miring'}*`;
+                newCursorPos = selected ? end + 2 : start + 1;
+                break;
+            case 'h1':
+                replacement = `\n# ${selected || 'JUDUL UTAMA DOKUMEN'}\n`;
+                newCursorPos = start + replacement.length;
+                break;
+            case 'h2':
+                replacement = `\n## ${selected || 'SUB-JUDUL DOKUMEN'}\n`;
+                newCursorPos = start + replacement.length;
+                break;
+            case 'h3':
+                replacement = `\n### ${selected || 'PASAL / KLAUSUL'}\n`;
+                newCursorPos = start + replacement.length;
+                break;
+            case 'bullet':
+                replacement = `\n- ${selected || 'Poin rincian'}\n`;
+                newCursorPos = start + replacement.length;
+                break;
+            case 'number':
+                replacement = `\n1. ${selected || 'Poin nomor'}\n`;
+                newCursorPos = start + replacement.length;
+                break;
+            case 'hr':
+                replacement = `\n\n---\n\n`;
+                newCursorPos = start + replacement.length;
+                break;
+        }
+
+        textarea.value = text.substring(0, start) + replacement + text.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = newCursorPos;
+        textarea.focus();
+        refreshLivePreview();
+    }
+
+    function switchPreviewMode(mode) {
+        const paperBox = document.getElementById('preview-paper-box');
+        const rawBox = document.getElementById('preview-raw-box');
+        const btnPaper = document.getElementById('tab-btn-paper');
+        const btnRaw = document.getElementById('tab-btn-raw');
+
+        if (mode === 'paper') {
+            paperBox.classList.remove('hidden');
+            rawBox.classList.add('hidden');
+            btnPaper.className = 'px-2.5 py-1 rounded-md font-bold transition-all bg-white text-emerald-800 shadow-2xs';
+            btnRaw.className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all';
+        } else {
+            paperBox.classList.add('hidden');
+            rawBox.classList.remove('hidden');
+            btnRaw.className = 'px-2.5 py-1 rounded-md font-bold transition-all bg-white text-emerald-800 shadow-2xs';
+            btnPaper.className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition-all';
+        }
+    }
+
+    let debounceTimer = null;
+    document.getElementById('template-editor')?.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(refreshLivePreview, 400);
+    });
+
     async function refreshLivePreview() {
         const content = document.getElementById('template-editor').value;
-        const container = document.getElementById('preview-container');
+        const rawContainer = document.getElementById('preview-container');
+        const htmlContainer = document.getElementById('preview-html-container');
         const errorBox = document.getElementById('preview-errors');
         const indicator = document.getElementById('validation-indicator');
 
@@ -183,7 +311,8 @@
             });
 
             const data = await res.json();
-            container.textContent = data.rendered;
+            rawContainer.textContent = data.rendered || '';
+            htmlContainer.innerHTML = data.rendered_html || '';
 
             if (data.valid) {
                 indicator.textContent = 'Valid';

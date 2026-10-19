@@ -76,3 +76,107 @@
 .toast-item:hover .animate-toast-progress {
   animation-play-state: paused !important;
 }
+
+/* ==========================================================================
+   Document Legal Paper Canvas Styling (A4 Document Format)
+   ========================================================================== */
+.document-legal-body {
+  color: #1e293b;
+  line-height: 1.8;
+  text-align: justify;
+}
+
+.document-legal-body h1 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f172a;
+  margin-top: 1rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.4;
+}
+
+.document-legal-body h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  color: #334155;
+  margin-top: 0.25rem;
+  margin-bottom: 1.25rem;
+  line-height: 1.4;
+}
+
+.document-legal-body h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0f172a;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1.5px solid #e2e8f0;
+  padding-bottom: 0.4rem;
+  letter-spacing: 0.025em;
+}
+
+.document-legal-body h4, 
+.document-legal-body h5 {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.document-legal-body p {
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+  color: #334155;
+  line-height: 1.85;
+}
+
+.document-legal-body hr {
+  border: 0;
+  border-top: 1.5px solid #cbd5e1;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.document-legal-body ul {
+  list-style-type: disc;
+  padding-left: 1.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.document-legal-body ol {
+  list-style-type: decimal;
+  padding-left: 1.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.document-legal-body li {
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.75;
+  color: #334155;
+}
+
+.document-legal-body strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.document-legal-body blockquote {
+  border-left: 3px solid #10b981;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #475569;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}

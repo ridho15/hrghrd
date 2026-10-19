@@ -90,4 +90,9 @@ class DocumentInstance extends Model
     {
         return $this->status === 'menunggu_tanda_tangan';
     }
+
+    public function getRenderedHtmlAttribute(): string
+    {
+        return app(\App\Services\DocumentTemplateService::class)->renderToHtml($this->rendered_content ?: '');
+    }
 }

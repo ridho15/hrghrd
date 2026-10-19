@@ -129,9 +129,11 @@
                     </div>
                 </div>
 
-                {{-- Document Reader View --}}
-                <div class="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto custom-scrollbar select-text shadow-inner">
-{{ $offeringDoc->rendered_content }}
+                {{-- Document Reader View (Official Legal Paper Canvas) --}}
+                <div class="p-6 sm:p-10 rounded-2xl bg-white border border-slate-200/90 shadow-sm max-h-[30rem] overflow-y-auto custom-scrollbar select-text">
+                    <div class="document-legal-body">
+                        {!! $offeringDoc->rendered_html !!}
+                    </div>
                 </div>
 
                 {{-- Signing Form --}}
@@ -170,9 +172,11 @@
                     </div>
                 </div>
 
-                {{-- Document Reader View --}}
-                <div class="p-5 sm:p-6 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-800 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto custom-scrollbar select-text shadow-inner">
-{{ $ndaDoc->rendered_content }}
+                {{-- Document Reader View (Official Legal Paper Canvas) --}}
+                <div class="p-6 sm:p-10 rounded-2xl bg-white border border-slate-200/90 shadow-sm max-h-[30rem] overflow-y-auto custom-scrollbar select-text">
+                    <div class="document-legal-body">
+                        {!! $ndaDoc->rendered_html !!}
+                    </div>
                 </div>
 
                 {{-- Signing Form --}}

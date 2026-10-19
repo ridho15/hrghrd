@@ -245,6 +245,21 @@ class DocumentTemplateService
     }
 
     /**
+     * Convert rendered markdown document into clean, official legal HTML.
+     */
+    public function renderToHtml(string $markdown): string
+    {
+        if (trim($markdown) === '') {
+            return '<div class="text-slate-400 italic text-center py-8">Naskah dokumen masih kosong.</div>';
+        }
+
+        return Str::markdown($markdown, [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]);
+    }
+
+    /**
      * Generate facts snapshot array for a candidate/case.
      */
     public function buildFactsSnapshot(OnboardingCase $case, array $extra = []): array

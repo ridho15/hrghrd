@@ -244,10 +244,12 @@ class MasterSettingsDocumentController extends Controller
         ];
 
         $rendered = $this->templateService->renderContent($content, $sampleFacts);
+        $renderedHtml = $this->templateService->renderToHtml($rendered);
         $validation = $this->templateService->validateTemplateContent($content);
 
         return response()->json([
             'rendered' => $rendered,
+            'rendered_html' => $renderedHtml,
             'valid' => $validation['valid'],
             'errors' => $validation['errors'],
             'used_variables' => $validation['used_variables'],

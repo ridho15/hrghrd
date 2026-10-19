@@ -189,8 +189,10 @@
                         @endif
                     </div>
 
-                    <div id="doc-preview-offer" class="hidden p-4 rounded-xl bg-slate-900 text-slate-100 text-xs font-mono whitespace-pre-wrap max-h-60 overflow-y-auto">
-{{ $offeringDoc->rendered_content }}
+                    <div id="doc-preview-offer" class="hidden p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm max-h-96 overflow-y-auto custom-scrollbar select-text">
+                        <div class="document-legal-body">
+                            {!! $offeringDoc->rendered_html !!}
+                        </div>
                     </div>
                 @endif
             </div>
@@ -252,8 +254,10 @@
                         @endif
                     </div>
 
-                    <div id="doc-preview-nda" class="hidden p-4 rounded-xl bg-slate-900 text-slate-100 text-xs font-mono whitespace-pre-wrap max-h-60 overflow-y-auto">
-{{ $ndaDoc->rendered_content }}
+                    <div id="doc-preview-nda" class="hidden p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm max-h-96 overflow-y-auto custom-scrollbar select-text">
+                        <div class="document-legal-body">
+                            {!! $ndaDoc->rendered_html !!}
+                        </div>
                     </div>
                 @else
                     <p class="text-xs text-slate-400 italic m-0">
