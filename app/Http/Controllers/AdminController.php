@@ -287,6 +287,7 @@ class AdminController extends Controller
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
         $data['active'] = true;
+        $data['allow_all_branches'] = $request->boolean('allow_all_branches');
         $user = User::create($data);
         Audit::record('user', $user->id, 'create');
 
@@ -309,7 +310,9 @@ class AdminController extends Controller
         }
         unset($data['reset_device']);
 
-        $trackedFields = ['name', 'email', 'branch_id', 'position_id', 'role', 'schedule_type', 'base_salary', 'bank_name', 'bank_account_number', 'bank_account_name', 'active'];
+        $data['allow_all_branches'] = $request->boolean('allow_all_branches');
+
+        $trackedFields = ['name', 'email', 'branch_id', 'allow_all_branches', 'position_id', 'role', 'schedule_type', 'base_salary', 'bank_name', 'bank_account_number', 'bank_account_name', 'active'];
         $before = $person->only($trackedFields);
         $person->update($data);
         $after = $person->fresh()->only($trackedFields);

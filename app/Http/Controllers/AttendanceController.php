@@ -30,7 +30,16 @@ class AttendanceController extends Controller
 
         if ($shiftId === 0 && $user->isFlexibleSchedule()) {
             if (($data['action'] ?? 'in') === 'in') {
-                $shift = app(\App\Services\ShiftService::class)->ensureFlexibleShiftOnCheckin($user);
+                $targetBranch = null;
+                if ($user->canRoamBranches()) {
+                    $targetBranch = AttendanceService::resolveBranchForCheckin(
+                        $user,
+                        (string) ($data['qr_code'] ?? ''),
+                        isset($data['latitude']) ? (float) $data['latitude'] : null,
+                        isset($data['longitude']) ? (float) $data['longitude'] : null
+                    );
+                }
+                $shift = app(\App\Services\ShiftService::class)->ensureFlexibleShiftOnCheckin($user, null, $targetBranch);
                 $shiftId = $shift?->id ?? 0;
             } else {
                 $activeAtt = Attendance::where('user_id', $user->id)

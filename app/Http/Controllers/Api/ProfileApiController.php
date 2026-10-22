@@ -241,18 +241,19 @@ class ProfileApiController extends Controller
                         'document_number' => $doc->document_number,
                         'file_hash' => $doc->file_hash,
                     ],
+                    'created_at' => $signedAt,
                 ]);
             }
         }
 
         AuditLog::create([
-            'entity_type' => 'document_instance',
-            'entity_id' => $doc->id,
-            'action' => 'employee_signed',
             'actor_id' => $user->id,
-            'description' => "Dokumen {$doc->document_number} ditandatangani secara elektronik oleh karyawan {$user->name} via Mobile App.",
-            'ip_address' => $ip,
-            'user_agent' => $userAgent,
+            'subject_type' => DocumentInstance::class,
+            'subject_id' => $doc->id,
+            'action' => 'employee_signed',
+            'reason' => "Dokumen {$doc->document_number} ditandatangani secara elektronik oleh karyawan {$user->name} via Mobile App.",
+            'ip' => $ip,
+            'created_at' => $signedAt,
         ]);
 
         return response()->json([

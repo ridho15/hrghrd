@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Branch;
 use App\Models\Shift;
 use App\Models\User;
 use App\Support\Access;
@@ -258,9 +259,11 @@ class ShiftService
      * Memastikan shift dinamis tersedia untuk karyawan jam bebas (flexible) saat melakukan check-in.
      * Shift dibuat instan on-the-fly pada jam kedatangan aktual tanpa batasan hari kerja atau jam kaku.
      */
-    public function ensureFlexibleShiftOnCheckin(User $user, ?Carbon $now = null): ?Shift
+    public function ensureFlexibleShiftOnCheckin(User $user, ?Carbon $now = null, ?Branch $targetBranch = null): ?Shift
     {
-        if (! $user->isFlexibleSchedule() || ! $user->branch_id || ! $user->active) {
+        $branchId = ($user->canRoamBranches() && $targetBranch) ? $targetBranch->id : $user->branch_id;
+
+        if (! $user->isFlexibleSchedule() || ! $branchId || ! $user->active) {
             return null;
         }
 
@@ -268,7 +271,7 @@ class ShiftService
         $todayDate = $now->toDateString();
 
         try {
-            Period::writable($user->branch_id, $todayDate);
+            Period::writable($branchId, $todayDate);
         } catch (\Throwable) {
             return null;
         }
@@ -296,7 +299,7 @@ class ShiftService
 
         $shift = Shift::create([
             'user_id'     => $user->id,
-            'branch_id'   => $user->branch_id,
+            'branch_id'   => $branchId,
             'position_id' => $user->position_id,
             'start_at'    => $startAt,
             'end_at'      => $endAt,

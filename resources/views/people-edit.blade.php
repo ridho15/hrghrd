@@ -206,6 +206,18 @@
                     />
                 </div>
             </div>
+
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" name="allow_all_branches" value="1" @checked(old('allow_all_branches', $person->allow_all_branches)) class="mt-0.5 w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                    <div>
+                        <span class="text-xs font-bold text-slate-800">Izinkan Presensi di Semua Cabang (Penugasan Keliling / Roaming)</span>
+                        <p class="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
+                            Jika diaktifkan, karyawan tetap memiliki Cabang Induk di atas untuk administrasi & payroll, namun diizinkan melakukan check-in dan check-out di kios cabang mana pun dengan memindai QR dinamis di lokasi setempat.
+                        </p>
+                    </div>
+                </label>
+            </div>
         </section>
 
         {{-- Kartu 3: Kompensasi, Masa Kerja & Perangkat --}}

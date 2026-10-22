@@ -22,6 +22,7 @@ class PersonStoreRequest extends FormRequest
             'role' => 'required|in:admin,manager,employee',
             'schedule_type' => 'nullable|in:shift,office_hours,flexible',
             'branch_id' => 'nullable|required_unless:role,admin|exists:branches,id',
+            'allow_all_branches' => 'nullable|boolean',
             'position_id' => 'nullable|exists:positions,id',
             'bank_name' => 'nullable|string|max:60',
             'bank_account_number' => 'nullable|string|max:60',

@@ -32,6 +32,56 @@ final class AttendanceService
         return substr(str_pad($digits, 8, '0'), 0, 8);
     }
 
+    /**
+     * Mengenali cabang target untuk check-in, khususnya bagi karyawan dengan hak akses multi-cabang (roaming).
+     */
+    public static function resolveBranchForCheckin(object $user, string $qrCode, ?float $latitude = null, ?float $longitude = null): ?Branch
+    {
+        $canRoam = method_exists($user, 'canRoamBranches') && $user->canRoamBranches();
+
+        if (! $canRoam) {
+            return $user->branch_id ? Branch::find($user->branch_id) : null;
+        }
+
+        if (empty($qrCode)) {
+            return $user->branch_id ? Branch::find($user->branch_id) : null;
+        }
+
+        $activeBranches = Branch::where('active', true)->get();
+        $slot = intdiv(now()->timestamp, self::QR_INTERVAL_SECONDS);
+
+        $matchingBranches = [];
+        foreach ($activeBranches as $branch) {
+            $qrValid = hash_equals(self::qr($branch, $slot), (string) $qrCode)
+                || hash_equals(self::qr($branch, $slot - 1), (string) $qrCode);
+
+            if ($qrValid) {
+                $matchingBranches[] = $branch;
+            }
+        }
+
+        if (empty($matchingBranches)) {
+            return $user->branch_id ? Branch::find($user->branch_id) : null;
+        }
+
+        if (count($matchingBranches) === 1) {
+            return $matchingBranches[0];
+        }
+
+        if ($latitude !== null && $longitude !== null) {
+            foreach ($matchingBranches as $branch) {
+                if ($branch->latitude !== null && $branch->longitude !== null) {
+                    $dist = self::distance((float) $branch->latitude, (float) $branch->longitude, $latitude, $longitude);
+                    if ($dist <= $branch->radius_m) {
+                        return $branch;
+                    }
+                }
+            }
+        }
+
+        return $matchingBranches[0];
+    }
+
     // $requireChallenge hanya valid untuk pemanggil berbasis sesi browser (AttendanceController
     // web), di mana `attendance_challenge` ditaruh di sesi saat halaman dimuat (DashboardController)
     // dan dicocokkan kembali saat form disubmit lewat sesi cookie yang sama. Klien mobile berbasis
@@ -50,13 +100,18 @@ final class AttendanceService
                     $this->reject($user->id, $shiftId, $action, 'Shift tidak disetujui', [], $now);
                 }
 
+                $attendance = Attendance::where('shift_id', $shiftId)->first();
+                if ($action === 'in' && $attendance) {
+                    $this->reject($user->id, $shiftId, $action, 'Check-in sudah tercatat', [], $now);
+                }
+
                 Period::writable($shift->branch_id, $shift->start_at->toDateString());
                 $branch = Branch::find($shift->branch_id);
                 if (! $branch) {
                     $this->reject($user->id, $shiftId, $action, 'Cabang tidak ditemukan', [], $now);
                 }
 
-                if ($user->branch_id && (int) $shift->branch_id !== (int) $user->branch_id) {
+                if (! (method_exists($user, 'canRoamBranches') && $user->canRoamBranches()) && $user->branch_id && (int) $shift->branch_id !== (int) $user->branch_id) {
                     $this->reject($user->id, $shiftId, $action, 'Cabang shift tidak sesuai dengan cabang penempatan karyawan', [], $now);
                 }
 

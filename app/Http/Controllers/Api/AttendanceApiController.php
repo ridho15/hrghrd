@@ -34,7 +34,16 @@ class AttendanceApiController extends Controller
 
         if (! $request->filled('shift_id')) {
             if ($user->isFlexibleSchedule()) {
-                $flexibleShift = app(\App\Services\ShiftService::class)->ensureFlexibleShiftOnCheckin($user);
+                $targetBranch = null;
+                if ($user->canRoamBranches()) {
+                    $targetBranch = AttendanceService::resolveBranchForCheckin(
+                        $user,
+                        (string) $request->input('qr_code', ''),
+                        $request->filled('latitude') ? (float) $request->input('latitude') : null,
+                        $request->filled('longitude') ? (float) $request->input('longitude') : null
+                    );
+                }
+                $flexibleShift = app(\App\Services\ShiftService::class)->ensureFlexibleShiftOnCheckin($user, null, $targetBranch);
                 if ($flexibleShift) {
                     $request->merge(['shift_id' => $flexibleShift->id]);
                 }

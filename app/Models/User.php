@@ -29,6 +29,7 @@ class User extends Authenticatable
         'address',
         'schedule_type',
         'branch_id',
+        'allow_all_branches',
         'position_id',
         'hired_at',
         'ended_at',
@@ -58,6 +59,7 @@ class User extends Authenticatable
             'base_salary' => 'integer',
             'annual_leave_quota' => 'integer',
             'active' => 'boolean',
+            'allow_all_branches' => 'boolean',
             'must_change_password' => 'boolean',
         ];
     }
@@ -219,6 +221,11 @@ class User extends Authenticatable
     public function isFlexibleSchedule(): bool
     {
         return ($this->schedule_type ?? 'shift') === 'flexible';
+    }
+
+    public function canRoamBranches(): bool
+    {
+        return (bool) ($this->allow_all_branches ?? false);
     }
 
     public function isShiftSchedule(): bool

@@ -212,7 +212,14 @@
             <strong class="text-xl font-extrabold text-emerald-800 mt-1 block truncate">
                 {{ $person->branch?->name ?? 'Pusat' }}
             </strong>
-            <span class="text-[11px] text-slate-400 mt-0.5 block font-mono">Kode: {{ $person->branch?->code ?? '-' }}</span>
+            <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-[11px] text-slate-400 font-mono">Kode: {{ $person->branch?->code ?? '-' }}</span>
+                @if($person->canRoamBranches())
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                        🌐 Multi-Cabang (Roaming)
+                    </span>
+                @endif
+            </div>
         </div>
 
         <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
