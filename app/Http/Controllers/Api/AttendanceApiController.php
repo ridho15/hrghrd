@@ -32,17 +32,18 @@ class AttendanceApiController extends Controller
     {
         $user = $request->user();
 
+        $targetBranch = null;
+        if ($user->canRoamBranches()) {
+            $targetBranch = AttendanceService::resolveBranchForCheckin(
+                $user,
+                (string) $request->input('qr_code', ''),
+                $request->filled('latitude') ? (float) $request->input('latitude') : null,
+                $request->filled('longitude') ? (float) $request->input('longitude') : null
+            );
+        }
+
         if (! $request->filled('shift_id')) {
             if ($user->isFlexibleSchedule()) {
-                $targetBranch = null;
-                if ($user->canRoamBranches()) {
-                    $targetBranch = AttendanceService::resolveBranchForCheckin(
-                        $user,
-                        (string) $request->input('qr_code', ''),
-                        $request->filled('latitude') ? (float) $request->input('latitude') : null,
-                        $request->filled('longitude') ? (float) $request->input('longitude') : null
-                    );
-                }
                 $flexibleShift = app(\App\Services\ShiftService::class)->ensureFlexibleShiftOnCheckin($user, null, $targetBranch);
                 if ($flexibleShift) {
                     $request->merge(['shift_id' => $flexibleShift->id]);
@@ -52,6 +53,11 @@ class AttendanceApiController extends Controller
                 if ($officeShift) {
                     $request->merge(['shift_id' => $officeShift->id]);
                 }
+            }
+        } elseif ($user->canRoamBranches() && $targetBranch) {
+            $existingShift = Shift::where('id', (int) $request->input('shift_id'))->where('user_id', $user->id)->first();
+            if ($existingShift && ! Attendance::where('shift_id', $existingShift->id)->exists() && (int) $existingShift->branch_id !== (int) $targetBranch->id) {
+                $existingShift->update(['branch_id' => $targetBranch->id]);
             }
         }
 

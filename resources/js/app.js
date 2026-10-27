@@ -29,6 +29,7 @@ document.querySelectorAll('.attendance-form').forEach(form => {
     const codeEl = form.querySelector('.qr-detected-code');
     const mismatchMsg = form.querySelector('.qr-mismatch-message');
     const submitBtn = form.querySelector('button[type="submit"], button:not([type])');
+    const isRoaming = form.dataset.allowRoaming === 'true';
     const targetBranchCode = (form.dataset.shiftBranchCode || '').toUpperCase().trim();
     const targetBranchName = form.dataset.shiftBranchName || targetBranchCode;
 
@@ -60,8 +61,8 @@ document.querySelectorAll('.attendance-form').forEach(form => {
           }
 
           if (/^[0-9]{8}$/.test(token) || /^[A-F0-9]{8}$/.test(token)) {
-            // Jika payload QR memiliki identitas cabang, periksa kecocokannya dengan cabang shift
-            if (scannedBranch && targetBranchCode && scannedBranch !== targetBranchCode) {
+            // Jika payload QR memiliki identitas cabang, periksa kecocokannya dengan cabang shift (kecuali karyawan roaming)
+            if (!isRoaming && scannedBranch && targetBranchCode && scannedBranch !== targetBranchCode) {
               // Mismatch!
               form.elements.qr_code.value = '';
               if (submitBtn) submitBtn.disabled = true;
@@ -76,15 +77,15 @@ document.querySelectorAll('.attendance-form').forEach(form => {
               break;
             }
 
-            // Match atau legacy token!
-            form.elements.qr_code.value = token;
+            // Match atau roaming! Simpan token/payload utuh agar backend mengenali cabang
+            form.elements.qr_code.value = scannedBranch ? `${scannedBranch}:${token}` : token;
             if (submitBtn) submitBtn.disabled = false;
             if (badgeMismatch) badgeMismatch.classList.add('hidden');
             if (badgeSuccess) {
               if (codeEl) codeEl.textContent = (scannedBranch ? `${scannedBranch}:` : '') + token;
               badgeSuccess.classList.remove('hidden');
             }
-            status.textContent = 'Kode QR cabang terverifikasi: ' + token;
+            status.textContent = (isRoaming && scannedBranch ? `[Multi-Cabang] QR Cabang "${scannedBranch}" terverifikasi: ` : 'Kode QR cabang terverifikasi: ') + token;
             break;
           }
         }

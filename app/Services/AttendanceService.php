@@ -43,43 +43,80 @@ final class AttendanceService
             return $user->branch_id ? Branch::find($user->branch_id) : null;
         }
 
-        if (empty($qrCode)) {
-            return $user->branch_id ? Branch::find($user->branch_id) : null;
+        $rawQr = strtoupper(trim($qrCode));
+        $prefixBranchCode = null;
+        $token = $rawQr;
+
+        if (str_contains($rawQr, ':')) {
+            $parts = explode(':', $rawQr, 2);
+            $prefixBranchCode = trim($parts[0]);
+            $token = trim($parts[1] ?? '');
         }
 
         $activeBranches = Branch::where('active', true)->get();
         $slot = intdiv(now()->timestamp, self::QR_INTERVAL_SECONDS);
 
-        $matchingBranches = [];
-        foreach ($activeBranches as $branch) {
-            $qrValid = hash_equals(self::qr($branch, $slot), (string) $qrCode)
-                || hash_equals(self::qr($branch, $slot - 1), (string) $qrCode);
+        // 1. Jika QR memiliki prefix kode cabang (contoh: BDG01:84920173), prioritaskan cabang tersebut
+        if ($prefixBranchCode !== null && $prefixBranchCode !== '') {
+            $branchByPrefix = $activeBranches->first(function ($b) use ($prefixBranchCode) {
+                return strtoupper((string) $b->code) === $prefixBranchCode
+                    || (string) $b->id === $prefixBranchCode;
+            });
 
-            if ($qrValid) {
-                $matchingBranches[] = $branch;
+            if ($branchByPrefix) {
+                $qrValid = hash_equals(self::qr($branchByPrefix, $slot), $token)
+                    || hash_equals(self::qr($branchByPrefix, $slot - 1), $token);
+
+                if ($qrValid) {
+                    return $branchByPrefix;
+                }
             }
         }
 
-        if (empty($matchingBranches)) {
-            return $user->branch_id ? Branch::find($user->branch_id) : null;
+        // 2. Cocokkan token QR dengan seluruh cabang aktif
+        if ($token !== '') {
+            $matchingBranches = [];
+            foreach ($activeBranches as $branch) {
+                $qrValid = hash_equals(self::qr($branch, $slot), $token)
+                    || hash_equals(self::qr($branch, $slot - 1), $token);
+
+                if ($qrValid) {
+                    $matchingBranches[] = $branch;
+                }
+            }
+
+            if (count($matchingBranches) === 1) {
+                return $matchingBranches[0];
+            }
+
+            if (count($matchingBranches) > 1 && $latitude !== null && $longitude !== null) {
+                foreach ($matchingBranches as $branch) {
+                    if ($branch->latitude !== null && $branch->longitude !== null) {
+                        $dist = self::distance((float) $branch->latitude, (float) $branch->longitude, $latitude, $longitude);
+                        if ($dist <= (float) $branch->radius_m) {
+                            return $branch;
+                        }
+                    }
+                }
+
+                return $matchingBranches[0];
+            }
         }
 
-        if (count($matchingBranches) === 1) {
-            return $matchingBranches[0];
-        }
-
+        // 3. Jika QR tidak cocok (atau format khusus), tetapi koordinat GPS berada dalam radius cabang aktif
         if ($latitude !== null && $longitude !== null) {
-            foreach ($matchingBranches as $branch) {
+            foreach ($activeBranches as $branch) {
                 if ($branch->latitude !== null && $branch->longitude !== null) {
                     $dist = self::distance((float) $branch->latitude, (float) $branch->longitude, $latitude, $longitude);
-                    if ($dist <= $branch->radius_m) {
+                    if ($dist <= (float) $branch->radius_m) {
                         return $branch;
                     }
                 }
             }
         }
 
-        return $matchingBranches[0];
+        // 4. Fallback ke cabang penempatan induk (Home Branch) jika tidak ada cabang roaming yang cocok
+        return $user->branch_id ? Branch::find($user->branch_id) : null;
     }
 
     // $requireChallenge hanya valid untuk pemanggil berbasis sesi browser (AttendanceController
@@ -137,8 +174,11 @@ final class AttendanceService
                 }
 
                 $slot = intdiv(now()->timestamp, self::QR_INTERVAL_SECONDS);
-                $qrValid = hash_equals(self::qr($branch, $slot), (string) ($input['qr_code'] ?? ''))
-                    || hash_equals(self::qr($branch, $slot - 1), (string) ($input['qr_code'] ?? ''));
+                $rawInputQr = strtoupper(trim((string) ($input['qr_code'] ?? '')));
+                $inputQrToken = str_contains($rawInputQr, ':') ? (explode(':', $rawInputQr, 2)[1] ?? $rawInputQr) : $rawInputQr;
+
+                $qrValid = hash_equals(self::qr($branch, $slot), $inputQrToken)
+                    || hash_equals(self::qr($branch, $slot - 1), $inputQrToken);
 
                 if (! $qrValid) {
                     $this->reject($user->id, $shiftId, $action, 'Kode cabang kedaluwarsa atau salah', $evidence, $now);

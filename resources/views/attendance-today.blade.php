@@ -66,9 +66,16 @@
                                 <div class="flex items-center gap-2 mb-1">
                                     <h3 class="text-base font-bold text-slate-900 m-0">Skema Jam Bebas / Penugasan Khusus</h3>
                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800 border border-teal-300">Presensi Dinamis</span>
+                                    @if($user->canRoamBranches())
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🌐 Multi-Cabang (Roaming)</span>
+                                    @endif
                                 </div>
                                 <p class="text-xs text-slate-600 m-0">
-                                    Cabang Penugasan: <strong class="text-slate-800">{{ $user->branch?->name ?? 'Cabang Penugasan' }}</strong> ({{ $user->branch?->code ?? '-' }}). Jam kerja akan dihitung otomatis saat Anda melakukan Check-in.
+                                    @if($user->canRoamBranches())
+                                        Cabang Induk: <strong class="text-slate-800">{{ $user->branch?->name ?? 'Cabang Induk' }}</strong>. Anda berhak melakukan presensi di cabang operasional mana saja yang sedang Anda kunjungi.
+                                    @else
+                                        Cabang Penugasan: <strong class="text-slate-800">{{ $user->branch?->name ?? 'Cabang Penugasan' }}</strong> ({{ $user->branch?->code ?? '-' }}). Jam kerja akan dihitung otomatis saat Anda melakukan Check-in.
+                                    @endif
                                 </p>
                             </div>
                         </div>
@@ -83,12 +90,17 @@
                                 </h4>
                             </div>
                             <p class="text-xs text-slate-500 mb-5 leading-relaxed">
-                                Pastikan Anda berada di area cabang <strong>{{ $user->branch?->name }}</strong> dan arahkan kamera ke layar QR Kiosk cabang untuk memulai penugasan hari ini.
+                                @if($user->canRoamBranches())
+                                    Arahkan kamera ke layar QR Kiosk cabang tempat Anda bertugas hari ini untuk memulai penugasan.
+                                @else
+                                    Pastikan Anda berada di area cabang <strong>{{ $user->branch?->name }}</strong> dan arahkan kamera ke layar QR Kiosk cabang untuk memulai penugasan hari ini.
+                                @endif
                             </p>
 
                             <form method="post" action="{{ route('attendance.act', 0) }}" class="space-y-4 attendance-form"
-                                data-shift-branch-code="{{ $user->branch?->code }}"
-                                data-shift-branch-name="{{ $user->branch?->name }}">
+                                data-shift-branch-code="{{ $user->canRoamBranches() ? '' : $user->branch?->code }}"
+                                data-shift-branch-name="{{ $user->canRoamBranches() ? 'Multi-Cabang (Roaming)' : $user->branch?->name }}"
+                                data-allow-roaming="{{ $user->canRoamBranches() ? 'true' : 'false' }}">
                                 @csrf
                                 <input type="hidden" name="action" value="in">
                                 <input type="hidden" name="latitude">
@@ -101,7 +113,13 @@
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                                         <div>
                                             <span class="text-xs font-bold text-slate-800 uppercase tracking-wider block">Verifikasi QR Code Cabang</span>
-                                            <p class="text-[11px] text-slate-500 m-0">Arahkan kamera ke layar QR Kiosk cabang <strong>{{ $user->branch?->name }} ({{ $user->branch?->code }})</strong>.</p>
+                                            <p class="text-[11px] text-slate-500 m-0">
+                                                @if($user->canRoamBranches())
+                                                    Arahkan kamera ke layar QR Kiosk cabang mana saja yang sedang Anda kunjungi.
+                                                @else
+                                                    Arahkan kamera ke layar QR Kiosk cabang <strong>{{ $user->branch?->name }} ({{ $user->branch?->code }})</strong>.
+                                                @endif
+                                            </p>
                                         </div>
                                         <button type="button" data-scan-qr class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-300 shadow-2xs transition-colors cursor-pointer shrink-0">
                                             <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>

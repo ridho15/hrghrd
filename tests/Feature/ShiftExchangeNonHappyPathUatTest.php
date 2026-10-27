@@ -200,7 +200,7 @@ class ShiftExchangeNonHappyPathUatTest extends TestCase
 
     public function test_employee_can_view_open_slot_banner_and_claim_buttons_on_calendar(): void
     {
-        $targetDate = Carbon::now('Asia/Jakarta')->addDays(6);
+        $targetDate = Carbon::now('Asia/Jakarta')->addDays(1);
 
         $openSlot = Shift::factory()->create([
             'branch_id' => $this->branch->id,
@@ -213,7 +213,7 @@ class ShiftExchangeNonHappyPathUatTest extends TestCase
 
         // Default scope (me): employee sees the banner announcing open slots
         $responseMe = $this->actingAs($this->employee)
-            ->get('/shifts/calendar');
+            ->get('/shifts/calendar?month=' . $targetDate->format('Y-m'));
 
         $responseMe->assertOk();
         $responseMe->assertSee('Jadwal Kosong Tersedia');

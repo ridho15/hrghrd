@@ -373,4 +373,212 @@ class RoamingFlexibleAttendanceDeepUatTest extends TestCase
 
         Carbon::setTestNow();
     }
+
+    /**
+     * UAT-NHP-10: Non-Happy Path - Karyawan Non-Roaming (allow_all_branches = false) mencoba scan QR cabang lain dengan prefix.
+     * Sistem harus menolak karena karyawan terikat pada Cabang Induk (tidak memiliki izin roaming).
+     */
+    public function test_non_roaming_employee_rejected_when_trying_to_checkin_at_another_branch_with_prefixed_qr(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-22 09:00:00', 'Asia/Jakarta'));
+
+        $homeBranch = $this->createBranch([
+            'name' => 'Cabang Induk Jakarta',
+            'code' => 'JKT01',
+            'latitude' => -6.2088,
+            'longitude' => 106.8456,
+            'radius_m' => 100,
+        ]);
+
+        $otherBranch = $this->createBranch([
+            'name' => 'Cabang Bandung',
+            'code' => 'BDG01',
+            'latitude' => -6.9034,
+            'longitude' => 107.6186,
+            'radius_m' => 100,
+        ]);
+
+        $employee = $this->createUser([
+            'branch_id' => $homeBranch->id,
+            'schedule_type' => 'flexible',
+            'allow_all_branches' => false, // Karyawan TIDAK diizinkan roaming
+        ]);
+
+        $slot = intdiv(now()->timestamp, AttendanceService::QR_INTERVAL_SECONDS);
+        $otherToken = AttendanceService::qr($otherBranch, $slot);
+        $prefixedQr = "BDG01:{$otherToken}";
+
+        $this->actingAs($employee, 'sanctum');
+
+        // Check-in di Bandung dengan koordinat Bandung
+        $response = $this->postJson('/api/v1/attendance/checkin', [
+            'qr_code' => $prefixedQr,
+            'latitude' => $otherBranch->latitude,
+            'longitude' => $otherBranch->longitude,
+            'accuracy' => 10,
+        ]);
+
+        // Harus ditolak (karena fallback ke Cabang Induk Jakarta, jarak 150km dari Bandung)
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('attendances', ['user_id' => $employee->id]);
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * UAT-NHP-11: Non-Happy Path - Karyawan roaming scan QR dengan prefix cabang fiktif/tidak terdaftar (GHOST99:token).
+     * Sistem harus menolak tanpa error 500 dan tidak mencatat presensi.
+     */
+    public function test_roaming_checkin_rejected_with_nonexistent_branch_prefix(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-22 10:00:00', 'Asia/Jakarta'));
+
+        $homeBranch = $this->createBranch(['name' => 'Cabang Induk']);
+        $employee = $this->createUser([
+            'branch_id' => $homeBranch->id,
+            'schedule_type' => 'flexible',
+            'allow_all_branches' => true,
+        ]);
+
+        $this->actingAs($employee, 'sanctum');
+
+        $response = $this->postJson('/api/v1/attendance/checkin', [
+            'qr_code' => 'GHOST99:84920173',
+            'latitude' => -6.2088,
+            'longitude' => 106.8456,
+            'accuracy' => 10,
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('Kode cabang kedaluwarsa atau salah', $response->json('message'));
+        $this->assertDatabaseMissing('attendances', ['user_id' => $employee->id]);
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * UAT-NHP-12: Non-Happy Path - Karyawan roaming scan QR dengan prefix cabang valid tapi tokennya kedaluwarsa.
+     */
+    public function test_roaming_checkin_rejected_with_prefixed_expired_token(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-22 10:00:00', 'Asia/Jakarta'));
+
+        $homeBranch = $this->createBranch(['name' => 'Cabang Induk']);
+        $roamingBranch = $this->createBranch([
+            'name' => 'Cabang Solo',
+            'code' => 'SOL01',
+            'latitude' => -7.5755,
+            'longitude' => 110.8243,
+            'radius_m' => 100,
+        ]);
+
+        $employee = $this->createUser([
+            'branch_id' => $homeBranch->id,
+            'schedule_type' => 'flexible',
+            'allow_all_branches' => true,
+        ]);
+
+        $slot = intdiv(now()->timestamp, AttendanceService::QR_INTERVAL_SECONDS);
+        $expiredToken = AttendanceService::qr($roamingBranch, $slot - 4); // 12 menit lalu
+        $expiredPrefixedQr = "SOL01:{$expiredToken}";
+
+        $this->actingAs($employee, 'sanctum');
+
+        $response = $this->postJson('/api/v1/attendance/checkin', [
+            'qr_code' => $expiredPrefixedQr,
+            'latitude' => $roamingBranch->latitude,
+            'longitude' => $roamingBranch->longitude,
+            'accuracy' => 10,
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('Kode cabang kedaluwarsa atau salah', $response->json('message'));
+        $this->assertDatabaseMissing('attendances', ['user_id' => $employee->id]);
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * UAT-NHP-13: Non-Happy Path - Karyawan roaming scan QR cabang tujuan valid, tapi GPS berada 3 km di luar radius cabang tujuan tersebut.
+     */
+    public function test_roaming_checkin_rejected_when_gps_is_3km_away_from_roaming_branch(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-22 10:00:00', 'Asia/Jakarta'));
+
+        $homeBranch = $this->createBranch(['name' => 'Cabang Induk']);
+        $roamingBranch = $this->createBranch([
+            'name' => 'Cabang Bali Kuta',
+            'code' => 'DPS01',
+            'latitude' => -8.7210,
+            'longitude' => 115.1695,
+            'radius_m' => 100,
+        ]);
+
+        $employee = $this->createUser([
+            'branch_id' => $homeBranch->id,
+            'schedule_type' => 'flexible',
+            'allow_all_branches' => true,
+        ]);
+
+        $slot = intdiv(now()->timestamp, AttendanceService::QR_INTERVAL_SECONDS);
+        $validToken = AttendanceService::qr($roamingBranch, $slot);
+        $validQr = "DPS01:{$validToken}";
+
+        $this->actingAs($employee, 'sanctum');
+
+        // Koordinat GPS digeser ~3 km (sekitar 0.027 derajat latitude)
+        $farLatitude = $roamingBranch->latitude + 0.027;
+        $farLongitude = $roamingBranch->longitude;
+
+        $response = $this->postJson('/api/v1/attendance/checkin', [
+            'qr_code' => $validQr,
+            'latitude' => $farLatitude,
+            'longitude' => $farLongitude,
+            'accuracy' => 10,
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertStringContainsString('Batas radius cabang', $response->json('message'));
+        $this->assertDatabaseMissing('attendances', ['user_id' => $employee->id]);
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * UAT-NHP-14: Non-Happy Path Web Route - Presensi roaming ditolak jika attendance challenge sesi salah.
+     */
+    public function test_roaming_web_checkin_rejected_on_invalid_session_challenge(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-22 09:30:00', 'Asia/Jakarta'));
+
+        $homeBranch = $this->createBranch(['name' => 'Kantor Pusat']);
+        $roamingBranch = $this->createBranch(['name' => 'Cabang Bogor', 'code' => 'BGR01']);
+
+        $employee = $this->createUser([
+            'branch_id' => $homeBranch->id,
+            'schedule_type' => 'flexible',
+            'allow_all_branches' => true,
+        ]);
+
+        $this->actingAs($employee);
+        session(['attendance_challenge' => 'correct_secret_challenge']);
+
+        $slot = intdiv(now()->timestamp, AttendanceService::QR_INTERVAL_SECONDS);
+        $token = AttendanceService::qr($roamingBranch, $slot);
+        $prefixedQr = "BGR01:{$token}";
+
+        $response = $this->withCookie('hrd_device', 'web_cookie_device')->post('/attendance/0', [
+            'action' => 'in',
+            'qr_code' => $prefixedQr,
+            'latitude' => $roamingBranch->latitude,
+            'longitude' => $roamingBranch->longitude,
+            'accuracy' => 10,
+            'challenge' => 'attacker_manipulated_challenge',
+        ]);
+
+        $response->assertSessionHasErrors();
+        $this->assertDatabaseMissing('attendances', ['user_id' => $employee->id]);
+
+        Carbon::setTestNow();
+    }
 }

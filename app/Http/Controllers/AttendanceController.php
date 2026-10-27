@@ -28,17 +28,18 @@ class AttendanceController extends Controller
         $data = $request->validated();
         $data['qr_code'] = strtoupper(trim($data['qr_code'] ?? ''));
 
+        $targetBranch = null;
+        if ($user->canRoamBranches() && ($data['action'] ?? 'in') === 'in') {
+            $targetBranch = AttendanceService::resolveBranchForCheckin(
+                $user,
+                (string) ($data['qr_code'] ?? ''),
+                isset($data['latitude']) ? (float) $data['latitude'] : null,
+                isset($data['longitude']) ? (float) $data['longitude'] : null
+            );
+        }
+
         if ($shiftId === 0 && $user->isFlexibleSchedule()) {
             if (($data['action'] ?? 'in') === 'in') {
-                $targetBranch = null;
-                if ($user->canRoamBranches()) {
-                    $targetBranch = AttendanceService::resolveBranchForCheckin(
-                        $user,
-                        (string) ($data['qr_code'] ?? ''),
-                        isset($data['latitude']) ? (float) $data['latitude'] : null,
-                        isset($data['longitude']) ? (float) $data['longitude'] : null
-                    );
-                }
                 $shift = app(\App\Services\ShiftService::class)->ensureFlexibleShiftOnCheckin($user, null, $targetBranch);
                 $shiftId = $shift?->id ?? 0;
             } else {
@@ -50,6 +51,11 @@ class AttendanceController extends Controller
                 if ($activeAtt) {
                     $shiftId = $activeAtt->shift_id;
                 }
+            }
+        } elseif ($shiftId > 0 && $user->canRoamBranches() && ($data['action'] ?? 'in') === 'in' && $targetBranch) {
+            $existingShift = Shift::where('id', $shiftId)->where('user_id', $user->id)->first();
+            if ($existingShift && ! Attendance::where('shift_id', $existingShift->id)->exists() && (int) $existingShift->branch_id !== (int) $targetBranch->id) {
+                $existingShift->update(['branch_id' => $targetBranch->id]);
             }
         }
 

@@ -375,4 +375,192 @@ class RoamingFlexibleAttendanceTest extends TestCase
         $this->assertFalse($created->canRoamBranches());
         $this->assertFalse($created->allow_all_branches);
     }
+
+    /**
+     * 8. UAT Khusus: Karyawan roaming scan QR dengan format ber-prefix cabang (contoh: BDG01:12345678).
+     * Memastikan sistem mengenali cabang BDG01 dan jarak dihitung terhadap cabang BDG01 (bukan cabang induk Jakarta yang berjarak 150km/3km).
+     */
+    public function test_roaming_flexible_employee_can_checkin_with_prefixed_qr_code(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-22 08:30:00', 'Asia/Jakarta'));
+
+        $homeBranch = $this->createBranch([
+            'name' => 'Cabang Induk Jakarta',
+            'code' => 'JKT01',
+            'latitude' => -6.2088,
+            'longitude' => 106.8456,
+            'radius_m' => 100,
+        ]);
+
+        $roamingBranch = $this->createBranch([
+            'name' => 'Cabang Bandung Pasteur',
+            'code' => 'BDG01',
+            'latitude' => -6.9034,
+            'longitude' => 107.6186,
+            'radius_m' => 100,
+        ]);
+
+        $employee = $this->createUser([
+            'branch_id' => $homeBranch->id,
+            'schedule_type' => 'flexible',
+            'allow_all_branches' => true,
+        ]);
+
+        $slot = intdiv(now()->timestamp, AttendanceService::QR_INTERVAL_SECONDS);
+        $token = AttendanceService::qr($roamingBranch, $slot);
+        $prefixedQr = "BDG01:{$token}";
+
+        $this->actingAs($employee, 'sanctum');
+
+        $resIn = $this->postJson('/api/v1/attendance/checkin', [
+            'qr_code' => $prefixedQr,
+            'latitude' => $roamingBranch->latitude,
+            'longitude' => $roamingBranch->longitude,
+            'accuracy' => 10,
+        ]);
+
+        $resIn->assertStatus(201);
+        $resIn->assertJsonPath('success', true);
+
+        // Shift dinamis berhasil dibuat dan terikat ke Cabang Bandung, bukan Jakarta
+        $shift = Shift::where('user_id', $employee->id)->latest('id')->first();
+        $this->assertNotNull($shift);
+        $this->assertSame($roamingBranch->id, $shift->branch_id);
+
+        $att = Attendance::where('shift_id', $shift->id)->first();
+        $this->assertNotNull($att);
+        $this->assertSame('present', $att->status);
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * 9. UAT Khusus: Shift awal sudah terbuat di Cabang Induk (tanpa check-in).
+     * Saat karyawan roaming datang ke Cabang Lain dan check-in, shift otomatis di-rebind ke Cabang Lain.
+     */
+    public function test_roaming_flexible_employee_rebinds_preexisting_home_shift_to_roaming_branch(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-22 09:00:00', 'Asia/Jakarta'));
+
+        $homeBranch = $this->createBranch([
+            'name' => 'Kantor Pusat Jakarta',
+            'code' => 'HQ',
+            'latitude' => -6.2088,
+            'longitude' => 106.8456,
+            'radius_m' => 100,
+        ]);
+
+        $outletBranch = $this->createBranch([
+            'name' => 'Outlet Tebet (3km dari HQ)',
+            'code' => 'TBT01',
+            'latitude' => -6.2300,
+            'longitude' => 106.8550,
+            'radius_m' => 100,
+        ]);
+
+        $employee = $this->createUser([
+            'branch_id' => $homeBranch->id,
+            'schedule_type' => 'flexible',
+            'allow_all_branches' => true,
+        ]);
+
+        // Simulasikan ada shift otomatis/terjadwal hari ini yang terbuat di Home Branch (HQ)
+        $preExistingShift = Shift::create([
+            'user_id' => $employee->id,
+            'branch_id' => $homeBranch->id,
+            'position_id' => $employee->position_id,
+            'start_at' => now('Asia/Jakarta')->startOfDay()->addHours(8),
+            'end_at' => now('Asia/Jakarta')->startOfDay()->addHours(17),
+            'status' => 'approved',
+            'version' => 1,
+        ]);
+
+        $slot = intdiv(now()->timestamp, AttendanceService::QR_INTERVAL_SECONDS);
+        $outletToken = AttendanceService::qr($outletBranch, $slot);
+        $outletQr = "TBT01:{$outletToken}";
+
+        $this->actingAs($employee, 'sanctum');
+
+        // Check in di Outlet Tebet dengan menyertakan shift_id dari shift yang sudah ada
+        $resIn = $this->postJson('/api/v1/attendance/checkin', [
+            'shift_id' => $preExistingShift->id,
+            'qr_code' => $outletQr,
+            'latitude' => $outletBranch->latitude,
+            'longitude' => $outletBranch->longitude,
+            'accuracy' => 15,
+        ]);
+
+        $resIn->assertStatus(201);
+        $resIn->assertJsonPath('success', true);
+
+        // Shift lama otomatis berpindah branch_id ke Outlet Tebet
+        $preExistingShift->refresh();
+        $this->assertSame($outletBranch->id, $preExistingShift->branch_id);
+
+        // Presensi berhasil tercatat tanpa ditolak error 3km
+        $att = Attendance::where('shift_id', $preExistingShift->id)->first();
+        $this->assertNotNull($att);
+        $this->assertSame('present', $att->status);
+
+        Carbon::setTestNow();
+    }
+
+    /**
+     * 10. UAT Khusus Web Route: Check-in via formulir web (POST /attendance/0) dengan QR ber-prefix cabang.
+     */
+    public function test_roaming_flexible_employee_web_route_checkin_with_prefixed_qr(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-22 09:30:00', 'Asia/Jakarta'));
+
+        $homeBranch = $this->createBranch([
+            'name' => 'Kantor Pusat Jakarta',
+            'code' => 'HQ',
+            'latitude' => -6.2088,
+            'longitude' => 106.8456,
+            'radius_m' => 100,
+        ]);
+
+        $roamingBranch = $this->createBranch([
+            'name' => 'Cabang Yogyakarta Malioboro',
+            'code' => 'YOG01',
+            'latitude' => -7.7956,
+            'longitude' => 110.3695,
+            'radius_m' => 100,
+        ]);
+
+        $employee = $this->createUser([
+            'branch_id' => $homeBranch->id,
+            'schedule_type' => 'flexible',
+            'allow_all_branches' => true,
+        ]);
+
+        $this->actingAs($employee);
+        $challenge = 'web_chal_' . uniqid();
+        session(['attendance_challenge' => $challenge]);
+
+        $slot = intdiv(now()->timestamp, AttendanceService::QR_INTERVAL_SECONDS);
+        $token = AttendanceService::qr($roamingBranch, $slot);
+        $prefixedQr = "YOG01:{$token}";
+
+        $res = $this->withCookie('hrd_device', 'web_dev_roam_test')->post('/attendance/0', [
+            'action' => 'in',
+            'qr_code' => $prefixedQr,
+            'latitude' => $roamingBranch->latitude,
+            'longitude' => $roamingBranch->longitude,
+            'accuracy' => 10,
+            'challenge' => $challenge,
+        ]);
+
+        $res->assertSessionHas('ok', 'Check-in tercatat.');
+
+        $shift = Shift::where('user_id', $employee->id)->latest('id')->first();
+        $this->assertNotNull($shift);
+        $this->assertSame($roamingBranch->id, $shift->branch_id);
+
+        $att = Attendance::where('shift_id', $shift->id)->first();
+        $this->assertNotNull($att);
+        $this->assertSame('present', $att->status);
+
+        Carbon::setTestNow();
+    }
 }

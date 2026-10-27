@@ -293,6 +293,23 @@ class ShiftService
             return $activeShift;
         }
 
+        // Cek apakah ada shift hari ini yang belum pernah check-in (misal auto-generated sebelumnya)
+        $unstartedShift = Shift::with(['branch', 'attendance', 'exceptions.reviewer'])
+            ->where('user_id', $user->id)
+            ->whereDate('start_at', $todayDate)
+            ->whereDoesntHave('attendance')
+            ->latest('id')
+            ->first();
+
+        if ($unstartedShift) {
+            if ((int) $unstartedShift->branch_id !== (int) $branchId) {
+                $unstartedShift->update(['branch_id' => $branchId]);
+                $unstartedShift->refresh();
+            }
+
+            return $unstartedShift->load(['branch', 'attendance', 'exceptions.reviewer']);
+        }
+
         // Buat shift dinamis on-the-fly dengan start_at = jam checkin aktual
         $startAt = $now->copy();
         $endAt = $now->copy()->addHours(16);
