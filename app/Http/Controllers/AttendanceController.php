@@ -29,7 +29,7 @@ class AttendanceController extends Controller
         $data['qr_code'] = strtoupper(trim($data['qr_code'] ?? ''));
 
         $targetBranch = null;
-        if ($user->canRoamBranches() && ($data['action'] ?? 'in') === 'in') {
+        if ($user->canRoamBranches()) {
             $targetBranch = AttendanceService::resolveBranchForCheckin(
                 $user,
                 (string) ($data['qr_code'] ?? ''),
@@ -59,9 +59,20 @@ class AttendanceController extends Controller
             }
         }
 
-        $service->act($user, $shiftId, $data['action'], $data, (string) $request->cookie('hrd_device'));
+        $deviceToken = (string) (
+            $request->cookie('hrd_device')
+            ?: ($data['device_token'] ?? $request->input('device_token'))
+            ?: ''
+        );
 
-        return back()->with('ok', $data['action'] === 'in' ? 'Check-in tercatat.' : 'Check-out tercatat.');
+        $service->act($user, $shiftId, $data['action'], $data, $deviceToken);
+
+        $response = back()->with('ok', $data['action'] === 'in' ? 'Check-in tercatat.' : 'Check-out tercatat.');
+        if (! $request->cookie('hrd_device') && $deviceToken !== '') {
+            $response->cookie('hrd_device', $deviceToken, 60 * 24 * 365, '/', null, $request->isSecure(), true, false, 'Lax');
+        }
+
+        return $response;
     }
 
     public function qrPage(Request $request)

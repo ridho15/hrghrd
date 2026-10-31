@@ -698,17 +698,48 @@ function initSearchableSelects() {
 }
 
 // Inisialisasi Fitur saat DOM siap
+// Sinkronisasi Multi-Persistensi Perangkat (Cookie + LocalStorage)
+function initDeviceTokenPersistence() {
+  try {
+    const metaToken = document.querySelector('meta[name="device-token"]')?.content?.trim();
+    const localToken = localStorage.getItem('hrd_device')?.trim();
+
+    if (metaToken && (!localToken || localToken !== metaToken)) {
+      localStorage.setItem('hrd_device', metaToken);
+    }
+
+    const effectiveToken = localStorage.getItem('hrd_device') || metaToken;
+    if (effectiveToken) {
+      document.querySelectorAll('.device-token-input').forEach(input => {
+        if (!input.value) input.value = effectiveToken;
+      });
+    }
+
+    document.addEventListener('submit', (e) => {
+      const form = e.target;
+      if (!form) return;
+      const tokenInput = form.querySelector('.device-token-input') || form.elements?.device_token;
+      if (tokenInput && !tokenInput.value) {
+        const stored = localStorage.getItem('hrd_device');
+        if (stored) tokenInput.value = stored;
+      }
+    }, true);
+  } catch (e) {}
+}
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     initToastNotifications();
     initKeyboardShortcuts();
     initConfirmModal();
     initSearchableSelects();
+    initDeviceTokenPersistence();
   });
 } else {
   initToastNotifications();
   initKeyboardShortcuts();
   initConfirmModal();
   initSearchableSelects();
+  initDeviceTokenPersistence();
 }
 

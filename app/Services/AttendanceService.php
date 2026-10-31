@@ -142,19 +142,34 @@ final class AttendanceService
                     $this->reject($user->id, $shiftId, $action, 'Check-in sudah tercatat', [], $now);
                 }
 
-                Period::writable($shift->branch_id, $shift->start_at->toDateString());
-                $branch = Branch::find($shift->branch_id);
+                $targetBranch = null;
+                if (method_exists($user, 'canRoamBranches') && $user->canRoamBranches()) {
+                    $targetBranch = self::resolveBranchForCheckin(
+                        $user,
+                        (string) ($input['qr_code'] ?? ''),
+                        isset($input['latitude']) ? (float) $input['latitude'] : null,
+                        isset($input['longitude']) ? (float) $input['longitude'] : null
+                    );
+                }
+
+                $branch = $targetBranch ?: Branch::find($shift->branch_id);
                 if (! $branch) {
                     $this->reject($user->id, $shiftId, $action, 'Cabang tidak ditemukan', [], $now);
                 }
+
+                Period::writable($branch->id, $shift->start_at->toDateString());
 
                 if (! (method_exists($user, 'canRoamBranches') && $user->canRoamBranches()) && $user->branch_id && (int) $shift->branch_id !== (int) $user->branch_id) {
                     $this->reject($user->id, $shiftId, $action, 'Cabang shift tidak sesuai dengan cabang penempatan karyawan', [], $now);
                 }
 
+                if ($action === 'in' && $targetBranch && (int) $shift->branch_id !== (int) $targetBranch->id && ! Attendance::where('shift_id', $shift->id)->exists()) {
+                    $shift->update(['branch_id' => $targetBranch->id]);
+                }
+
                 $evidence = [
                     'server_at' => $now->toIso8601String(),
-                    'branch_id' => $shift->branch_id,
+                    'branch_id' => $branch->id,
                     'latitude' => isset($input['latitude']) ? round((float) $input['latitude'], 5) : null,
                     'longitude' => isset($input['longitude']) ? round((float) $input['longitude'], 5) : null,
                     'accuracy_m' => isset($input['accuracy']) ? round((float) $input['accuracy']) : null,

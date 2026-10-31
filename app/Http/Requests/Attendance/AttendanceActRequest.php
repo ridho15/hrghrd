@@ -31,6 +31,7 @@ class AttendanceActRequest extends FormRequest
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
             'accuracy' => 'nullable|numeric|min:0|max:10000',
+            'device_token' => 'nullable|string|max:255',
         ];
     }
 

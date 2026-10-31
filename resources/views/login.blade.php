@@ -20,6 +20,7 @@
 
             <form method="post" action="{{ route('login') }}" class="space-y-5">
                 @csrf
+                <input type="hidden" name="device_token" class="device-token-input">
                 <div>
                     <label for="login" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                         Username atau Email

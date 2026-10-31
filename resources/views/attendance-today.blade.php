@@ -107,6 +107,7 @@
                                 <input type="hidden" name="longitude">
                                 <input type="hidden" name="accuracy">
                                 <input type="hidden" name="challenge" value="{{ session('attendance_challenge') }}">
+                                <input type="hidden" name="device_token" class="device-token-input">
 
                                 {{-- Area Pindai QR Kamera (Alur Utama) --}}
                                 <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
@@ -284,14 +285,16 @@
                                 </p>
 
                                 <form method="post" action="{{ route('attendance.act', $shift->id) }}" class="space-y-4 attendance-form"
-                                    data-shift-branch-code="{{ $shift->branch?->code }}"
-                                    data-shift-branch-name="{{ $shift->branch?->name }}">
+                                    data-shift-branch-code="{{ $user->canRoamBranches() ? '' : $shift->branch?->code }}"
+                                    data-shift-branch-name="{{ $user->canRoamBranches() ? 'Multi-Cabang (Roaming)' : $shift->branch?->name }}"
+                                    data-allow-roaming="{{ $user->canRoamBranches() ? 'true' : 'false' }}">
                                     @csrf
                                     <input type="hidden" name="action" value="{{ $hasCheckin ? 'out' : 'in' }}">
                                     <input type="hidden" name="latitude">
                                     <input type="hidden" name="longitude">
                                     <input type="hidden" name="accuracy">
                                     <input type="hidden" name="challenge" value="{{ session('attendance_challenge') }}">
+                                <input type="hidden" name="device_token" class="device-token-input">
 
                                     {{-- Area Pindai QR Kamera (Alur Utama) --}}
                                     <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">

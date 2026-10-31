@@ -42,9 +42,15 @@ class AuthController extends Controller
         $requiresPasswordChange = $user && ($user->must_change_password || Hash::check('12345678', $user->password));
         $redirectUrl = $requiresPasswordChange ? route('password.force_change') : route('home');
 
-        if (!$request->cookie('hrd_device')) {
-            $token = Str::random(48);
-            return redirect($redirectUrl)->cookie('hrd_device', $token, 60 * 24 * 365, '/', null, $request->isSecure(), true, false, 'Lax');
+        $existingCookie = (string) $request->cookie('hrd_device');
+        $deviceToken = $existingCookie !== '' ? $existingCookie : trim((string) ($data['device_token'] ?? ''));
+
+        if ($deviceToken === '') {
+            $deviceToken = Str::random(48);
+        }
+
+        if ($existingCookie !== $deviceToken) {
+            return redirect($redirectUrl)->cookie('hrd_device', $deviceToken, 60 * 24 * 365, '/', null, $request->isSecure(), true, false, 'Lax');
         }
 
         return redirect($redirectUrl);

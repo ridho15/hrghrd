@@ -17,6 +17,7 @@ class LoginRequest extends FormRequest
             'login' => 'required_without:email|nullable|string',
             'email' => 'nullable|string',
             'password' => 'required|string',
+            'device_token' => 'nullable|string|max:255',
         ];
     }
 

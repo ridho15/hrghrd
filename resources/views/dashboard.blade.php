@@ -553,14 +553,16 @@
 
                             {{-- Formulir Presensi (Dikelola app.js) --}}
                             <form method="post" action="{{ route('attendance.act', $shift->id) }}" class="space-y-4 attendance-form"
-                                data-shift-branch-code="{{ $shift->branch?->code }}"
-                                data-shift-branch-name="{{ $shift->branch?->name ?: $shift->branch_name }}">
+                                data-shift-branch-code="{{ auth()->user()->canRoamBranches() ? '' : $shift->branch?->code }}"
+                                data-shift-branch-name="{{ auth()->user()->canRoamBranches() ? 'Multi-Cabang (Roaming)' : ($shift->branch?->name ?: $shift->branch_name) }}"
+                                data-allow-roaming="{{ auth()->user()->canRoamBranches() ? 'true' : 'false' }}">
                                 @csrf
                                 <input type="hidden" name="action" value="{{ $shift->checkin_at ? 'out' : 'in' }}">
                                 <input type="hidden" name="latitude">
                                 <input type="hidden" name="longitude">
                                 <input type="hidden" name="accuracy">
                                 <input type="hidden" name="challenge" value="{{ $challenge }}">
+                                <input type="hidden" name="device_token" class="device-token-input">
 
                                 {{-- Area Pindai QR Kamera (Alur Utama) --}}
                                 <div class="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
@@ -706,16 +708,93 @@
                     </div>
                 @empty
                     @if(auth()->user()->isFlexibleSchedule())
-                        <div class="text-center py-8 px-4 rounded-xl border border-teal-200 bg-teal-50/40">
-                            <div class="w-10 h-10 rounded-full bg-teal-100 text-teal-700 mx-auto flex items-center justify-center mb-2">
-                                <svg class="w-5 h-5 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        <div class="rounded-2xl border border-teal-200/80 bg-teal-50/30 p-5 sm:p-6 space-y-4">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-teal-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm shrink-0 border border-teal-200">
+                                        <svg class="w-5 h-5 text-teal-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h4 class="text-sm font-bold text-slate-900 m-0">Presensi Masuk (Jam Bebas)</h4>
+                                            @if(auth()->user()->canRoamBranches())
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🌐 Multi-Cabang</span>
+                                            @endif
+                                        </div>
+                                        <p class="text-xs text-slate-500 m-0 mt-0.5">
+                                            @if(auth()->user()->canRoamBranches())
+                                                Pindai QR Kiosk di cabang mana saja tempat Anda bertugas hari ini untuk memulai jam kerja.
+                                            @else
+                                                Pindai QR Kiosk di cabang <strong>{{ auth()->user()->branch?->name }}</strong> untuk memulai jam kerja.
+                                            @endif
+                                        </p>
+                                    </div>
+                                </div>
+                                <button type="button" data-open-attendance="flexible-0" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white transition-all shadow-xs shrink-0 cursor-pointer">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>Buka Presensi Masuk</span>
+                                </button>
                             </div>
-                            <h4 class="text-sm font-bold text-slate-900 m-0">Skema Jam Bebas (Flexible) Aktif</h4>
-                            <p class="text-xs text-slate-600 mt-1 max-w-sm mx-auto">Anda tidak memiliki jadwal shift statis. Buka halaman Presensi Hari Ini untuk melakukan check-in saat bertugas.</p>
-                            <a href="{{ route('attendance.today') }}" class="inline-flex items-center gap-1.5 mt-3 px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition-colors shadow-2xs">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span>Buka Presensi Hari Ini &rarr;</span>
-                            </a>
+
+                            <div id="attendance-flexible-0" class="pt-2" hidden>
+                                <form method="post" action="{{ route('attendance.act', 0) }}" class="space-y-4 attendance-form"
+                                    data-shift-branch-code="{{ auth()->user()->canRoamBranches() ? '' : auth()->user()->branch?->code }}"
+                                    data-shift-branch-name="{{ auth()->user()->canRoamBranches() ? 'Multi-Cabang (Roaming)' : auth()->user()->branch?->name }}"
+                                    data-allow-roaming="{{ auth()->user()->canRoamBranches() ? 'true' : 'false' }}">
+                                    @csrf
+                                    <input type="hidden" name="action" value="in">
+                                    <input type="hidden" name="latitude">
+                                    <input type="hidden" name="longitude">
+                                    <input type="hidden" name="accuracy">
+                                    <input type="hidden" name="challenge" value="{{ $challenge }}">
+                                    <input type="hidden" name="device_token" class="device-token-input">
+
+                                    <div class="p-4 bg-white border border-slate-200/80 rounded-2xl space-y-3">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span class="text-xs font-bold text-slate-800 uppercase tracking-wider block">Verifikasi QR Code Cabang</span>
+                                                <p class="text-[11px] text-slate-500 m-0">Arahkan kamera ke layar QR Kiosk cabang Anda.</p>
+                                            </div>
+                                            <button type="button" data-scan-qr class="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-300 shadow-2xs transition-colors cursor-pointer shrink-0">
+                                                <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                                <span>Buka Kamera Pemindai</span>
+                                            </button>
+                                        </div>
+
+                                        <video class="qr-scanner w-full max-h-56 rounded-xl border border-slate-300 bg-black object-cover" playsinline hidden></video>
+
+                                        <div class="qr-detected-badge hidden p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2 text-xs">
+                                            <span class="text-emerald-800 font-bold flex items-center gap-1.5">
+                                                <svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                                <span>QR Cabang Terverifikasi:</span>
+                                                <code class="qr-detected-code font-mono font-black text-emerald-900 bg-white px-2 py-0.5 rounded-md border border-emerald-300"></code>
+                                            </span>
+                                            <span class="text-[10px] text-emerald-700 font-bold uppercase tracking-wider bg-emerald-100/80 px-2 py-0.5 rounded-full shrink-0">Siap Kirim</span>
+                                        </div>
+
+                                        <div class="qr-mismatch-badge hidden p-3 bg-rose-50 border border-rose-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-rose-900">
+                                            <span class="font-bold flex items-center gap-1.5">
+                                                <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                                <span class="qr-mismatch-message">QR yang dipindai tidak sesuai.</span>
+                                            </span>
+                                        </div>
+
+                                        <details class="text-xs text-slate-500 pt-1 border-t border-slate-200/60">
+                                            <summary class="cursor-pointer hover:text-slate-700 font-medium py-1">Kamera bermasalah? Masukkan kode QR manual</summary>
+                                            <div class="mt-2 flex gap-2">
+                                                <input type="text" name="qr_code" placeholder="Contoh: 84920173" class="w-full sm:w-64 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono font-bold tracking-wider text-slate-900 uppercase">
+                                            </div>
+                                        </details>
+                                    </div>
+
+                                    <div class="flex items-center justify-between gap-3 pt-2">
+                                        <button type="submit" disabled class="px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-all shadow-xs cursor-pointer">
+                                            Catat Check-in Sekarang
+                                        </button>
+                                        <small class="form-status text-xs font-semibold text-emerald-700" aria-live="polite"></small>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     @else
                         <div class="text-center py-10 px-4 rounded-xl border border-dashed border-slate-200">

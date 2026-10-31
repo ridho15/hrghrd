@@ -317,4 +317,17 @@
         </div>
     </form>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const scheduleSelect = document.querySelector('select[name="schedule_type"]');
+    const roamCheckbox = document.querySelector('input[name="allow_all_branches"]');
+    if (scheduleSelect && roamCheckbox) {
+        scheduleSelect.addEventListener('change', () => {
+            if (scheduleSelect.value === 'flexible') {
+                roamCheckbox.checked = true;
+            }
+        });
+    }
+});
+</script>
 @endsection
