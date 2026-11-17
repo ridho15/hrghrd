@@ -8,7 +8,13 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KioskController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\Auth\HrGroupAuthController;
 use Illuminate\Support\Facades\Route;
+
+// SSO Keycloak HR Group
+Route::get('/auth/hr-group/redirect', [HrGroupAuthController::class, 'redirect'])->name('auth.hrgroup.redirect');
+Route::get('/auth/hr-group/callback', [HrGroupAuthController::class, 'callback'])->name('auth.hrgroup.callback');
+Route::get('/auth/hr-group/logout', [HrGroupAuthController::class, 'logout'])->name('auth.hrgroup.logout');
 
 Route::get('/login',[AuthController::class,'loginForm'])->name('login');
 Route::post('/login',[AuthController::class,'login'])->middleware('throttle:5,1');

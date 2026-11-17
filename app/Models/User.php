@@ -99,6 +99,11 @@ class User extends Authenticatable
         return $this->hasMany(IdentitySubmission::class)->orderByDesc('id');
     }
 
+    public function hrGroupLink()
+    {
+        return $this->hasOne(HrGroupLink::class);
+    }
+
     public function livenessChecks(): HasMany
     {
         return $this->hasMany(LivenessCheck::class)->orderByDesc('id');

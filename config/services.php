@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'hrgroup' => [
+        'enabled' => env('HRG_ENABLED', true),
+        'issuer' => env('HRG_ISSUER', 'http://localhost:8080/realms/hrgroup'),
+        'client_id' => env('HRG_CLIENT_ID', 'hrg-hrd'),
+        'client_secret' => env('HRG_CLIENT_SECRET', 'hrd_secret_local_2026'),
+        'redirect_uri' => env('HRG_REDIRECT_URI', 'http://localhost:8000/auth/hr-group/callback'),
+    ],
+
 ];

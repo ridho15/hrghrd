@@ -14,9 +14,28 @@
             <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mb-2">
                 Selamat Datang Kembali
             </h1>
-            <p class="text-sm text-slate-500 mb-8 leading-relaxed">
+            <p class="text-sm text-slate-500 mb-6 leading-relaxed">
                 Masuk ke portal HR Group Enterprise untuk mengakses administrasi sistem, manajemen shift kerja, presensi lokasi, dan operasional SDM.
             </p>
+
+            {{-- Tombol SSO Keycloak HR Group --}}
+            <div class="mb-6">
+                <a 
+                    href="{{ route('auth.hrgroup.redirect') }}" 
+                    class="w-full py-3.5 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm tracking-wide shadow-xs transition-all flex items-center justify-center gap-3 border border-slate-700/80 group active:scale-98"
+                >
+                    <svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    <span>Masuk dengan Akun HR Group (SSO)</span>
+                </a>
+            </div>
+
+            <div class="relative flex items-center justify-center mb-6">
+                <div class="border-t border-slate-200 w-full"></div>
+                <span class="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">atau masuk dengan kredensial lokal</span>
+                <div class="border-t border-slate-200 w-full"></div>
+            </div>
 
             <form method="post" action="{{ route('login') }}" class="space-y-5">
                 @csrf
