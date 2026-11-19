@@ -17,7 +17,7 @@ class PayrollController extends Controller
 {
     private function admin(): void
     {
-        abort_unless(Access::admin(), 403);
+        abort_unless(Access::canManagePayroll(), 403);
     }
 
     public function index(Request $request, PayrollCalculator $calculator, PayrollService $service)

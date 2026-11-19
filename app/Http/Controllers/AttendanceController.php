@@ -126,20 +126,21 @@ class AttendanceController extends Controller
 
     public function review(Request $request)
     {
-        abort_unless(Access::manager(), 403);
+        abort_unless(Access::canReviewAttendance(), 403);
+        $canSeeAllBranches = Access::admin() || (auth()->user()?->hasCapability('attendance:review') ?? false);
         $branch = auth()->user()->branch_id;
-        $branches = Access::admin() ? Branch::orderBy('name')->get() : Branch::where('id', $branch)->get();
+        $branches = $canSeeAllBranches ? Branch::orderBy('name')->get() : Branch::where('id', $branch)->get();
 
         $view = in_array($request->query('view'), ['calendar', 'table'], true)
             ? $request->query('view')
             : 'calendar';
 
-        $pendingExceptionsQuery = AttendanceException::whereHas('shift', fn ($q) => Access::admin() ? $q : $q->where('branch_id', $branch))->pending();
+        $pendingExceptionsQuery = AttendanceException::whereHas('shift', fn ($q) => $canSeeAllBranches ? $q : $q->where('branch_id', $branch))->pending();
         $pendingExceptionsTotal = $pendingExceptionsQuery->count();
 
         // 1. Data untuk Tab Tabel Log Presensi & Pengecualian
         $exceptions = AttendanceException::with(['user', 'shift'])
-            ->whereHas('shift', fn ($q) => Access::admin() ? $q : $q->where('branch_id', $branch))
+            ->whereHas('shift', fn ($q) => $canSeeAllBranches ? $q : $q->where('branch_id', $branch))
             ->pending()
             ->orderBy('created_at')
             ->paginate(10, ['*'], 'exceptions_page')

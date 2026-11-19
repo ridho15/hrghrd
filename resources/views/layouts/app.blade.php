@@ -64,6 +64,25 @@
             </div>
         @endif
 
+        {{-- Flash Notifikasi Error Sesi / SSO --}}
+        @if(session('error'))
+            <div id="flash-error" role="alert" class="toast-item pointer-events-auto relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-rose-200/90 p-4 text-rose-950 shadow-xl shadow-slate-950/5 flex items-start justify-between gap-3 transform transition-all duration-300 translate-x-0 opacity-100" data-toast-type="error" data-duration="7000">
+                <div class="flex items-start gap-3">
+                    <span class="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    </span>
+                    <div class="space-y-0.5">
+                        <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider m-0">Kendala Autentikasi</h4>
+                        <p class="text-xs font-medium text-slate-700 m-0 leading-relaxed">{{ session('error') }}</p>
+                    </div>
+                </div>
+                <button type="button" data-toast-close class="p-1 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer shrink-0" aria-label="Tutup notifikasi">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <div class="toast-progress absolute bottom-0 left-0 h-1 bg-rose-600 w-full transition-all duration-100"></div>
+            </div>
+        @endif
+
         {{-- Flash Notifikasi Error / Validasi Form --}}
         @if($errors->any())
             <div id="flash-errors" role="alert" class="toast-item pointer-events-auto relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-md border border-rose-200/90 p-4 text-rose-950 shadow-xl shadow-slate-950/5 flex items-start justify-between gap-3 transform transition-all duration-300 translate-x-0 opacity-100" data-toast-type="error" data-duration="7000">
@@ -171,32 +190,36 @@
                     </div>
                 </div>
 
-                {{-- Grup 2: Manajemen Operasi (Admin & Manager) --}}
-                @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                {{-- Grup 2: Manajemen Operasi (Admin, Manager, atau Capability Review Absensi) --}}
+                @if(in_array(auth()->user()->role, ['admin', 'manager']) || auth()->user()->hasCapability('attendance:review'))
                     <div>
                         <div class="px-3 mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">Manajemen Operasi</div>
                         <div class="space-y-1">
-                            <a href="{{ route('shifts') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('shifts*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span>Jadwal Shift</span>
-                            </a>
-                            <a href="{{ route('shifts.exchanges') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('shifts.exchanges*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
-                                <span>Mutasi & Tukar Shift</span>
-                            </a>
+                            @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                                <a href="{{ route('shifts') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('shifts*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>Jadwal Shift</span>
+                                </a>
+                                <a href="{{ route('shifts.exchanges') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('shifts.exchanges*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                                    <span>Mutasi & Tukar Shift</span>
+                                </a>
+                            @endif
                             <a href="{{ route('attendance.review', ['view' => 'calendar']) }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('attendance.review*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
                                 <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                                 <span>Tinjau Absensi</span>
                             </a>
-                            <a href="{{ route('qr.page') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('qr.*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                                <span>QR Presensi (Kiosk)</span>
-                            </a>
+                            @if(in_array(auth()->user()->role, ['admin', 'manager']))
+                                <a href="{{ route('qr.page') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('qr.*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                                    <span>QR Presensi (Kiosk)</span>
+                                </a>
+                            @endif
                         </div>
                     </div>
                 @endif
 
-                {{-- Grup 3: Administrasi & Finansial (Super Admin & HR) --}}
+                {{-- Grup 3: Talenta & Struktur (Super Admin & HR) --}}
                 @if(in_array(auth()->user()->role, ['admin', 'hr']))
                     <div>
                         <div class="px-3 mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">Talenta & Struktur</div>
@@ -219,39 +242,52 @@
                             </a>
                         </div>
                     </div>
+                @endif
 
+                {{-- Grup 4: Administrasi & Finansial (Super Admin, HR, atau Granular Capabilities) --}}
+                @if(in_array(auth()->user()->role, ['admin', 'hr']) || auth()->user()->hasCapability('employee:manage', 'payroll:manage'))
                     <div>
                         <div class="px-3 mb-2 text-[10px] font-bold tracking-wider text-slate-400 uppercase">Administrasi & Finansial</div>
                         <div class="space-y-1">
-                            <a href="{{ route('people') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('people*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                                <span>Karyawan</span>
-                            </a>
-                            <a href="{{ route('branches.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('branches*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                                <span>Cabang</span>
-                            </a>
-                            <a href="{{ route('positions.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('positions*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                                <span>Jabatan</span>
-                            </a>
+                            @if(in_array(auth()->user()->role, ['admin', 'hr']) || auth()->user()->hasCapability('employee:manage'))
+                                <a href="{{ route('people') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('people*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                                    <span>Karyawan</span>
+                                </a>
+                            @endif
 
-                            <a href="{{ route('import') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('import*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                                <span>Impor Data</span>
-                            </a>
-                            <a href="{{ route('payroll.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('payroll*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span>Payroll</span>
-                            </a>
-                            <a href="{{ route('settings') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('settings*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                <span>Aturan & Kebijakan</span>
-                            </a>
-                            <a href="{{ route('audit') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('audit') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
-                                <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                <span>Jejak Audit</span>
-                            </a>
+                            @if(in_array(auth()->user()->role, ['admin', 'hr']))
+                                <a href="{{ route('branches.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('branches*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                    <span>Cabang</span>
+                                </a>
+                                <a href="{{ route('positions.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('positions*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                    <span>Jabatan</span>
+                                </a>
+                                <a href="{{ route('import') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('import*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                    <span>Impor Data</span>
+                                </a>
+                            @endif
+
+                            @if(in_array(auth()->user()->role, ['admin', 'hr']) || auth()->user()->hasCapability('payroll:manage'))
+                                <a href="{{ route('payroll.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('payroll*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    <span>Payroll</span>
+                                </a>
+                            @endif
+
+                            @if(in_array(auth()->user()->role, ['admin', 'hr']))
+                                <a href="{{ route('settings') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('settings*') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                    <span>Aturan & Kebijakan</span>
+                                </a>
+                                <a href="{{ route('audit') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors {{ request()->routeIs('audit') ? 'bg-emerald-50 text-emerald-800 border-l-2 border-emerald-600 font-bold' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 font-medium' }}">
+                                    <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    <span>Jejak Audit</span>
+                                </a>
+                            @endif
                         </div>
                     </div>
                 @endif

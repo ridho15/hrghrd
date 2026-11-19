@@ -10,7 +10,7 @@ class PersonUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return Access::admin();
+        return Access::canManageEmployees();
     }
 
     protected function prepareForValidation(): void

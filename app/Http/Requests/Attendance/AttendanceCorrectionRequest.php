@@ -9,7 +9,7 @@ class AttendanceCorrectionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return Access::manager();
+        return Access::canReviewAttendance();
     }
 
     public function rules(): array

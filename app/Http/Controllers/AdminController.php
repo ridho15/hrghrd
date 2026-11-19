@@ -45,9 +45,14 @@ class AdminController extends Controller
         abort_unless(Access::admin(), 403);
     }
 
+    private function canManageEmployees(): void
+    {
+        abort_unless(Access::canManageEmployees(), 403);
+    }
+
     public function people(Request $request)
     {
-        $this->admin();
+        $this->canManageEmployees();
         $branches = Branch::orderBy('name')->get();
         $positions = Position::orderBy('name')->get();
 
@@ -240,7 +245,7 @@ class AdminController extends Controller
 
     public function personCreate()
     {
-        $this->admin();
+        $this->canManageEmployees();
         $branches = Branch::orderBy('name')->get();
         $positions = Position::orderBy('name')->get();
 
@@ -274,7 +279,7 @@ class AdminController extends Controller
 
     public function personEdit(int $id)
     {
-        $this->admin();
+        $this->canManageEmployees();
         $person = User::findOrFail($id);
         $branches = Branch::orderBy('name')->get();
         $positions = Position::orderBy('name')->get();
@@ -329,7 +334,7 @@ class AdminController extends Controller
 
     public function personToggleStatus(int $id)
     {
-        $this->admin();
+        $this->canManageEmployees();
         $person = User::findOrFail($id);
         if ($person->id === auth()->id()) {
             return back()->withErrors(['person' => 'Anda tidak dapat mengubah status akun Anda sendiri.']);
@@ -348,7 +353,7 @@ class AdminController extends Controller
 
     public function personResetPassword(int $id)
     {
-        $this->admin();
+        $this->canManageEmployees();
         $person = User::findOrFail($id);
         if ($person->id === auth()->id()) {
             return back()->withErrors(['person' => 'Untuk alasan keamanan, Anda tidak dapat mereset password akun Anda sendiri melalui fitur ini. Silakan gunakan menu ubah kata sandi profil.']);
@@ -366,7 +371,7 @@ class AdminController extends Controller
 
     public function peopleBulkResetPassword(Request $request)
     {
-        $this->admin();
+        $this->canManageEmployees();
         $validated = $request->validate([
             'user_ids' => 'required|array|min:1',
             'user_ids.*' => 'integer|exists:users,id',
@@ -432,7 +437,7 @@ class AdminController extends Controller
 
     public function personGenerateUsername(int $id)
     {
-        $this->admin();
+        $this->canManageEmployees();
         $person = User::with('branch')->findOrFail($id);
         $oldUsername = $person->username;
         $newUsername = $this->buildUniqueUsername($person);
@@ -448,7 +453,7 @@ class AdminController extends Controller
 
     public function peopleBulkGenerateUsername(Request $request)
     {
-        $this->admin();
+        $this->canManageEmployees();
         $validated = $request->validate([
             'user_ids' => 'required|array|min:1',
             'user_ids.*' => 'integer|exists:users,id',
@@ -481,7 +486,7 @@ class AdminController extends Controller
 
     public function personDestroy(int $id)
     {
-        $this->admin();
+        $this->canManageEmployees();
         $person = User::withCount(['attendances', 'payrollLines', 'shifts'])->findOrFail($id);
         if ($person->id === auth()->id()) {
             return back()->withErrors(['person' => 'Anda tidak dapat menghapus akun Anda sendiri.']);

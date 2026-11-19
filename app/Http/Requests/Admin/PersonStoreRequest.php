@@ -9,7 +9,7 @@ class PersonStoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return Access::admin();
+        return Access::canManageEmployees();
     }
 
     public function rules(): array

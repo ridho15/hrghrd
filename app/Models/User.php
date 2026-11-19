@@ -19,6 +19,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'capabilities',
         'employment_status',
         'entity_name',
         'manager_id',
@@ -61,6 +62,7 @@ class User extends Authenticatable
             'active' => 'boolean',
             'allow_all_branches' => 'boolean',
             'must_change_password' => 'boolean',
+            'capabilities' => 'array',
         ];
     }
 
@@ -202,6 +204,26 @@ class User extends Authenticatable
     public function isEmployee(): bool
     {
         return $this->role === 'employee';
+    }
+
+    public function hasCapability(string ...$capabilities): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        $current = $this->capabilities ?? [];
+        if (!is_array($current)) {
+            return false;
+        }
+
+        foreach ($capabilities as $cap) {
+            if (in_array($cap, $current, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function isCandidate(): bool

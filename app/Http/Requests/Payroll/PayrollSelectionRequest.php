@@ -9,7 +9,7 @@ class PayrollSelectionRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return Access::admin();
+        return Access::canManagePayroll();
     }
 
     public function rules(): array

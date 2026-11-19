@@ -74,4 +74,25 @@ final class Access
     {
         return self::admin() || self::hr();
     }
+
+    public static function canManageEmployees(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+        return self::admin() || self::hr() || $user->hasCapability('employee:manage');
+    }
+
+    public static function canManagePayroll(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+        return self::admin() || self::hr() || $user->hasCapability('payroll:manage');
+    }
+
+    public static function canReviewAttendance(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+        return self::admin() || self::hr() || self::manager() || $user->hasCapability('attendance:review');
+    }
 }
