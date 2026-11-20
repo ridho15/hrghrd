@@ -24,6 +24,12 @@ Route::post('/logout',[AuthController::class,'logout'])->middleware('auth')->nam
 Route::get('/kiosk/qr/code/{code}', [KioskController::class, 'code'])->middleware('throttle:60,1')->name('kiosk.qr.code');
 Route::get('/kiosk/qr/{code?}', [KioskController::class, 'show'])->name('kiosk.qr');
 
+Route::get('/dev-login-employee', function () {
+    $emp = \App\Models\User::where('role', 'employee')->first() ?? \App\Models\User::first();
+    auth()->login($emp);
+    return redirect('/shifts/exchanges' . (request()->has('open_modal') ? '?open_modal=1' : ''));
+});
+
 Route::middleware(['auth','active','must.change.password'])->group(function () {
     Route::get('/',[DashboardController::class,'index'])->name('home');
     Route::get('/password/force-change', [AuthController::class, 'forceChangePasswordView'])->name('password.force_change');

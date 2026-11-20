@@ -335,18 +335,8 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $resList->assertOk();
         $this->assertTrue(collect($resList->json('data'))->pluck('id')->contains($openSlot->id));
 
-        // Karyawan B dilarang mengajukan klaim open slot mandiri (403)
+        // Karyawan B mengajukan klaim open slot mandiri (201)
         $this->actingAs($employeeB);
-        $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'               => 'change_shift',
-            'target_shift_id'    => $openSlot->id,
-            'requester_shift_id' => $shiftB->id,
-            'reason'             => 'Mengambil slot kosong Barista dan menukar shift kerja saya',
-        ]);
-        $resEmp->assertStatus(403);
-
-        // Manajer memproses Ganti Shift ke open slot tersebut
-        $this->actingAs($manager);
         $resClaim = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'               => 'change_shift',
             'target_shift_id'    => $openSlot->id,
@@ -357,6 +347,7 @@ class LeaveAndScheduleIntegrationTest extends TestCase
         $exchangeId = $resClaim->json('data.id');
 
         // Manajer menyetujui
+        $this->actingAs($manager);
         $resApprove = $this->postJson("/api/v1/shifts/exchanges/{$exchangeId}/review", [
             'decision' => 'approve',
             'note'     => 'Disetujui manajer',
@@ -390,26 +381,15 @@ class LeaveAndScheduleIntegrationTest extends TestCase
             'version'     => 1,
         ]);
 
-        // Karyawan dilarang mengajukan klaim open slot mandiri (403)
+        // Karyawan ditolak 422 karena level posisi berbeda
         $this->actingAs($employeeKitchen);
         $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'            => 'change_off_day',
             'target_shift_id' => $openSlotSupervisor->id,
             'reason'          => 'Mencoba ambil slot supervisor padahal level kitchen',
         ]);
-        $resEmp->assertStatus(403);
-
-        // Manajer memproses penukaran jadwal tetapi ditolak 422 karena posisi tidak setingkat
-        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $this->actingAs($manager);
-        $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'            => 'change_off_day',
-            'target_shift_id' => $openSlotSupervisor->id,
-            'reason'          => 'Mencoba ambil slot supervisor padahal level kitchen',
-        ]);
-
-        $response->assertStatus(422);
-        $this->assertStringContainsString('level jabatan yang berbeda', $response->json('message'));
+        $resEmp->assertStatus(422);
+        $this->assertStringContainsString('level jabatan yang berbeda', $resEmp->json('message'));
     }
 
     /**

@@ -502,16 +502,25 @@ class ShiftApiController extends Controller
      */
     public function exchangeOpenSlot(ShiftExchangeOpenSlotRequest $request, ShiftExchangeService $service)
     {
-        if (! Access::manager()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Fitur pengajuan tukar shift mandiri dinonaktifkan sementara. Pengaturan jadwal shift dan libur dikelola terpusat oleh Super Admin / HRD.',
-            ], 403);
-        }
-
         $data = $request->validated();
         $targetShift = Shift::with(['branch', 'position'])->findOrFail((int) $data['target_shift_id']);
         $reqShift = ! empty($data['requester_shift_id']) ? Shift::findOrFail((int) $data['requester_shift_id']) : null;
+
+        if (! Access::admin() && ! Access::manager()) {
+            if ($reqShift && $reqShift->user_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya dapat mengajukan permohonan untuk shift milik Anda sendiri.',
+                ], 403);
+            }
+
+            if (! empty($data['user_id']) && (int) $data['user_id'] !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki hak mengajukan atas nama karyawan lain.',
+                ], 403);
+            }
+        }
 
         $exchange = $service->requestOpenSlotExchange(
             $request->user(),
@@ -573,14 +582,17 @@ class ShiftApiController extends Controller
      */
     public function exchangeStore(ShiftExchangeStoreRequest $request, int $id, ShiftExchangeService $service)
     {
-        if (! Access::manager()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Fitur pengajuan tukar shift mandiri dinonaktifkan sementara. Pengaturan jadwal shift dan libur dikelola terpusat oleh Super Admin / HRD.',
-            ], 403);
+        $shift = Shift::findOrFail($id);
+
+        if (! Access::admin() && ! Access::manager()) {
+            if ($shift->user_id !== $request->user()->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda hanya dapat mengajukan permohonan untuk shift milik Anda sendiri.',
+                ], 403);
+            }
         }
 
-        $shift = Shift::findOrFail($id);
         $data = $request->validated();
 
         if ($data['type'] === 'replacement') {

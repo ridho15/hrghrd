@@ -8,7 +8,7 @@ class ShiftExchangeOpenSlotRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && \App\Support\Access::manager();
+        return auth()->check();
     }
 
     public function rules(): array

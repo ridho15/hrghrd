@@ -118,19 +118,8 @@ class OpenSlotShiftExchangeTest extends TestCase
             'end_at'   => Carbon::now('Asia/Jakarta')->addDays(5)->setTime(21, 0)->toDateTimeString(),
         ]);
 
-        // Karyawan dilarang mengajukan (403)
+        // Karyawan mengajukan mandiri (201)
         $this->actingAs($employee);
-        $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'               => 'change_shift',
-            'target_shift_id'    => $openSlot->id,
-            'requester_shift_id' => $myShift->id,
-            'reason'             => 'Ingin pindah shift karena ada urusan keluarga di hari Selasa',
-        ]);
-        $resEmp->assertStatus(403);
-
-        // Manajer mengajukan ganti shift terpusat
-        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $this->actingAs($manager);
         $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'               => 'change_shift',
             'target_shift_id'    => $openSlot->id,
@@ -182,21 +171,9 @@ class OpenSlotShiftExchangeTest extends TestCase
 
         $offDate = Carbon::now('Asia/Jakarta')->addDays(1)->toDateString();
 
-        // Karyawan dilarang (403)
+        // Karyawan mengajukan mandiri (201)
         $this->actingAs($employee);
-        $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'            => 'change_off_day',
-            'target_shift_id' => $openSlot->id,
-            'off_date'        => $offDate,
-            'reason'          => 'Ganti libur hari Senin untuk masuk pada shift kosong hari Sabtu',
-        ]);
-        $resEmp->assertStatus(403);
-
-        // Manajer memproses terpusat
-        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $this->actingAs($manager);
         $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'user_id'         => $employee->id,
             'type'            => 'change_off_day',
             'target_shift_id' => $openSlot->id,
             'off_date'        => $offDate,
@@ -243,26 +220,15 @@ class OpenSlotShiftExchangeTest extends TestCase
             'end_at'   => Carbon::now('Asia/Jakarta')->addDays(4)->setTime(16, 0)->toDateTimeString(),
         ]);
 
-        // Karyawan dilarang mengajukan (403)
+        // Karyawan mengajukan ditolak 422 karena level posisi berbeda
         $this->actingAs($employee);
         $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'            => 'change_off_day',
             'target_shift_id' => $openSlotLeader->id,
             'reason'          => 'Mencoba mengambil slot leader',
         ]);
-        $resEmp->assertStatus(403);
-
-        // Manajer yang memproses ditolak 422 karena level posisi berbeda
-        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $this->actingAs($manager);
-        $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'            => 'change_off_day',
-            'target_shift_id' => $openSlotLeader->id,
-            'reason'          => 'Mencoba mengambil slot leader',
-        ]);
-
-        $response->assertStatus(422);
-        $this->assertStringContainsString('level jabatan yang berbeda', $response->json('message'));
+        $resEmp->assertStatus(422);
+        $this->assertStringContainsString('level jabatan yang berbeda', $resEmp->json('message'));
     }
 
     /**
@@ -285,24 +251,15 @@ class OpenSlotShiftExchangeTest extends TestCase
             'end_at'   => Carbon::now('Asia/Jakarta')->addDays(3)->setTime(16, 0)->toDateTimeString(),
         ]);
 
+        // Karyawan mengajukan klaim slot cabang lain ditolak 422
         $this->actingAs($employee);
         $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'            => 'change_off_day',
             'target_shift_id' => $openSlotB->id,
             'reason'          => 'Mencoba ambil slot cabang lain',
         ]);
-        $resEmp->assertStatus(403);
-
-        $managerA = $this->createUser(['role' => 'manager', 'branch_id' => $branchA->id]);
-        $this->actingAs($managerA);
-        $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'            => 'change_off_day',
-            'target_shift_id' => $openSlotB->id,
-            'reason'          => 'Mencoba ambil slot cabang lain',
-        ]);
-
-        $response->assertStatus(422);
-        $this->assertStringContainsString('cabang yang sama', $response->json('message'));
+        $resEmp->assertStatus(422);
+        $this->assertStringContainsString('cabang yang sama', $resEmp->json('message'));
     }
 
     /**
@@ -327,18 +284,8 @@ class OpenSlotShiftExchangeTest extends TestCase
             'target_shift_id' => $assignedShift->id,
             'reason'          => 'Mencoba serobot shift rekan via open slot endpoint',
         ]);
-        $resEmp->assertStatus(403);
-
-        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $this->actingAs($manager);
-        $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'            => 'change_off_day',
-            'target_shift_id' => $assignedShift->id,
-            'reason'          => 'Mencoba serobot shift rekan via open slot endpoint',
-        ]);
-
-        $response->assertStatus(422);
-        $this->assertStringContainsString('bukan merupakan jadwal kosong', $response->json('message'));
+        $resEmp->assertStatus(422);
+        $this->assertStringContainsString('bukan merupakan jadwal kosong', $resEmp->json('message'));
     }
 
     /**
@@ -369,19 +316,8 @@ class OpenSlotShiftExchangeTest extends TestCase
             'target_shift_id' => $openSlot->id,
             'reason'          => 'Mencoba ambil slot bertabrakan',
         ]);
-        $resEmp->assertStatus(403);
-
-        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $this->actingAs($manager);
-        $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'user_id'         => $employee->id,
-            'type'            => 'change_off_day',
-            'target_shift_id' => $openSlot->id,
-            'reason'          => 'Mencoba ambil slot bertabrakan',
-        ]);
-
-        $response->assertStatus(409);
-        $this->assertStringContainsString('bertabrakan', $response->json('message'));
+        $resEmp->assertStatus(409);
+        $this->assertStringContainsString('bertabrakan', $resEmp->json('message'));
     }
 
     /**
@@ -410,26 +346,15 @@ class OpenSlotShiftExchangeTest extends TestCase
             'status'          => 'pending_manager',
         ]);
 
-        // Karyawan 2 mencoba mengajukan ke slot yang sama
+        // Karyawan 2 mencoba mengajukan ke slot yang sama ditolak 409
         $this->actingAs($employee2);
         $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'            => 'change_off_day',
             'target_shift_id' => $openSlot->id,
             'reason'          => 'Karyawan 2 berebut slot',
         ]);
-        $resEmp->assertStatus(403);
-
-        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $this->actingAs($manager);
-        $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'user_id'         => $employee2->id,
-            'type'            => 'change_off_day',
-            'target_shift_id' => $openSlot->id,
-            'reason'          => 'Karyawan 2 berebut slot',
-        ]);
-
-        $response->assertStatus(409);
-        $this->assertStringContainsString('sudah memiliki permohonan', $response->json('message'));
+        $resEmp->assertStatus(409);
+        $this->assertStringContainsString('sudah memiliki permohonan', $resEmp->json('message'));
     }
 
     /**
@@ -449,17 +374,7 @@ class OpenSlotShiftExchangeTest extends TestCase
             'target_shift_id' => $openSlot->id,
             'reason'          => 'Ganti shift tanpa shift asal',
         ]);
-        $resEmp->assertStatus(403);
-
-        $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
-        $this->actingAs($manager);
-        $response = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'            => 'change_shift',
-            'target_shift_id' => $openSlot->id,
-            'reason'          => 'Ganti shift tanpa shift asal',
-        ]);
-
-        $response->assertStatus(422);
+        $resEmp->assertStatus(422);
     }
 
     /**
@@ -484,18 +399,8 @@ class OpenSlotShiftExchangeTest extends TestCase
             'end_at'   => Carbon::now('Asia/Jakarta')->addDays(5)->setTime(21, 0)->toDateTimeString(),
         ]);
 
-        // Karyawan dilarang mengajukan (403)
+        // Karyawan mengajukan mandiri
         $this->actingAs($employee);
-        $resEmp = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
-            'type'               => 'change_shift',
-            'target_shift_id'    => $openSlot->id,
-            'requester_shift_id' => $myOldShift->id,
-            'reason'             => 'Tukar hari kerja dengan slot kosong',
-        ]);
-        $resEmp->assertStatus(403);
-
-        // Manajer mengajukan terpusat
-        $this->actingAs($manager);
         $resStore = $this->postJson('/api/v1/shifts/exchanges/open-slot', [
             'type'               => 'change_shift',
             'target_shift_id'    => $openSlot->id,
@@ -506,6 +411,7 @@ class OpenSlotShiftExchangeTest extends TestCase
         $exchangeId = $resStore->json('data.id');
 
         // Manajer mereview dan menyetujui
+        $this->actingAs($manager);
         $resReview = $this->postJson("/api/v1/shifts/exchanges/{$exchangeId}/review", [
             'decision' => 'approve',
             'note'     => 'Disetujui manajer cabang',

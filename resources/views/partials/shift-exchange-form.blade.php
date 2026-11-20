@@ -11,7 +11,7 @@
 <div
     id="{{ $modalId }}"
     data-modal-container
-    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-all duration-200"
+    class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs {{ request('open_modal') ? '' : 'hidden' }} transition-all duration-200"
 >
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-200 text-left space-y-4 max-h-[92vh] overflow-y-auto exchange-modal-box">
         {{-- Header Modal --}}
