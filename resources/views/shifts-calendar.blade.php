@@ -1424,6 +1424,30 @@
         });
     }
 
+    function formatWibTime(isoStr) {
+        if (!isoStr) return '-';
+        try {
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return (isoStr || '').substring(11, 16) || '-';
+            return d.toLocaleTimeString('en-GB', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false });
+        } catch (_) {
+            return (isoStr || '').substring(11, 16) || '-';
+        }
+    }
+
+    function getWibHour(isoStr) {
+        if (!isoStr) return 0;
+        try {
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return parseInt((isoStr || '').substring(11, 13) || '0', 10);
+            const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jakarta', hour: 'numeric', hourCycle: 'h23' }).formatToParts(d);
+            const hourPart = parts.find(p => p.type === 'hour');
+            return hourPart ? parseInt(hourPart.value, 10) : d.getHours();
+        } catch (_) {
+            return parseInt((isoStr || '').substring(11, 13) || '0', 10);
+        }
+    }
+
     // Fungsi Saat Mengetuk Tanggal di Kalender Mini Mobile
     window.selectMobileDate = function(dateStr) {
         // Update styling tombol tanggal aktif
@@ -1470,13 +1494,16 @@
         // Render setiap kartu shift
         let html = '';
         shifts.forEach(s => {
-            const startHour = parseInt((s.start_at || '').substring(11, 13) || '0');
-            const isS1 = startHour < 12;
+            const sm = (window.shiftsMap || {})[s.id];
+            const startHour = sm ? parseInt((sm.startTime || '00').substring(0, 2), 10) : getWibHour(s.start_at);
+            const isS1 = sm ? sm.isShift1 : (startHour < 12);
             const shiftBadge = isS1 ? 'S1' : 'S2';
-            const shiftTypeLabel = isS1 ? 'Shift 1 (Pagi)' : 'Shift 2 (Siang)';
-            const startTime = (s.start_at || '').substring(11, 16);
-            const endTime = (s.end_at || '').substring(11, 16);
+            const shiftTypeLabel = sm ? sm.shiftTypeLabel : (isS1 ? 'Shift 1 (Pagi)' : 'Shift 2 (Siang)');
+            const startTime = sm ? sm.startTime : formatWibTime(s.start_at);
+            const endTime = sm ? sm.endTime : formatWibTime(s.end_at);
             const att = s.attendance;
+            const checkinTime = sm && sm.checkinAt ? sm.checkinAt.substring(0, 5) : formatWibTime(att ? att.checkin_at : null);
+            const checkoutTime = sm && sm.checkoutAt ? sm.checkoutAt.substring(0, 5) : formatWibTime(att ? att.checkout_at : null);
             const userName = s.user ? s.user.name : 'Karyawan';
             const branchName = s.branch ? s.branch.name : '-';
             const posName = (s.user && s.user.position) ? s.user.position.name : 'Staf';
@@ -1523,11 +1550,11 @@
                         <div class="p-2.5 rounded-lg bg-white border border-slate-100 text-xs space-y-1">
                             <div class="flex justify-between text-[11px]">
                                 <span class="text-slate-500">Scan Check-in:</span>
-                                <span class="font-mono font-bold text-slate-800">${(att.checkin_at || '').substring(11, 16) || '-'}</span>
+                                <span class="font-mono font-bold text-slate-800">${checkinTime}</span>
                             </div>
                             <div class="flex justify-between text-[11px]">
                                 <span class="text-slate-500">Scan Check-out:</span>
-                                <span class="font-mono font-bold text-slate-800">${(att.checkout_at || '').substring(11, 16) || '-'}</span>
+                                <span class="font-mono font-bold text-slate-800">${checkoutTime}</span>
                             </div>
                         </div>
                     ` : ''}

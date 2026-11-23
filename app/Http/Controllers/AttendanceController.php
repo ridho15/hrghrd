@@ -310,12 +310,28 @@ class AttendanceController extends Controller
             $selectedDate = $startOfMonth->toDateString();
         }
 
+        $shiftsMap = $shifts->mapWithKeys(function ($s) {
+            $att = $s->attendance;
+            $startHour = (int) $s->start_at->format('H');
+            $isShift1 = $startHour < 12;
+
+            return [$s->id => [
+                'id'                 => $s->id,
+                'isShift1'           => $isShift1,
+                'shiftTypeLabel'     => $isShift1 ? 'Shift 1 (Pagi)' : 'Shift 2 (Siang)',
+                'startTime'          => $s->start_at->format('H:i'),
+                'endTime'            => $s->end_at->format('H:i'),
+                'checkinAt'          => $att?->checkin_at ? Carbon::parse($att->checkin_at, 'Asia/Jakarta')->format('H:i:s') : null,
+                'checkoutAt'         => $att?->checkout_at ? Carbon::parse($att->checkout_at, 'Asia/Jakarta')->format('H:i:s') : null,
+            ]];
+        });
+
         return view('attendance-review', compact(
             'exceptions', 'attempts', 'attendances', 'branches',
             'view', 'pendingExceptionsTotal',
             'currentMonth', 'monthStr', 'prevMonth', 'nextMonth',
             'gridStart', 'gridEnd', 'selectedBranchId', 'people',
-            'shifts', 'groupedShifts', 'attendanceStatus',
+            'shifts', 'groupedShifts', 'shiftsMap', 'attendanceStatus',
             'attendanceSummaryByDate', 'monthSummary', 'selectedDate'
         ));
     }

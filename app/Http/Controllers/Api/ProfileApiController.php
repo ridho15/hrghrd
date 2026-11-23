@@ -72,16 +72,43 @@ class ProfileApiController extends Controller
             app(\App\Services\ShiftService::class)->ensureOfficeShiftToday($user, $now);
         }
 
+        // 1. Prioritaskan shift yang saat ini sedang aktif berdinas (sedang check-in, belum check-out)
         $shift = Shift::with(['branch', 'attendance', 'exceptions'])
             ->where('user_id', $user->id)
-            ->whereDate('start_at', $todayDate)
+            ->whereHas('attendance', fn ($a) => $a->whereNotNull('checkin_at')->whereNull('checkout_at'))
+            ->latest('id')
             ->first();
 
+        // 2. Jika tidak sedang berdinas, cari shift hari ini yang belum tuntas presensinya,
+        // prioritaskan shift terdekat dengan jam sekarang (mendukung multi-shift / shift siang)
+        if (! $shift) {
+            $uncompletedShifts = Shift::with(['branch', 'attendance', 'exceptions'])
+                ->where('user_id', $user->id)
+                ->whereDate('start_at', $todayDate)
+                ->where(function ($q) {
+                    $q->doesntHave('attendance')
+                        ->orWhereHas('attendance', fn ($a) => $a->whereNull('checkout_at'));
+                })
+                ->get();
+
+            $shift = $uncompletedShifts->sortBy(fn ($s) => abs($s->start_at->diffInMinutes($now, false)))->first();
+        }
+
+        // 3. Jika tidak ada shift hari ini yang belum tuntas, periksa shift lintas hari yang sedang berlangsung
         if (! $shift) {
             $shift = Shift::with(['branch', 'attendance', 'exceptions'])
                 ->where('user_id', $user->id)
                 ->where('start_at', '<=', $now)
                 ->where('end_at', '>=', $now)
+                ->first();
+        }
+
+        // 4. Fallback ke shift hari ini yang sudah selesai (ambil jadwal terbaru)
+        if (! $shift) {
+            $shift = Shift::with(['branch', 'attendance', 'exceptions'])
+                ->where('user_id', $user->id)
+                ->whereDate('start_at', $todayDate)
+                ->latest('start_at')
                 ->first();
         }
 
