@@ -336,7 +336,7 @@ class ProfileApiController extends Controller
                     'branch' => $c->branch?->name ?? $user->branch?->name,
                     'unit' => $c->unit ?? 'Operasional',
                     'email' => $c->email,
-                    'is_same_manager' => $c->manager_id === $user->manager_id,
+                    'is_same_manager' => $user->manager_id !== null && $c->manager_id === $user->manager_id,
                 ]),
             ],
         ]);

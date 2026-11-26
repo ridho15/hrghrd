@@ -11,6 +11,7 @@ use App\Models\Shift;
 use App\Services\AttendanceService;
 use App\Support\Access;
 use App\Support\Period;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 /**
@@ -215,6 +216,10 @@ class AttendanceApiController extends Controller
      */
     public function history(Request $request)
     {
+        $request->validate([
+            'month' => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+        ]);
+
         $user = $request->user();
         $perPage = min((int) ($request->query('per_page', 15)), 50);
 
@@ -223,9 +228,12 @@ class AttendanceApiController extends Controller
             ->when(Access::manager() && ! Access::admin(), fn ($q) => $q->whereHas(
                 'user', fn ($u) => $u->where('branch_id', $user->branch_id)
             ))
-            ->when($request->query('month'), fn ($q, $month) => $q->whereHas(
-                'shift', fn ($s) => $s->whereRaw("DATE_FORMAT(start_at, '%Y-%m') = ?", [$month])
-            ))
+            ->when($request->query('month'), function ($q, $month) {
+                $base = Carbon::createFromFormat('Y-m-d', $month . '-01');
+                $start = $base->copy()->startOfMonth()->toDateTimeString();
+                $end = $base->copy()->endOfMonth()->toDateTimeString();
+                $q->whereHas('shift', fn ($s) => $s->whereBetween('start_at', [$start, $end]));
+            })
             ->when($request->query('user_id') && Access::manager(), fn ($q) => $q->where('user_id', $request->query('user_id')))
             ->latest('id');
 

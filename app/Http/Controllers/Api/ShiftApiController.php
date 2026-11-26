@@ -39,6 +39,10 @@ class ShiftApiController extends Controller
      */
     public function index(Request $request)
     {
+        $request->validate([
+            'month' => ['nullable', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+        ]);
+
         $user = $request->user();
 
         $query = Shift::with(['user', 'branch', 'attendance'])
@@ -48,7 +52,13 @@ class ShiftApiController extends Controller
             ->when($request->query('user_id') && Access::manager(), fn ($q) => $q->where('user_id', $request->query('user_id')))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($request->query('date'), fn ($q, $d) => $q->whereDate('start_at', $d))
-            ->when($request->query('month'), fn ($q, $m) => $q->whereRaw("DATE_FORMAT(start_at, '%Y-%m') = ?", [$m]))
+            ->when($request->query('month'), function ($q, $m) {
+                $base = Carbon::createFromFormat('Y-m-d', $m . '-01');
+                $q->whereBetween('start_at', [
+                    $base->copy()->startOfMonth()->toDateTimeString(),
+                    $base->copy()->endOfMonth()->toDateTimeString(),
+                ]);
+            })
             ->latest('start_at');
 
         $perPage = min((int) ($request->query('per_page', 15)), 50);
