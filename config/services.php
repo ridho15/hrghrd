@@ -37,6 +37,7 @@ return [
 
     'hrgroup' => [
         'enabled' => env('HRG_ENABLED', true),
+        'show_sso_button' => env('HRG_SHOW_SSO_BUTTON', false),
         'issuer' => env('HRG_ISSUER', 'http://localhost:8080/realms/hrgroup'),
         'client_id' => env('HRG_CLIENT_ID', 'hrg-hrd'),
         'client_secret' => env('HRG_CLIENT_SECRET', 'hrd_secret_local_2026'),

@@ -18,7 +18,8 @@
                 Masuk ke portal HR Group Enterprise untuk mengakses administrasi sistem, manajemen shift kerja, presensi lokasi, dan operasional SDM.
             </p>
 
-            {{-- Tombol SSO Keycloak HR Group --}}
+            @if(config('services.hrgroup.show_sso_button', false))
+            {{-- Tombol SSO Keycloak HR Group (Opsional, default hidden per Option B Silent Sync) --}}
             <div class="mb-6">
                 <a 
                     href="{{ route('auth.hrgroup.redirect') }}" 
@@ -36,6 +37,7 @@
                 <span class="bg-white px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">atau masuk dengan kredensial lokal</span>
                 <div class="border-t border-slate-200 w-full"></div>
             </div>
+            @endif
 
             <form method="post" action="{{ route('login') }}" class="space-y-5">
                 @csrf
