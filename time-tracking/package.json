@@ -1,0 +1,16 @@
+{
+  "name": "hrghrd",
+  "version": "0.2.0",
+  "description": "HR Group HRD App - transparent employee time tracking & KPI",
+  "type": "module",
+  "scripts": {
+    "start": "node --no-warnings src/server.mjs",
+    "seed": "node --no-warnings src/seed.mjs",
+    "test": "node --no-warnings --test test/api.test.mjs",
+    "hash-password": "node src/hash-password.mjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "license": "UNLICENSED"
+}

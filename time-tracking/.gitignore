@@ -1,0 +1,9 @@
+node_modules/
+*.db
+*.db-*
+.env
+
+# .NET agent build output
+agent/bin/
+agent/obj/
+agent/dist/

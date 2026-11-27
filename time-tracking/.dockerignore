@@ -1,0 +1,7 @@
+agent/
+db/
+docs/
+*.db
+*.db-*
+.env
+node_modules/

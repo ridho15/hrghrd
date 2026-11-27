@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#047857">
+  <title>Time Tracking · HR Group</title>
+  <link rel="preload" href="/fonts/plus-jakarta-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/plus-jakarta-sans-700.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <p class="brand"><b>HR Group</b><span>Time Tracking</span></p>
+      <div class="session hidden" id="session">
+        <span class="session-user" id="session-user"></span>
+        <button type="button" class="btn btn-quiet" id="logout-btn">Keluar</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Desktop navigation (960px and up); the bottom bar below serves phones. -->
+  <nav class="tabs tabs-top hidden" aria-label="Menu utama" data-nav></nav>
+
+  <main class="page" id="main">
+    <div class="page-head">
+      <div>
+        <h1 id="page-title">Masuk</h1>
+        <p id="page-sub"></p>
+      </div>
+      <div class="page-actions" id="page-actions"></div>
+    </div>
+
+    <div id="notices"></div>
+
+    <section id="login" class="login" aria-labelledby="login-title">
+      <form id="login-form" class="panel">
+        <h2 id="login-title">Masuk ke dashboard</h2>
+        <p class="section-desc">Admin utama: kosongkan username dan isi password admin.</p>
+        <div class="form-grid">
+          <label class="field"><span>Username</span>
+            <input id="username" type="text" autocomplete="username" maxlength="32" placeholder="mis. manajer.hr">
+          </label>
+          <label class="field"><span>Password</span>
+            <input id="password" type="password" autocomplete="current-password" required>
+          </label>
+          <button type="submit" class="btn btn-primary btn-block">Masuk</button>
+          <p id="login-error" class="form-msg is-error" role="alert"></p>
+        </div>
+      </form>
+    </section>
+
+    <div id="app" class="hidden">
+      <div class="filters" id="filters">
+        <label class="field"><span>Karyawan</span><select id="emp-select"></select></label>
+        <label class="field"><span>Tanggal</span><input type="date" id="day"></label>
+      </div>
+      <div id="view" aria-live="polite"></div>
+    </div>
+  </main>
+
+  <nav class="tabs tabs-bottom hidden" aria-label="Menu utama" data-nav></nav>
+
+  <script src="/app.js"></script>
+</body>
+</html>

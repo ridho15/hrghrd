@@ -1,0 +1,25 @@
+name: "Time Tracking: Server tests"
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ "time-tracking/src/**", "time-tracking/public/**", "time-tracking/test/**", "time-tracking/package.json", ".github/workflows/time-tracking-tests.yml" ]
+  pull_request:
+    paths: [ "time-tracking/src/**", "time-tracking/public/**", "time-tracking/test/**", "time-tracking/package.json", ".github/workflows/time-tracking-tests.yml" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: time-tracking
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-node@v4.1.0
+        with:
+          node-version: "22.x"
+      - run: npm test

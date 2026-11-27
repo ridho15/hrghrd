@@ -1,0 +1,50 @@
+name: "Time Tracking: Agent & Installer"
+
+# Builds the Windows time-tracking agent and its one-click installer. Scoped to
+# time-tracking/agent so it never interferes with the Laravel app.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "time-tracking/agent/**"
+      - ".github/workflows/time-tracking-agent.yml"
+  pull_request:
+    paths:
+      - "time-tracking/agent/**"
+      - ".github/workflows/time-tracking-agent.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: time-tracking
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-dotnet@v4.1.0
+        with:
+          dotnet-version: "8.0.x"
+      - name: Publish agent (single-file, self-contained)
+        run: >
+          dotnet publish agent/HrgAgent.csproj -c Release -r win-x64
+          -p:PublishSingleFile=true -p:SelfContained=true
+          -o agent/dist
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+      - name: Build installer (version from the csproj)
+        shell: pwsh
+        run: |
+          $ver = ([xml](Get-Content agent/HrgAgent.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$ver" agent\installer\HrgTracker.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          name: HrgTracker-Setup
+          path: time-tracking/agent/installer/Output/*.exe
+          if-no-files-found: error
