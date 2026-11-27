@@ -221,11 +221,12 @@ class AttendanceApiController extends Controller
         ]);
 
         $user = $request->user();
+        $mineOnly = $request->boolean('mine');
         $perPage = min((int) ($request->query('per_page', 15)), 50);
 
         $query = Attendance::with(['shift.branch', 'shift.exceptions', 'user', 'exception'])
-            ->when(! Access::manager(), fn ($q) => $q->where('user_id', $user->id))
-            ->when(Access::manager() && ! Access::admin(), fn ($q) => $q->whereHas(
+            ->when($mineOnly || ! Access::manager(), fn ($q) => $q->where('user_id', $user->id))
+            ->when(! $mineOnly && Access::manager() && ! Access::admin(), fn ($q) => $q->whereHas(
                 'user', fn ($u) => $u->where('branch_id', $user->branch_id)
             ))
             ->when($request->query('month'), function ($q, $month) {
@@ -234,7 +235,7 @@ class AttendanceApiController extends Controller
                 $end = $base->copy()->endOfMonth()->toDateTimeString();
                 $q->whereHas('shift', fn ($s) => $s->whereBetween('start_at', [$start, $end]));
             })
-            ->when($request->query('user_id') && Access::manager(), fn ($q) => $q->where('user_id', $request->query('user_id')))
+            ->when(! $mineOnly && $request->query('user_id') && Access::manager(), fn ($q) => $q->where('user_id', $request->query('user_id')))
             ->latest('id');
 
         $paginator = $query->paginate($perPage);

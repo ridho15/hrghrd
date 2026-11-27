@@ -139,4 +139,66 @@ class EmployeeMobileQaRegressionTest extends TestCase
         $this->assertTrue($colleaguesWithMgr->firstWhere('id', $peerUnderMgr->id)['is_same_manager']);
         $this->assertFalse($colleaguesWithMgr->firstWhere('id', $peerNoMgr->id)['is_same_manager']);
     }
+
+    public function test_manager_shifts_and_history_with_mine_filter_returns_only_own_records(): void
+    {
+        $branch = Branch::factory()->create(['active' => true]);
+        $manager = User::factory()->create([
+            'role'      => 'manager',
+            'branch_id' => $branch->id,
+            'active'    => true,
+        ]);
+        $staff = User::factory()->create([
+            'role'      => 'employee',
+            'branch_id' => $branch->id,
+            'active'    => true,
+        ]);
+
+        $managerShift = Shift::factory()->create([
+            'user_id'   => $manager->id,
+            'branch_id' => $branch->id,
+            'start_at'  => '2026-11-27 08:00:00',
+            'end_at'    => '2026-11-27 17:00:00',
+            'status'    => 'approved',
+        ]);
+        $staffShift = Shift::factory()->create([
+            'user_id'   => $staff->id,
+            'branch_id' => $branch->id,
+            'start_at'  => '2026-11-27 09:00:00',
+            'end_at'    => '2026-11-27 18:00:00',
+            'status'    => 'approved',
+        ]);
+
+        Attendance::create([
+            'shift_id'     => $staffShift->id,
+            'user_id'      => $staff->id,
+            'checkin_at'   => '2026-11-27 09:00:00',
+            'status'       => 'present',
+            'late_minutes' => 0,
+            'late_units'   => 0,
+        ]);
+
+        // Tanpa mine=1 (untuk manajemen cabang), manager melihat semua shift & history cabang
+        $this->actingAs($manager, 'sanctum')
+            ->getJson('/api/v1/shifts?month=2026-11')
+            ->assertOk()
+            ->assertJsonCount(2, 'data');
+
+        $this->actingAs($manager, 'sanctum')
+            ->getJson('/api/v1/attendance/history?month=2026-11')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+
+        // Dengan mine=1 (layar jadwal & riwayat pribadi mobile), manager hanya melihat datanya sendiri
+        $this->actingAs($manager, 'sanctum')
+            ->getJson('/api/v1/shifts?month=2026-11&mine=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $managerShift->id);
+
+        $this->actingAs($manager, 'sanctum')
+            ->getJson('/api/v1/attendance/history?month=2026-11&mine=1')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
 }

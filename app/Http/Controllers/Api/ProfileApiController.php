@@ -13,6 +13,7 @@ use App\Models\SignatureEvent;
 use App\Models\Shift;
 use App\Models\User;
 use App\Services\OnboardingService;
+use App\Support\Rules;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -72,10 +73,14 @@ class ProfileApiController extends Controller
             app(\App\Services\ShiftService::class)->ensureOfficeShiftToday($user, $now);
         }
 
-        // 1. Prioritaskan shift yang saat ini sedang aktif berdinas (sedang check-in, belum check-out)
+        // 1. Prioritaskan shift yang saat ini sedang aktif berdinas (sedang check-in, belum check-out),
+        // dibatasi pada jendela check-out yang masih wajar agar shift usang yang lupa check-out
+        // berhari-hari lalu tidak terus terkunci sebagai status 'checked_in' hari ini.
+        $activeWindowCutoff = $now->copy()->subHours(max(12, Rules::int('checkout_late_hours')));
         $shift = Shift::with(['branch', 'attendance', 'exceptions'])
             ->where('user_id', $user->id)
-            ->whereHas('attendance', fn ($a) => $a->whereNotNull('checkin_at')->whereNull('checkout_at'))
+            ->where('end_at', '>=', $activeWindowCutoff)
+            ->whereHas('attendance', fn ($a) => $a->where('user_id', $user->id)->whereNotNull('checkin_at')->whereNull('checkout_at'))
             ->latest('id')
             ->first();
 
@@ -113,6 +118,9 @@ class ProfileApiController extends Controller
         }
 
         $attendance = $shift?->attendance;
+        if ($attendance && (int) $attendance->user_id !== (int) $user->id) {
+            $attendance = null;
+        }
 
         return response()->json([
             'success' => true,

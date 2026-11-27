@@ -44,12 +44,13 @@ class ShiftApiController extends Controller
         ]);
 
         $user = $request->user();
+        $mineOnly = $request->boolean('mine');
 
         $query = Shift::with(['user', 'branch', 'attendance'])
-            ->when(! Access::manager(), fn ($q) => $q->where('user_id', $user->id))
-            ->when(Access::manager() && ! Access::admin(), fn ($q) => $q->where('branch_id', $user->branch_id))
-            ->when($request->query('branch_id') && Access::admin(), fn ($q) => $q->where('branch_id', $request->query('branch_id')))
-            ->when($request->query('user_id') && Access::manager(), fn ($q) => $q->where('user_id', $request->query('user_id')))
+            ->when($mineOnly || ! Access::manager(), fn ($q) => $q->where('user_id', $user->id))
+            ->when(! $mineOnly && Access::manager() && ! Access::admin(), fn ($q) => $q->where('branch_id', $user->branch_id))
+            ->when(! $mineOnly && $request->query('branch_id') && Access::admin(), fn ($q) => $q->where('branch_id', $request->query('branch_id')))
+            ->when(! $mineOnly && $request->query('user_id') && Access::manager(), fn ($q) => $q->where('user_id', $request->query('user_id')))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->when($request->query('date'), fn ($q, $d) => $q->whereDate('start_at', $d))
             ->when($request->query('month'), function ($q, $m) {
