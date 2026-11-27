@@ -116,11 +116,19 @@
 
                 <div class="space-y-3.5">
                     <div>
+                        <label for="setting_payroll_cutoff_day" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                            Tanggal Cut-off Payroll
+                        </label>
+                        <input type="number" min="0" max="28" name="payroll_cutoff_day" id="setting_payroll_cutoff_day" value="{{ $settings['payroll_cutoff_day'] }}" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold tabular-nums text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600">
+                        <span class="text-[11px] text-slate-400 mt-0.5 block">Periode berakhir di tanggal ini dan diberi nama bulan akhirnya. Nilai 20: periode Desember = 21 November s.d. 20 Desember. Isi 0 untuk bulan kalender penuh.</span>
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                             Pembagi Tarif Harian (Daily Divisor)
                         </label>
                         <select name="daily_divisor" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 cursor-pointer">
-                            <option value="calendar" @selected($settings['daily_divisor'] === 'calendar')>Jumlah Hari Kalender Bulan Tersebut (Disetujui)</option>
+                            <option value="calendar" @selected($settings['daily_divisor'] === 'calendar')>Jumlah Hari dalam Periode Payroll (Disetujui)</option>
                             <option value="fixed_30" @selected($settings['daily_divisor'] === 'fixed_30')>Tetap 30 Hari per Bulan</option>
                         </select>
                         <span class="text-[11px] text-slate-400 mt-0.5 block">Dasar pembagian gaji pokok menjadi tarif harian per orang.</span>

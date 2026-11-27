@@ -14,7 +14,7 @@
                 Kalkulasi & Rekap Payroll
             </h1>
             <p class="text-sm text-slate-500 mt-1">
-                Rekapitulasi gaji dan remunerasi cabang <strong>{{ $branch->name }}</strong> untuk periode <strong>{{ \Carbon\Carbon::parse($month.'-01')->translatedFormat('F Y') }}</strong>.
+                Rekapitulasi gaji dan remunerasi cabang <strong>{{ $branch->name }}</strong> untuk periode <strong>{{ $periodLabel }}</strong>.
             </p>
         </div>
 
@@ -103,7 +103,8 @@
                     <label for="payroll-month" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                         Periode Bulan
                     </label>
-                    <input id="payroll-month" type="month" name="month" value="{{ $month }}" required class="h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 tabular-nums">
+                    <input id="payroll-month" type="month" name="month" value="{{ $month }}" required aria-describedby="payroll-month-range" class="h-10 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 tabular-nums">
+                    <span id="payroll-month-range" class="text-[11px] text-slate-500 mt-0.5 block">{{ $periodLabel }}</span>
                 </div>
 
                 <button type="submit" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold uppercase tracking-wider border border-slate-200 transition-colors cursor-pointer h-10">
@@ -301,7 +302,7 @@
                                             {{ $emp->name }}
                                         </a>
                                         <span class="text-[11px] text-slate-400 block">
-                                            {{ $emp->position?->name ?? 'Staf' }} &middot; {{ $d['employed_days'] }}/{{ $d['calendar_days'] }} Hari
+                                            {{ $emp->position?->name ?? 'Staf' }} &middot; {{ $d['employed_days'] }}/{{ $d['period_days'] ?? $d['calendar_days'] }} Hari
                                         </span>
                                         @if(empty($emp->bank_account_number))
                                             <div class="mt-0.5">

@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Services\PayrollCalculator;
 use App\Services\PayrollService;
 use App\Support\Access;
-use Carbon\Carbon;
+use App\Support\PayrollPeriod;
 use Illuminate\Http\Request;
 
 class PayrollController extends Controller
@@ -24,20 +24,17 @@ class PayrollController extends Controller
     {
         $this->admin();
         $branches = Branch::orderBy('name')->get();
-        $month = $request->query('month', now('Asia/Jakarta')->format('Y-m'));
+        $month = $request->query('month', PayrollPeriod::current());
         abort_unless(preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month), 422);
-        $currentMonth = now('Asia/Jakarta')->format('Y-m');
+        $currentMonth = PayrollPeriod::current();
         abort_if($month > $currentMonth, 422, "Periode payroll untuk masa depan ({$month}) belum dapat diproses.");
         $branchId = (int) $request->query('branch_id', $branches->first()?->id);
         $branch = $branches->firstWhere('id', $branchId);
         abort_unless($branch, 404);
 
         $run = PayrollRun::with('lines')->where('branch_id', $branchId)->where('month', $month)->first();
-        $end = Carbon::createFromFormat('!Y-m', $month, 'Asia/Jakarta')->endOfMonth()->toDateString();
-        $employeesQuery = User::where('branch_id', $branchId)
-            ->whereIn('role', ['employee', 'manager'])
-            ->where('hired_at', '<=', $end)
-            ->where(fn ($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', $month . '-01'))
+        $periodLabel = PayrollPeriod::label($month, $branchId);
+        $employeesQuery = $service->employeesQuery($branchId, $month)
             ->when($request->query('search'), function ($q, $search) {
                 $search = trim((string) $search);
                 if ($search === '') {
@@ -91,11 +88,7 @@ class PayrollController extends Controller
                 $summary['employee_count']++;
             }
         } else {
-            $branchAllForSummary = User::where('branch_id', $branchId)
-                ->whereIn('role', ['employee', 'manager'])
-                ->where('hired_at', '<=', $end)
-                ->where(fn ($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', $month . '-01'))
-                ->get();
+            $branchAllForSummary = $service->employeesFor($branchId, $month);
             foreach ($branchAllForSummary as $emp) {
                 $d = $calculator->calculate($emp, $month);
                 $summary['total_base'] += ($d['prorated_base'] ?? 0);
@@ -106,16 +99,16 @@ class PayrollController extends Controller
             }
         }
 
-        return view('payroll', compact('branches', 'branch', 'branchId', 'month', 'run', 'lines', 'blockers', 'paginatedEmployees', 'allBranchEmployees', 'summary'));
+        return view('payroll', compact('branches', 'branch', 'branchId', 'month', 'periodLabel', 'run', 'lines', 'blockers', 'paginatedEmployees', 'allBranchEmployees', 'summary'));
     }
 
     public function slip(Request $request, int $userId, PayrollCalculator $calculator)
     {
         abort_unless(Access::employee($userId), 403);
         $employee = User::with(['branch', 'position'])->findOrFail($userId);
-        $month = $request->query('month', now('Asia/Jakarta')->format('Y-m'));
+        $month = $request->query('month', PayrollPeriod::current());
         abort_unless(preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month), 422);
-        $currentMonth = now('Asia/Jakarta')->format('Y-m');
+        $currentMonth = PayrollPeriod::current();
         abort_if($month > $currentMonth, 422, "Periode payroll untuk masa depan ({$month}) belum dapat diproses.");
 
         $branchId = (int) $request->query('branch_id', $employee->branch_id);
@@ -135,7 +128,9 @@ class PayrollController extends Controller
             $detail = $calculator->calculate($employee, $month);
         }
 
-        return view('payroll-slip', compact('employee', 'branch', 'month', 'run', 'detail'));
+        $periodLabel = PayrollPeriod::label($month, $branchId);
+
+        return view('payroll-slip', compact('employee', 'branch', 'month', 'periodLabel', 'run', 'detail'));
     }
 
     public function generate(PayrollSelectionRequest $request, PayrollCalculator $calculator, PayrollService $service)

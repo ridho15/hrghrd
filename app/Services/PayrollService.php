@@ -11,15 +11,16 @@ use App\Models\PayrollRun;
 use App\Models\Shift;
 use App\Models\User;
 use App\Support\Audit;
-use Carbon\Carbon;
+use App\Support\PayrollPeriod;
 use Illuminate\Support\Facades\DB;
 
 class PayrollService
 {
     public function blockers(int $branchId, string $month): array
     {
-        $first = $month . '-01';
-        $last = Carbon::createFromFormat('!Y-m', $month, 'Asia/Jakarta')->endOfMonth()->toDateString();
+        $range = PayrollPeriod::range($month, $branchId);
+        $first = $range['start']->toDateString();
+        $last = $range['end']->toDateString();
         $blockers = [];
 
         if (User::where('branch_id', $branchId)->whereIn('role', ['employee', 'manager'])
@@ -76,12 +77,12 @@ class PayrollService
                 'status' => 'draft',
             ]);
 
-            $end = Carbon::createFromFormat('!Y-m', $month, 'Asia/Jakarta')->endOfMonth()->toDateString();
-            $employees = User::where('branch_id', $branchId)
-                ->whereIn('role', ['employee', 'manager'])
-                ->where('hired_at', '<=', $end)
-                ->where(fn ($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', $month . '-01'))
-                ->get();
+            $range = PayrollPeriod::range($month, $branchId);
+            $payrollRun->update([
+                'period_start' => $range['start']->toDateString(),
+                'period_end' => $range['end']->toDateString(),
+            ]);
+            $employees = $this->employeesFor($branchId, $month);
 
             $payrollRun->lines()->delete();
 
@@ -105,18 +106,14 @@ class PayrollService
     {
         $run = PayrollRun::where('branch_id', $branchId)->where('month', $month)->first();
         abort_unless($run && $run->status === 'draft', 409, 'Buat draf dulu.');
-        abort_if(now('Asia/Jakarta')->lte(Carbon::createFromFormat('!Y-m', $month, 'Asia/Jakarta')->endOfMonth()), 409, 'Bulan payroll belum berakhir.');
+        $range = PayrollPeriod::range($month, $branchId);
+        abort_if(now('Asia/Jakarta')->lte($range['end']->copy()->endOfDay()), 409, 'Periode payroll belum berakhir.');
 
         $blockers = $this->blockers($branchId, $month);
         abort_if(! empty($blockers), 409, 'Selesaikan shift, pengajuan, dan pengecualian yang tertunda sebelum persetujuan.');
 
         $saved = $run->lines()->get()->keyBy('user_id');
-        $end = Carbon::createFromFormat('!Y-m', $month, 'Asia/Jakarta')->endOfMonth()->toDateString();
-        $employees = User::where('branch_id', $branchId)
-            ->whereIn('role', ['employee', 'manager'])
-            ->where('hired_at', '<=', $end)
-            ->where(fn ($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', $month . '-01'))
-            ->get();
+        $employees = $this->employeesFor($branchId, $month);
 
         abort_if($saved->count() !== $employees->count(), 409, 'Draf payroll berubah. Buat ulang dan periksa kembali.');
 
@@ -130,6 +127,8 @@ class PayrollService
         }
 
         $run->update([
+            'period_start' => $range['start']->toDateString(),
+            'period_end' => $range['end']->toDateString(),
             'status' => 'approved',
             'approved_by' => $approver->id,
             'approved_at' => now(),
@@ -145,8 +144,8 @@ class PayrollService
         $run = PayrollRun::where('branch_id', $branchId)->where('month', $month)->first();
         abort_unless($run && $run->status === 'approved', 409, 'Setujui payroll dulu.');
 
-        $last = Carbon::createFromFormat('!Y-m', $month, 'Asia/Jakarta')->endOfMonth();
-        abort_if(now('Asia/Jakarta')->lte($last), 409, 'Bulan payroll belum berakhir.');
+        $last = PayrollPeriod::range($month, $branchId)['end']->copy()->endOfDay();
+        abort_if(now('Asia/Jakarta')->lte($last), 409, 'Periode payroll belum berakhir.');
         abort_if(! empty($this->blockers($branchId, $month)), 409, 'Masih ada pekerjaan tertunda.');
 
         $run->update([
@@ -158,6 +157,29 @@ class PayrollService
         Audit::record('payroll_run', $run->id, 'lock');
 
         return $run;
+    }
+
+    /**
+     * Karyawan cabang yang bekerja setidaknya satu hari dalam periode payroll.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, User>
+     */
+    public function employeesFor(int $branchId, string $month): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->employeesQuery($branchId, $month)->get();
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<User>
+     */
+    public function employeesQuery(int $branchId, string $month): \Illuminate\Database\Eloquent\Builder
+    {
+        $range = PayrollPeriod::range($month, $branchId);
+
+        return User::where('branch_id', $branchId)
+            ->whereIn('role', ['employee', 'manager'])
+            ->where('hired_at', '<=', $range['end']->toDateString())
+            ->where(fn ($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', $range['start']->toDateString()));
     }
 
     public function addAdjustment(array $data, User $creator): PayrollAdjustment

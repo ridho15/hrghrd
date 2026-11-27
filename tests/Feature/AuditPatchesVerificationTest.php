@@ -14,6 +14,7 @@ use App\Services\PayrollCalculator;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AuditPatchesVerificationTest extends TestCase
@@ -273,6 +274,7 @@ class AuditPatchesVerificationTest extends TestCase
             'ended_at' => '2026-10-31',
             'base_salary' => 3460000, // 3,460,000 / 173 = exactly 20,000 per hour
         ]);
+        DB::table('settings')->updateOrInsert(['key' => 'overtime_rate_scheme'], ['value' => 'statutory_pp35']);
 
         $manager = $this->createUser(['role' => 'manager', 'branch_id' => $branch->id]);
 
@@ -310,7 +312,7 @@ class AuditPatchesVerificationTest extends TestCase
     public function test_full_month_employed_receives_exact_base_salary_without_proration_distortion(): void
     {
         $branch = $this->createBranch();
-        // October has 31 days
+        // Periode Oktober = 21 September s.d. 20 Oktober = 30 hari
         $employee = $this->createUser([
             'branch_id' => $branch->id,
             'hired_at' => '2026-01-01',
@@ -321,8 +323,8 @@ class AuditPatchesVerificationTest extends TestCase
         $calculator = new PayrollCalculator();
         $result = $calculator->calculate($employee, '2026-10');
 
-        $this->assertSame(31, $result['calendar_days']);
-        $this->assertSame(31, $result['employed_days']);
+        $this->assertSame(30, $result['calendar_days']);
+        $this->assertSame(30, $result['employed_days']);
         // Base salary must be exactly 6,000,000, not prorated with rounding error
         $this->assertSame(6000000, $result['prorated_base']);
     }

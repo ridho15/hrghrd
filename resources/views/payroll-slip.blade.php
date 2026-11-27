@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Slip Gaji: ' . $employee->name . ' (' . \Carbon\Carbon::parse($month.'-01')->translatedFormat('F Y') . ')')
+@section('title', 'Slip Gaji: ' . $employee->name . ' (' . $periodLabel . ')')
 
 @push('styles')
 <style>
@@ -53,7 +53,7 @@
                 Slip Gaji Karyawan
             </h1>
             <p class="text-sm text-slate-500 mt-1">
-                Rincian penghasilan hak gaji dan kewajiban potongan untuk <strong>{{ $employee->name }}</strong> periode {{ \Carbon\Carbon::parse($month.'-01')->translatedFormat('F Y') }}.
+                Rincian penghasilan hak gaji dan kewajiban potongan untuk <strong>{{ $employee->name }}</strong> periode {{ $periodLabel }}.
             </p>
         </div>
 
@@ -113,7 +113,7 @@
                 <span class="text-[11px] font-extrabold uppercase tracking-widest text-slate-500 block">BUKTI PENGGAJIAN RESMI</span>
                 <span class="text-base sm:text-lg font-black text-slate-900 block mt-0.5">{{ $employee->name }}</span>
                 <span class="text-xs font-mono font-bold text-slate-600 block">{{ $refSlipNumber }}</span>
-                <span class="text-xs text-slate-500 block">Periode: {{ \Carbon\Carbon::parse($month.'-01')->translatedFormat('F Y') }}</span>
+                <span class="text-xs text-slate-500 block">Periode: {{ $periodLabel }}</span>
                 @if($employee->bank_account_number)
                     <span class="text-[11px] font-medium text-emerald-800 block mt-1">
                         {{ $employee->bank_name ?? 'Bank' }}: <strong class="font-mono">{{ $employee->bank_account_number }}</strong> ({{ $employee->bank_account_name ?? $employee->name }})

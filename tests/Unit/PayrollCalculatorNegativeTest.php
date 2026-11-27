@@ -18,7 +18,7 @@ class PayrollCalculatorNegativeTest extends TestCase
         $employee = $this->createUser([
             'branch_id' => $branch->id,
             'hired_at' => '2026-01-01',
-            'ended_at' => '2026-08-31', // Resigned before September
+            'ended_at' => '2026-08-20', // Resigned before the September period (21 Aug - 20 Sep)
             'base_salary' => 6000000,
         ]);
 
@@ -108,9 +108,9 @@ class PayrollCalculatorNegativeTest extends TestCase
         $branch = $this->createBranch();
         $employee = $this->createUser([
             'branch_id' => $branch->id,
-            'hired_at' => '2026-09-20',
-            'ended_at' => '2026-09-22', // Employed only 3 days
-            'base_salary' => 3000000,   // Daily rate = 100,000 (300,000 prorated base)
+            'hired_at' => '2026-09-10',
+            'ended_at' => '2026-09-12', // Employed only 3 days
+            'base_salary' => 3100000,   // Period 21 Aug - 20 Sep = 31 days: daily rate 100,000 (300,000 prorated base)
         ]);
 
         // Negative manual deduction (e.g., equipment damage deduction)

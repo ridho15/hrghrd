@@ -33,6 +33,7 @@ class SettingsSaveRequest extends FormRequest
             'sick_paid_days_per_case' => 'required|integer|min:0|max:30',
             'hourly_divisor' => 'required|integer|min:1|max:240',
             'daily_divisor' => 'required|in:calendar,fixed_30',
+            'payroll_cutoff_day' => 'sometimes|required|integer|min:0|max:28',
         ];
     }
 
@@ -52,6 +53,7 @@ class SettingsSaveRequest extends FormRequest
     {
         return [
             'daily_divisor.in' => 'Skema pembagi harian harus antara kalender atau tetap 30 hari.',
+            'payroll_cutoff_day.max' => 'Tanggal cut-off payroll maksimal 28 agar berlaku di setiap bulan.',
         ];
     }
 }

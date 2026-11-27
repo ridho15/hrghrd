@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\PayrollPeriod;
 use App\Support\Rules;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -10,13 +11,19 @@ final class PayrollCalculator
 {
     public function calculate(object $employee, string $month): array
     {
-        $first = Carbon::createFromFormat('!Y-m', $month, 'Asia/Jakarta');
-        $last = $first->copy()->endOfMonth();
-        $days = $first->daysInMonth;
-        $hired = $employee->hired_at ? Carbon::parse($employee->hired_at, 'Asia/Jakarta') : $first;
+        // Periode payroll mengikuti tanggal cut-off (default 21 s.d. 20 bulan berikutnya).
+        $nominal = PayrollPeriod::nominal($month);
+        $range = PayrollPeriod::range($month, isset($employee->branch_id) ? (int) $employee->branch_id : null);
+        $first = $range['start']->copy();
+        $last = $range['end']->copy();
+        // Tarif harian memakai panjang periode nominal agar periode transisi yang lebih
+        // pendek tidak membuat potongan per hari membengkak.
+        $days = (int) $nominal['start']->diffInDays($nominal['end']) + 1;
+        $periodDays = (int) $first->diffInDays($last) + 1;
+        $hired = $employee->hired_at ? Carbon::parse($employee->hired_at, 'Asia/Jakarta')->startOfDay() : $first;
         $employedStart = $hired->greaterThan($first) ? $hired : $first;
-        $ended = $employee->ended_at ? Carbon::parse($employee->ended_at, 'Asia/Jakarta') : $last->copy()->startOfDay();
-        $employedEnd = $ended->lessThan($last) ? $ended : $last->copy()->startOfDay();
+        $ended = $employee->ended_at ? Carbon::parse($employee->ended_at, 'Asia/Jakarta')->startOfDay() : $last->copy();
+        $employedEnd = $ended->lessThan($last) ? $ended : $last->copy();
         $employedDays = $employedStart->greaterThan($employedEnd) ? 0 : (int)$employedStart->diffInDays($employedEnd) + 1;
         $dailyDivisor = Rules::get('daily_divisor') === 'fixed_30' ? 30 : $days;
         $daily = (float) $employee->base_salary / $dailyDivisor;
@@ -100,13 +107,15 @@ final class PayrollCalculator
         // — netto saja tidak cukup untuk merekonstruksi dua kategori terpisah.
         $bonusTotal = array_sum(array_filter(array_column($adjustments, 'amount'), fn ($a) => $a > 0));
         $kasbonTotal = abs(array_sum(array_filter(array_column($adjustments, 'amount'), fn ($a) => $a < 0)));
-        $base = ($employedDays === $days) ? (int) $employee->base_salary : (int) round($daily * $employedDays);
+        $base = ($employedDays >= $periodDays) ? (int) $employee->base_salary : (int) round($daily * $employedDays);
         $unpaid = (int) round($daily * count($unpaidDates));
         $late = $lateUnits * Rules::int('late_penalty_per_unit');
         $overtime = $totalOvertimePay;
 
         return [
-            'monthly_salary'=>(int)$employee->base_salary, 'calendar_days'=>$days, 'daily_divisor'=>$dailyDivisor,
+            'monthly_salary'=>(int)$employee->base_salary,
+            'period_start'=>$first->toDateString(), 'period_end'=>$last->toDateString(), 'period_days'=>$periodDays,
+            'calendar_days'=>$days, 'daily_divisor'=>$dailyDivisor,
             'employed_days'=>$employedDays, 'daily_rate'=>round($daily,2), 'hourly_rate'=>round($hourly,2),
             'prorated_base'=>$base, 'unpaid_dates'=>$unpaidDates, 'unpaid_deduction'=>$unpaid,
             'late_units'=>$lateUnits, 'late_sources'=>$lateSources, 'late_deduction'=>$late,

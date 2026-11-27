@@ -10,7 +10,7 @@ use App\Models\User;
 use App\Services\PayrollCalculator;
 use App\Services\PayrollService;
 use App\Support\Access;
-use Carbon\Carbon;
+use App\Support\PayrollPeriod;
 use Illuminate\Http\Request;
 
 /**
@@ -25,12 +25,12 @@ class PayrollApiController extends Controller
      *
      * Menampilkan slip gaji rincian untuk karyawan yang sedang terautentikasi.
      *
-     * Query: `month` (format YYYY-MM, contoh: 2026-10)
+     * Query: `month` (format YYYY-MM, contoh: 2026-10 = periode 21 Sep s.d. 20 Okt 2026)
      */
     public function mySlip(Request $request, PayrollCalculator $calculator)
     {
         $user = $request->user()->load(['branch', 'position']);
-        $month = $request->query('month', now('Asia/Jakarta')->format('Y-m'));
+        $month = $request->query('month', PayrollPeriod::current());
 
         if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
             return response()->json(['success' => false, 'message' => 'Format bulan harus YYYY-MM.'], 422);
@@ -91,7 +91,7 @@ class PayrollApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Karyawan bukan dari cabang Anda.'], 403);
         }
 
-        $month = $request->query('month', now('Asia/Jakarta')->format('Y-m'));
+        $month = $request->query('month', PayrollPeriod::current());
 
         if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
             return response()->json(['success' => false, 'message' => 'Format bulan harus YYYY-MM.'], 422);
@@ -146,7 +146,7 @@ class PayrollApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Diperlukan role Manager.'], 403);
         }
 
-        $month = $request->query('month', now('Asia/Jakarta')->format('Y-m'));
+        $month = $request->query('month', PayrollPeriod::current());
         if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $month)) {
             return response()->json(['success' => false, 'message' => 'Format bulan harus YYYY-MM.'], 422);
         }
@@ -159,7 +159,6 @@ class PayrollApiController extends Controller
 
         $branch = Branch::findOrFail($branchId);
         $run = PayrollRun::with('lines')->where('branch_id', $branchId)->where('month', $month)->first();
-        $end = Carbon::createFromFormat('!Y-m', $month, 'Asia/Jakarta')->endOfMonth()->toDateString();
 
         $summary = [
             'total_base'       => 0,
@@ -179,11 +178,7 @@ class PayrollApiController extends Controller
                 $summary['employee_count']++;
             }
         } else {
-            $branchEmployees = User::where('branch_id', $branchId)
-                ->whereIn('role', ['employee', 'manager'])
-                ->where('hired_at', '<=', $end)
-                ->where(fn ($q) => $q->whereNull('ended_at')->orWhere('ended_at', '>=', $month . '-01'))
-                ->get();
+            $branchEmployees = $service->employeesFor($branchId, $month);
 
             foreach ($branchEmployees as $emp) {
                 $d = $calculator->calculate($emp, $month);
@@ -196,6 +191,7 @@ class PayrollApiController extends Controller
         }
 
         $blockers = $service->blockers($branchId, $month);
+        $range = PayrollPeriod::range($month, $branchId);
 
         return response()->json([
             'success' => true,
@@ -206,6 +202,8 @@ class PayrollApiController extends Controller
                     'code' => $branch->code,
                 ],
                 'month'          => $month,
+                'period_start'   => $range['start']->toDateString(),
+                'period_end'     => $range['end']->toDateString(),
                 'status'         => $run?->status ?? 'unprocessed',
                 'summary'        => $summary,
                 'blockers_count' => count($blockers),

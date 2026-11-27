@@ -31,6 +31,9 @@ class PayrollSlipResource extends JsonResource
         return [
             'ref_number'       => $this['ref_number'] ?? ('SLIP-' . ($branch->code ?? 'BR') . '-' . $employee->id . '-' . str_replace('-', '', $this['month'])),
             'period'           => $this['month'],
+            // Rentang tanggal periode (cut-off 21 s.d. 20). Null untuk slip lama sebelum field ini ada.
+            'period_start'     => $detail['period_start'] ?? null,
+            'period_end'       => $detail['period_end'] ?? null,
             // 'draft': estimasi berjalan, dihitung real-time dan bisa berubah.
             // 'approved'/'locked': sudah final, diambil dari payroll_run_lines yang disimpan.
             'status'           => $this['status'] ?? 'draft',

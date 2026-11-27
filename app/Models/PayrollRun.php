@@ -14,6 +14,8 @@ class PayrollRun extends Model
     protected $fillable = [
         'branch_id',
         'month',
+        'period_start',
+        'period_end',
         'status',
         'approved_by',
         'approved_at',
@@ -24,6 +26,8 @@ class PayrollRun extends Model
     protected function casts(): array
     {
         return [
+            'period_start' => 'date:Y-m-d',
+            'period_end' => 'date:Y-m-d',
             'approved_at' => 'datetime',
             'locked_at' => 'datetime',
         ];

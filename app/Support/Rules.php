@@ -12,13 +12,14 @@ final class Rules
         'checkin_early_minutes' => '60', 'checkout_late_hours' => '6',
         'overtime_threshold_minutes' => '90', 'overtime_max_daily_minutes' => '240',
         'overtime_calculation_basis' => 'per_hour', // 'per_hour' atau 'per_minute'
-        'overtime_rate_scheme' => 'statutory_pp35', // 'fixed_amount', 'hourly_prorata', 'statutory_pp35'
+        'overtime_rate_scheme' => 'fixed_amount', // 'fixed_amount', 'hourly_prorata', 'statutory_pp35'
         'overtime_unit_minutes' => '60', // Durasi per 1 unit lembur (15, 30, 60 menit)
-        'overtime_rate_per_unit' => '20000', // Nominal rupiah per unit (skema fixed_amount)
+        'overtime_rate_per_unit' => '10000', // Nominal rupiah per unit (skema fixed_amount): Rp10.000 per jam
         'overtime_rounding_mode' => 'floor', // 'floor', 'round', 'ceil'
         'min_work_duration_minutes' => '30',
         'leave_notice_days' => '7',
         'sick_paid_days_per_case' => '2', 'daily_divisor' => 'calendar',
+        'payroll_cutoff_day' => '20', // Periode 21 s.d. 20 bulan berikutnya; 0 = bulan kalender
         'hourly_divisor' => '24',
         'office_start_time' => '09:00',
         'office_end_time' => '18:00',
